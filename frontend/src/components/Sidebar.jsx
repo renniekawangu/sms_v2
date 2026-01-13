@@ -128,7 +128,7 @@ function Sidebar({ isOpen, onClose }) {
       `}>
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Esync Logo" className="w-16 h-16 object-contain" />
+            <img src="/logo.png" alt="Esync Logo" className="w-40 h-24 object-contain" />
           </div>
           {/* Close button for mobile */}
           <button
