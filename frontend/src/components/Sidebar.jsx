@@ -129,7 +129,6 @@ function Sidebar({ isOpen, onClose }) {
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Esync Logo" className="w-10 h-10 object-contain" />
-            <h1 className="text-2xl font-semibold text-text-dark">EsyncSMS</h1>
           </div>
           {/* Close button for mobile */}
           <button
