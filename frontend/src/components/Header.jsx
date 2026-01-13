@@ -46,20 +46,6 @@ function Header({ onMenuClick }) {
             <User size={18} />
             <span className="text-sm hidden sm:inline">{user?.name || 'User'}</span>
           </div>
-          <button
-            onClick={handleLogout}
-            className="p-2 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-            title="Logout"
-            aria-label="Logout"
-          >
-            <LogOut size={20} />
-          </button>
-          <button 
-            className="hidden sm:flex p-2 text-text-muted hover:text-text-dark hover:bg-gray-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-blue"
-            aria-label="Voice search"
-          >
-            <Mic size={20} />
-          </button>
           <img src="/logo.png" alt="Esync Logo" className="w-10 h-10 object-contain ml-4 border-l border-gray-200 pl-4" />
         </div>
       </div>
