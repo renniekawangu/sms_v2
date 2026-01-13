@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText, Award, CheckCircle, DollarSign, CreditCard, TrendingDown, AlertCircle, Settings, UserCog, Lock, X } from 'lucide-react'
+import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText, Award, CheckCircle, DollarSign, CreditCard, TrendingDown, AlertCircle, Settings, UserCog, Lock, X, Search, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
+import { useNavigate } from 'react-router-dom'
 
 // Admin menu items
 const adminMenuItems = [
@@ -72,8 +74,20 @@ const parentMenuItems = [
 
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const { success } = useToast()
+  const navigate = useNavigate()
   const userRole = user?.role || 'admin'
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      success('Logged out successfully')
+      navigate('/login')
+    } catch (error) {
+      navigate('/login')
+    }
+  }
 
   // Get menu items based on role
   let menuItems = []
@@ -150,6 +164,35 @@ function Sidebar({ isOpen, onClose }) {
             })}
           </ul>
         </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-6 border-t border-gray-100">
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center">
+                <span className="text-white text-xs font-semibold">{user?.name?.charAt(0) || 'U'}</span>
+              </div>
+              <span className="text-sm font-medium text-text-dark truncate">{user?.name || 'User'}</span>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-2 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none"
+          >
+            <LogOut size={18} />
+            <span className="text-sm font-medium">Logout</span>
+          </button>
+        </div>
       </aside>
     </>
   )
