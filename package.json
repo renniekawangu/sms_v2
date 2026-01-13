@@ -1,0 +1,14 @@
+{
+  "name": "sms-system",
+  "version": "1.0.0",
+  "description": "School Management System - Monorepo",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "cd backend && node src/server.js",
+    "dev": "cd backend && npm run dev",
+    "install": "cd backend && npm install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
