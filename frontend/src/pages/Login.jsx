@@ -43,8 +43,8 @@ function Login() {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-blue rounded-custom mb-4">
-            <GraduationCap className="text-white" size={32} />
+          <div className="inline-flex items-center justify-center mb-4">
+            <img src="/logo.png" alt="Esync Logo" className="w-24 h-24 object-contain" />
           </div>
           <h1 className="text-3xl font-semibold text-text-dark mb-2">Edusync</h1>
           <p className="text-text-muted">School Management System</p>
