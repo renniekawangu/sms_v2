@@ -42,7 +42,7 @@ function Header({ onMenuClick }) {
           </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-4 ml-auto">
-          <img src="/logo.png" alt="Esync Logo" className="w-10 h-10 object-contain ml-4 border-l border-gray-200 pl-4" />
+          <img src="/logo.png" alt="Esync Logo" className="w-14 h-14 object-contain ml-4 border-l border-gray-200 pl-4" />
         </div>
       </div>
     </header>
