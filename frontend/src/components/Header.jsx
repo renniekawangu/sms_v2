@@ -42,10 +42,6 @@ function Header({ onMenuClick }) {
           </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-4 ml-auto">
-          <div className="flex items-center gap-2 text-text-muted">
-            <User size={18} />
-            <span className="text-sm hidden sm:inline">{user?.name || 'User'}</span>
-          </div>
           <img src="/logo.png" alt="Esync Logo" className="w-10 h-10 object-contain ml-4 border-l border-gray-200 pl-4" />
         </div>
       </div>
