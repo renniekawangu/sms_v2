@@ -15,6 +15,7 @@ const { Fee } = require('../models/fees');
 const { Payment } = require('../models/payment');
 const { Expense } = require('../models/expense');
 const { AuditLog } = require('../models/audit-log');
+const { logAction } = require('../utils/auditLogger');
 const { getSchoolSettings, getCurrentAcademicYear } = require('../models/school-settings');
 
 const router = express.Router();
@@ -191,6 +192,14 @@ router.post('/users', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async 
   });
   await user.save();
 
+  await logAction({
+    action: 'create_user',
+    actor: req.user,
+    targetType: 'User',
+    targetId: user._id,
+    details: { email: user.email, role: user.role }
+  });
+
   res.status(201).json({ 
     message: 'User created', 
     user_id: user._id, 
@@ -216,6 +225,13 @@ router.put('/users/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(asy
   if (role) user.role = role;
 
   await user.save();
+  await logAction({
+    action: 'update_user',
+    actor: req.user,
+    targetType: 'User',
+    targetId: user._id,
+    details: { email: user.email, role: user.role }
+  });
   res.json({ message: 'User updated', user_id: user._id });
 }));
 
@@ -226,6 +242,13 @@ router.put('/users/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(asy
 router.delete('/users/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
   const user = await User.findByIdAndDelete(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
+  await logAction({
+    action: 'delete_user',
+    actor: req.user,
+    targetType: 'User',
+    targetId: req.params.id,
+    details: { email: user.email, role: user.role }
+  });
   res.json({ message: 'User deleted' });
 }));
 
@@ -278,6 +301,12 @@ router.post('/students/bulk-delete', requireAuth, requireRole(ROLES.ADMIN, ROLES
   }
 
   const result = await Student.deleteMany({ _id: { $in: ids } });
+  await logAction({
+    action: 'bulk_delete_students',
+    actor: req.user,
+    targetType: 'Student',
+    details: { ids }
+  });
   res.json({ message: `${result.deletedCount} students deleted` });
 }));
 
@@ -330,6 +359,12 @@ router.post('/staff/bulk-delete', requireAuth, requireRole(ROLES.ADMIN), asyncHa
   }
 
   const result = await Staff.deleteMany({ _id: { $in: ids } });
+  await logAction({
+    action: 'bulk_delete_staff',
+    actor: req.user,
+    targetType: 'Staff',
+    details: { ids }
+  });
   res.json({ message: `${result.deletedCount} staff members deleted` });
 }));
 

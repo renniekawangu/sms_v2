@@ -12,6 +12,7 @@ import Students from './pages/Students'
 import Teachers from './pages/Teachers'
 import Staffs from './pages/Staffs'
 import Classrooms from './pages/Classrooms'
+import ViewClassroom from './pages/ViewClassroom'
 import Subjects from './pages/Subjects'
 import Timetable from './pages/Timetable'
 import Exams from './pages/Exams'
@@ -132,6 +133,18 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+                {/* View Classroom - accessible to all authenticated users */}
+                <Route
+                  path="/classrooms/:id"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <ViewClassroom />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
 
               {/* Subjects - accessible to all authenticated users */}
               <Route

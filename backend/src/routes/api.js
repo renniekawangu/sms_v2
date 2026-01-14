@@ -11,6 +11,7 @@ const { Student } = require('../models/student');
 const { Staff } = require('../models/staff');
 const { Subject } = require('../models/subjects');
 const { Grade } = require('../models/grades');
+const { Teacher } = require('../models/teacher');
 const { Attendance } = require('../models/attendance');
 const { Fee } = require('../models/fees');
 const { Classroom } = require('../models/classroom');
