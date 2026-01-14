@@ -70,21 +70,23 @@ router.post('/login', authRateLimiter, asyncHandler(async (req, res) => {
       user_id: user._id,
       email: user.email,
       role: user.role,
-      name: user.email.split('@')[0]
+      name: user.name || user.email.split('@')[0],
+      phone: user.phone,
+      date_of_join: user.date_of_join
     };
 
     // Enhance user details with profile information
     if (user.role === 'student') {
       const student = await Student.findOne({ userId: user._id });
       if (student) {
-        userDetails.name = `${student.firstName} ${student.lastName}`;
+        if (!user.name) userDetails.name = `${student.firstName} ${student.lastName}`;
         userDetails.student_id = student._id;
       }
     } else if (user.role === 'teacher' || user.role === 'staff') {
       const { Staff } = require('../models/staff');
       const staff = await Staff.findOne({ userId: user._id });
       if (staff) {
-        userDetails.name = `${staff.firstName} ${staff.lastName}`;
+        if (!user.name) userDetails.name = `${staff.firstName} ${staff.lastName}`;
         userDetails.staff_id = staff._id;
       }
     }
@@ -94,7 +96,9 @@ router.post('/login', authRateLimiter, asyncHandler(async (req, res) => {
       user_id: userDetails.user_id,
       email: userDetails.email,
       role: userDetails.role,
-      name: userDetails.name
+      name: userDetails.name,
+      phone: userDetails.phone,
+      date_of_join: userDetails.date_of_join
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -132,10 +136,13 @@ router.get('/me', asyncHandler(async (req, res) => {
     let userDetails = {
       user_id: user._id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      name: user.name,
+      phone: user.phone,
+      date_of_join: user.date_of_join
     };
 
-    if (user.role === 'student') {
+    if (user.role === 'student' && !user.name) {
       const student = await Student.findOne({ userId: user._id });
       if (student) {
         userDetails.name = `${student.firstName} ${student.lastName}`;

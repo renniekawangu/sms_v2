@@ -7,7 +7,9 @@ function UserForm({ user, onSubmit, onCancel }) {
     name: '',
     email: '',
     password: '',
-    role: ROLES.STUDENT
+    role: ROLES.STUDENT,
+    phone: '',
+    date_of_join: ''
   })
   const [errors, setErrors] = useState({})
 
@@ -17,7 +19,9 @@ function UserForm({ user, onSubmit, onCancel }) {
         name: user.name || '',
         email: user.email || '',
         password: '', // Never pre-fill password
-        role: user.role || ROLES.STUDENT
+        role: user.role || ROLES.STUDENT,
+        phone: user.phone || '',
+        date_of_join: user.date_of_join ? new Date(user.date_of_join).toISOString().split('T')[0] : ''
       })
     }
   }, [user])
@@ -125,6 +129,35 @@ function UserForm({ user, onSubmit, onCancel }) {
             {errors.email && (
               <p className="mt-1 text-sm text-red-500">{errors.email}</p>
             )}
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              placeholder="+1234567890"
+            />
+          </div>
+
+          {/* Date of Join */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date of Join
+            </label>
+            <input
+              type="date"
+              name="date_of_join"
+              value={formData.date_of_join}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+            />
           </div>
 
           {/* Password */}

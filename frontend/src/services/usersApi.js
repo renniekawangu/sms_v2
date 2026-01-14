@@ -30,6 +30,8 @@ export const usersApi = {
    * @param {string} userData.email - User's email
    * @param {string} userData.password - User's password (will be hashed)
    * @param {string} userData.role - User's role (admin, teacher, student, etc.)
+   * @param {string} [userData.phone] - User's phone number
+   * @param {string} [userData.date_of_join] - User's join date (ISO format)
    * @returns {Promise<Object>} Created user
    */
   async createUser(userData) {

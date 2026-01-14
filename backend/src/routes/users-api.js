@@ -35,7 +35,7 @@ router.get('/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (re
 
 // POST /api/users - create user
 router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
-  const { email, password, role, ...rest } = req.body;
+  const { email, password, role, name, phone, date_of_join, ...rest } = req.body;
   if (!email || !password || !role) {
     return res.status(400).json({ error: 'Email, password, and role are required' });
   }
@@ -46,7 +46,15 @@ router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req,
   if (existing) return res.status(400).json({ error: 'Email already in use' });
 
   const hashed = await bcrypt.hash(password, 10);
-  const user = new User({ email: email.toLowerCase().trim(), password: hashed, role, ...rest });
+  const user = new User({ 
+    email: email.toLowerCase().trim(), 
+    password: hashed, 
+    role,
+    name,
+    phone,
+    date_of_join: date_of_join ? new Date(date_of_join) : undefined,
+    ...rest 
+  });
   await user.save();
   res.status(201).json(sanitizeUser(user.toObject()));
 }));
@@ -54,7 +62,7 @@ router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req,
 // PUT /api/users/:id - update user
 router.put('/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { password, role, email, name, ...rest } = req.body;
+  const { password, role, email, name, phone, date_of_join, ...rest } = req.body;
   if (!mongoose.isValidObjectId(id)) {
     return res.status(400).json({ error: 'Invalid user id' });
   }
@@ -72,6 +80,8 @@ router.put('/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (re
     user.email = normalizedEmail;
   }
   if (name) user.name = name;
+  if (phone !== undefined) user.phone = phone;
+  if (date_of_join) user.date_of_join = new Date(date_of_join);
   if (role) user.role = role;
   if (password) {
     user.password = await bcrypt.hash(password, 10);

@@ -106,7 +106,10 @@ router.post('/students', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHE
   const user = new User({
     email,
     password: 'temp123',
-    role: 'student'
+    role: 'student',
+    name,
+    phone,
+    date_of_join: date_of_join ? new Date(date_of_join) : new Date()
   });
   await user.save();
 
@@ -178,7 +181,10 @@ router.post('/teachers', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHE
   const user = new User({
     email,
     password: 'temp123',
-    role: 'teacher'
+    role: 'teacher',
+    name,
+    phone,
+    date_of_join: date_of_join ? new Date(date_of_join) : new Date()
   });
   await user.save();
 

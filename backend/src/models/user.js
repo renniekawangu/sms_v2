@@ -21,12 +21,16 @@ const userSchema = new mongoose.Schema({
     required: true,
     enum: ['admin', 'student', 'teacher', 'head-teacher', 'accounts']
   },
+  name: { type: String },
+  phone: { type: String },
+  date_of_join: { type: Date },
   profilePicture: { type: String, default: '/uploads/profiles/default.svg' },
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
   teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff' },
   headTeacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'HeadTeacher' },
-  accountsId: { type: mongoose.Schema.Types.ObjectId, ref: 'Accounts' },
-  createdAt: { type: Date, default: Date.now }
+  accountsId: { type: mongoose.Schema.Types.ObjectId, ref: 'Accounts' }
+}, {
+  timestamps: true
 });
 
 const User = mongoose.model('User', userSchema);

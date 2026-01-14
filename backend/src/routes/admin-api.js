@@ -170,7 +170,7 @@ router.get('/users/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(asy
  * Create new user
  */
 router.post('/users', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password, role, name, phone, date_of_join } = req.body;
 
   if (!email || !password || !role) {
     return res.status(400).json({ error: 'Email, password, and role are required' });
@@ -181,10 +181,25 @@ router.post('/users', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async 
     return res.status(409).json({ error: 'User already exists' });
   }
 
-  const user = new User({ email, password, role });
+  const user = new User({ 
+    email, 
+    password, 
+    role,
+    name,
+    phone,
+    date_of_join: date_of_join ? new Date(date_of_join) : undefined
+  });
   await user.save();
 
-  res.status(201).json({ message: 'User created', user_id: user._id, email: user.email, role: user.role });
+  res.status(201).json({ 
+    message: 'User created', 
+    user_id: user._id, 
+    email: user.email, 
+    role: user.role,
+    name: user.name,
+    phone: user.phone,
+    date_of_join: user.date_of_join
+  });
 }));
 
 /**
