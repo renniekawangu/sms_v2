@@ -54,7 +54,7 @@ router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req,
 // PUT /api/users/:id - update user
 router.put('/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { password, role, email, ...rest } = req.body;
+  const { password, role, email, name, ...rest } = req.body;
   if (!mongoose.isValidObjectId(id)) {
     return res.status(400).json({ error: 'Invalid user id' });
   }
@@ -71,6 +71,7 @@ router.put('/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (re
     if (duplicate) return res.status(400).json({ error: 'Email already in use' });
     user.email = normalizedEmail;
   }
+  if (name) user.name = name;
   if (role) user.role = role;
   if (password) {
     user.password = await bcrypt.hash(password, 10);
