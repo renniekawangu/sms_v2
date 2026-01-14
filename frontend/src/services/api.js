@@ -583,6 +583,17 @@ export const adminApi = {
       method: 'GET',
     });
   },
+
+  // Staff and Students raw lists (include _id)
+  listStaff: async (params = {}) => {
+    const query = new URLSearchParams({ limit: '1000', ...params }).toString();
+    return apiCall(`/admin/staff-list?${query}`, { method: 'GET' });
+  },
+
+  listStudents: async (params = {}) => {
+    const query = new URLSearchParams({ limit: '1000', ...params }).toString();
+    return apiCall(`/admin/students-list?${query}`, { method: 'GET' });
+  },
 };
 
 // Accounts API

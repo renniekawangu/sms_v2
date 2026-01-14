@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { School, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
-import { classroomsApi, teachersApi, studentsApi } from '../services/api'
+import { classroomsApi, adminApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import ClassroomForm from '../components/ClassroomForm'
@@ -24,14 +24,24 @@ function Classrooms() {
     try {
       setLoading(true)
       setError(null)
-      const [classroomsData, teachersData, studentsData] = await Promise.all([
+      const [classroomsData, staffResp, studentsResp] = await Promise.all([
         classroomsApi.list(),
-        teachersApi.list(),
-        studentsApi.list()
+        adminApi.listStaff({ role: 'teacher', limit: 1000 }),
+        adminApi.listStudents({ limit: 1000 })
       ])
       setClassrooms(classroomsData)
-      setTeachers(teachersData)
-      setStudents(studentsData)
+      // Normalize teachers to {_id, name}
+      const teacherList = (staffResp.staff || []).map(t => ({
+        _id: t._id,
+        name: [t.firstName, t.lastName].filter(Boolean).join(' ').trim() || 'Teacher'
+      }))
+      setTeachers(teacherList)
+      // Normalize students to {_id, name}
+      const studentList = (studentsResp.students || []).map(s => ({
+        _id: s._id,
+        name: s.name || [s.firstName, s.lastName].filter(Boolean).join(' ').trim() || s.email || 'Student'
+      }))
+      setStudents(studentList)
     } catch (err) {
       const errorMessage = err.message || 'Failed to load data'
       setError(errorMessage)

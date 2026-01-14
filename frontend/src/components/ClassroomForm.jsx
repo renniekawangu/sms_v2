@@ -41,9 +41,7 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
       newErrors.section = 'Section is required'
     }
 
-    if (!formData.teacher_id) {
-      newErrors.teacher_id = 'Teacher is required'
-    }
+    // Teacher is optional; backend allows null
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
