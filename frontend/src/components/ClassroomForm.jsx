@@ -91,16 +91,6 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
     })
   }
 
-  const filteredTeachers = teachers.filter(t => 
-    !teacherSearch.trim() || 
-    t.name.toLowerCase().includes(teacherSearch.toLowerCase())
-  )
-
-  const filteredStudents = students.filter(s => 
-    !studentSearch.trim() || 
-    s.name.toLowerCase().includes(studentSearch.toLowerCase())
-  )
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -168,10 +158,11 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
                 : 'border-gray-200 focus:ring-primary-blue'
             }`}
           >
-            <option value="">Select a teacher</option>
+            <option value="">No teacher assigned</option>
             {filteredTeachers.map((teacher) => (
               <option key={teacher._id} value={teacher._id}>
                 {teacher.name}
+                {import.meta.env.DEV && teacher._id ? ` [${teacher._id.slice(-6)}]` : ''}
               </option>
             ))}
           </select>
@@ -207,6 +198,9 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
                   />
                   <span className="text-sm text-text-dark">
                     {student.name}
+                    {import.meta.env.DEV && student._id ? (
+                      <span className="text-xs text-gray-400 ml-1">[{student._id.slice(-6)}]</span>
+                    ) : null}
                   </span>
                 </label>
               ))}
