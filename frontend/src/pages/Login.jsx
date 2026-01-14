@@ -41,17 +41,13 @@ function Login() {
   return (
     <div className="min-h-screen bg-background-light flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-4">
-            <img src="/logo.png" alt="Esync Logo" className="w-24 h-24 object-contain" />
-          </div>
-          <h1 className="text-3xl font-semibold text-text-dark mb-2">Edusync</h1>
-          <p className="text-text-muted">School Management System</p>
-        </div>
-
         {/* Login Card */}
         <div className="bg-card-white rounded-custom shadow-custom p-8">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center mb-4">
+              <img src="/logo.png" alt="Esync Logo" className="w-24 h-24 object-contain" />
+            </div>
+          </div>
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-text-dark mb-2">Welcome Back</h2>
             <p className="text-text-muted">Sign in to your account</p>
@@ -131,36 +127,10 @@ function Login() {
               )}
             </button>
           </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-3">
-            <p className="text-xs text-text-muted mb-3 font-medium">Demo Credentials:</p>
-            
-            <div>
-              <p className="text-xs font-semibold text-text-dark mb-1">Admin:</p>
-              <p className="text-xs text-text-muted">admin@school.com / admin123</p>
-            </div>
-            
-            <div>
-              <p className="text-xs font-semibold text-text-dark mb-1">Teacher:</p>
-              <p className="text-xs text-text-muted">emily.chen@school.com / teacher123</p>
-              <p className="text-xs text-text-muted">robert.taylor@school.com / teacher123</p>
-            </div>
-            
-            <div>
-              <p className="text-xs font-semibold text-text-dark mb-1">Student:</p>
-              <p className="text-xs text-text-muted">student@school.com / student123</p>
-            </div>
-            
-            <div>
-              <p className="text-xs font-semibold text-text-dark mb-1">Accounts:</p>
-              <p className="text-xs text-text-muted">accountant@school.com / accounts123</p>
-            </div>
-          </div>
         </div>
 
         <p className="text-center text-sm text-text-muted mt-6">
-          © 2025 Edusync. All rights reserved.
+          © 2026 esyncsms. All rights reserved.
         </p>
       </div>
     </div>
