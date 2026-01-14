@@ -1,0 +1,910 @@
+{
+  "auditDate": "2026-01-14",
+  "auditScope": "SMS Backend Models and Routes Audit",
+  "models_audited": 12,
+  "routes_files_audited": 6,
+  "summary": {
+    "total_issues": 42,
+    "critical_issues": 12,
+    "warning_issues": 18,
+    "info_issues": 12
+  },
+  "findings": {
+    "STUDENT": {
+      "model_file": "backend/src/models/student.js",
+      "route_file": "backend/src/routes/student-api.js",
+      "field_naming": {
+        "status": "MIXED",
+        "details": "Uses camelCase (firstName, lastName, dateOfBirth, enrollmentDate) but inconsistent with references",
+        "issues": [
+          {
+            "severity": "warning",
+            "field": "enrollmentDate",
+            "issue": "Uses camelCase but routes reference 'date_of_join' (snake_case)"
+          }
+        ]
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "PASS",
+        "configured": true,
+        "virtuals": ["name (computed from firstName + lastName)"],
+        "toJSON_configured": true
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "GET /api/student/dashboard",
+          "GET /api/student/attendance",
+          "GET /api/student/grades",
+          "GET /api/student/performance",
+          "GET /api/students",
+          "GET /api/students/:id",
+          "POST /api/students"
+        ],
+        "missing_endpoints": [
+          "PUT /api/students/:id (update student)",
+          "DELETE /api/students/:id (delete student)",
+          "GET /api/students/:id/attendance (detailed attendance)"
+        ]
+      },
+      "dto_format": {
+        "status": "INCONSISTENT",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "API responses use camelCase (firstName, lastName) but api.js toStudentDto() uses snake_case (student_id, date_of_join)"
+          },
+          {
+            "severity": "critical",
+            "issue": "Mismatch: model has 'enrollmentDate' but DTO converts to 'date_of_join'"
+          }
+        ],
+        "sample_response": {
+          "model": {
+            "firstName": "John",
+            "lastName": "Doe",
+            "enrollmentDate": "2024-01-15"
+          },
+          "api_response": {
+            "student_id": 25000001,
+            "name": "John Doe",
+            "date_of_join": "2024-01-15"
+          }
+        }
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "STAFF": {
+      "model_file": "backend/src/models/staff.js",
+      "route_file": "backend/src/routes/teacher-api.js, admin-api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (firstName, lastName, email, phone, address)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "PASS",
+        "configured": true,
+        "virtuals": ["name (computed from firstName + lastName)"],
+        "toJSON_configured": true
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "GET /api/admin/users (includes staff)",
+          "GET /api/head-teacher/dashboard (includes teachers)"
+        ],
+        "missing_endpoints": [
+          "GET /api/staff",
+          "GET /api/staff/:id",
+          "POST /api/staff",
+          "PUT /api/staff/:id",
+          "DELETE /api/staff/:id",
+          "GET /api/staff/by-role/:role"
+        ]
+      },
+      "dto_format": {
+        "status": "INCONSISTENT",
+        "issues": [
+          {
+            "severity": "critical",
+            "issue": "api.js toTeacherDto() references 'dateOfBirth' and 'employmentDate' which don't exist in Staff model"
+          },
+          {
+            "severity": "warning",
+            "issue": "Staff model doesn't have dateOfBirth or employmentDate fields"
+          }
+        ]
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "PARENT": {
+      "model_file": "backend/src/models/parent.js",
+      "route_file": "backend/src/routes/parents-api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (firstName, lastName, alternativePhone, emergencyContact)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "PASS",
+        "configured": true,
+        "virtuals": ["fullName (computed from firstName + lastName)"],
+        "toJSON_configured": true
+      },
+      "api_endpoints": {
+        "status": "GOOD",
+        "endpoints_found": [
+          "GET /api/parents/dashboard",
+          "GET /api/parents",
+          "POST /api/parents",
+          "PUT /api/parents/:id",
+          "DELETE /api/parents/:id",
+          "GET /api/parents/:id",
+          "GET /api/parents/:id/children"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "MISSING",
+        "note": "Parent model doesn't have createdBy field for audit trail"
+      }
+    },
+    "ACCOUNTS": {
+      "model_file": "backend/src/models/accounts.js",
+      "route_file": "backend/src/routes/accounts-api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (firstName, lastName, email, phone, address)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "PASS",
+        "configured": true,
+        "virtuals": ["name (computed from firstName + lastName)"],
+        "toJSON_configured": true
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "GET /api/accounts/dashboard",
+          "GET /api/accounts/fees",
+          "POST /api/accounts/fees",
+          "GET /api/accounts/payments",
+          "POST /api/accounts/payments"
+        ],
+        "missing_endpoints": [
+          "GET /api/accounts",
+          "GET /api/accounts/:id",
+          "PUT /api/accounts/:id",
+          "DELETE /api/accounts/:id"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "HEAD_TEACHER": {
+      "model_file": "backend/src/models/head-teacher.js",
+      "route_file": "backend/src/routes/head-teacher-api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (firstName, lastName, email, phone, address)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "PASS",
+        "configured": true,
+        "virtuals": ["name (computed from firstName + lastName)"],
+        "toJSON_configured": true
+      },
+      "api_endpoints": {
+        "status": "GOOD",
+        "endpoints_found": [
+          "GET /api/head-teacher/dashboard",
+          "GET /api/head-teacher/students",
+          "POST /api/head-teacher/students",
+          "GET /api/head-teacher/subjects",
+          "GET /api/head-teacher/subjects/:id",
+          "POST /api/head-teacher/subjects"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "ATTENDANCE": {
+      "model_file": "backend/src/models/attendance.js",
+      "route_file": "backend/src/routes/teacher-api.js, admin-api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (studentId, markedBy, classLevel)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "MISSING",
+        "issues": [
+          {
+            "severity": "info",
+            "issue": "No computed virtuals - consider adding present_percentage, absent_count"
+          }
+        ]
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "POST /api/teacher/attendance",
+          "GET /api/teacher/classroom/:classroomId/attendance",
+          "GET /api/admin/attendance"
+        ],
+        "missing_endpoints": [
+          "GET /api/attendance",
+          "GET /api/attendance/:id",
+          "GET /api/attendance/student/:studentId",
+          "GET /api/attendance/date/:date",
+          "PUT /api/attendance/:id",
+          "DELETE /api/attendance/:id"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "indexes": {
+        "status": "PASS",
+        "compound_index": "studentId + date + subject (unique)"
+      }
+    },
+    "FEES": {
+      "model_file": "backend/src/models/fees.js",
+      "route_file": "backend/src/routes/accounts-api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (studentId, amountPaid, dueDate, latePenaltyApplied)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "MISSING",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "Consider adding: balanceDue (amount - amountPaid), isOverdue, paymentPercentage"
+          }
+        ]
+      },
+      "api_endpoints": {
+        "status": "GOOD",
+        "endpoints_found": [
+          "GET /api/accounts/fees",
+          "GET /api/accounts/fees/:id",
+          "POST /api/accounts/fees",
+          "PUT /api/accounts/fees/:id",
+          "POST /api/accounts/fees/:id/payment",
+          "GET /api/accounts/fees/overdue"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "SUBJECTS": {
+      "model_file": "backend/src/models/subjects.js",
+      "route_file": "backend/src/routes/head-teacher-api.js",
+      "field_naming": {
+        "status": "MIXED",
+        "issues": [
+          {
+            "severity": "warning",
+            "field": "teacherId",
+            "issue": "Uses camelCase but routes reference teacher (singular vs plural inconsistency)"
+          }
+        ]
+      },
+      "timestamps": {
+        "status": "MISSING",
+        "configured": false,
+        "note": "Subject schema does not have timestamps enabled"
+      },
+      "virtuals": {
+        "status": "MISSING",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "No virtuals - consider adding: studentCount, teacherName, classInfo"
+          }
+        ]
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "GET /api/head-teacher/subjects",
+          "GET /api/head-teacher/subjects/:id",
+          "POST /api/head-teacher/subjects"
+        ],
+        "missing_endpoints": [
+          "GET /api/subjects",
+          "PUT /api/subjects/:id",
+          "DELETE /api/subjects/:id",
+          "POST /api/subjects/:id/assign-teacher",
+          "POST /api/subjects/:id/add-student",
+          "DELETE /api/subjects/:id/remove-student"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "GRADES": {
+      "model_file": "backend/src/models/grades.js",
+      "route_file": "backend/src/routes/teacher-api.js, admin-api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (studentId, teacherId, midTermGrade, endTermGrade, finalGrade)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "MISSING",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "No virtuals - consider adding: gradeLabel (A, B, C, etc.), isPass, gradePercentage"
+          }
+        ]
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "POST /api/teacher/grades",
+          "GET /api/student/grades",
+          "GET /api/admin/grades"
+        ],
+        "missing_endpoints": [
+          "GET /api/grades",
+          "GET /api/grades/:id",
+          "GET /api/grades/student/:studentId",
+          "GET /api/grades/subject/:subject",
+          "PUT /api/grades/:id",
+          "DELETE /api/grades/:id",
+          "GET /api/grades/summary"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "EXAM": {
+      "model_file": "backend/src/models/exam.js",
+      "route_file": "backend/src/routes/api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (examType, startTime, endTime, totalMarks, passingMarks)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "GOOD",
+        "configured": true,
+        "virtuals": ["isUpcoming", "isPast"],
+        "note": "toJSON settings not explicitly configured - may not serialize virtuals"
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "GET /api/exams",
+          "GET /api/exams/:id",
+          "POST /api/exams",
+          "PUT /api/exams/:id",
+          "DELETE /api/exams/:id"
+        ],
+        "missing_endpoints": [
+          "GET /api/exams/upcoming",
+          "GET /api/exams/by-subject/:subjectId",
+          "GET /api/exams/by-classroom/:classroomId",
+          "POST /api/exams/:id/publish"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "issue": "Virtual 'isUpcoming' and 'isPast' may not serialize - add toJSON configuration"
+        }
+      ]
+    },
+    "PAYMENT": {
+      "model_file": "backend/src/models/payment.js",
+      "route_file": "backend/src/routes/accounts-api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (paymentId, feeId, amountPaid, paymentDate)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "MISSING",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "No virtuals - consider adding: formattedDate, methodLabel, studentInfo"
+          }
+        ]
+      },
+      "api_endpoints": {
+        "status": "GOOD",
+        "endpoints_found": [
+          "GET /api/accounts/payments",
+          "GET /api/accounts/payments/:id",
+          "POST /api/accounts/payments",
+          "GET /api/accounts/payments/fee/:feeId"
+        ]
+      },
+      "dto_format": {
+        "status": "INCONSISTENT",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "api.js toPaymentDto() uses snake_case (payment_id, amount_paid, payment_date) while routes use camelCase"
+          }
+        ]
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "EXPENSE": {
+      "model_file": "backend/src/models/expense.js",
+      "route_file": "backend/src/routes/accounts-api.js, api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (expenseId, description, createdBy)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "MISSING",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "No virtuals - consider adding: monthYear, quarter, categoryLabel"
+          }
+        ]
+      },
+      "api_endpoints": {
+        "status": "GOOD",
+        "endpoints_found": [
+          "GET /api/accounts/expenses",
+          "GET /api/accounts/expenses/:id",
+          "POST /api/accounts/expenses",
+          "PUT /api/accounts/expenses/:id",
+          "DELETE /api/accounts/expenses/:id",
+          "GET /api/accounts/expenses/by-category"
+        ]
+      },
+      "dto_format": {
+        "status": "INCONSISTENT",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "api.js toExpenseDto() uses snake_case (expense_id) while model uses camelCase"
+          }
+        ]
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      }
+    },
+    "TIMETABLE": {
+      "model_file": "backend/src/models/timetable.js",
+      "route_file": "backend/src/routes/api.js",
+      "field_naming": {
+        "status": "PASS",
+        "details": "Consistent camelCase (dayOfWeek, startTime, endTime, academicYear, createdBy)"
+      },
+      "timestamps": {
+        "status": "PASS",
+        "configured": true,
+        "fields": ["createdAt", "updatedAt"]
+      },
+      "virtuals": {
+        "status": "GOOD",
+        "configured": true,
+        "virtuals": ["durationMinutes"],
+        "note": "toJSON settings not explicitly configured"
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "GET /api/timetable",
+          "GET /api/timetable/:id",
+          "POST /api/timetable",
+          "PUT /api/timetable/:id",
+          "DELETE /api/timetable/:id"
+        ],
+        "missing_endpoints": [
+          "GET /api/timetable/classroom/:classroomId",
+          "GET /api/timetable/teacher/:teacherId",
+          "GET /api/timetable/by-day/:dayOfWeek",
+          "GET /api/timetable/search"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "PASS",
+        "configured": true
+      },
+      "indexes": {
+        "status": "PASS",
+        "compound_index": "classroom + dayOfWeek + startTime (unique - prevents double-booking)"
+      }
+    },
+    "CLASSROOM": {
+      "model_file": "backend/src/models/classroom.js",
+      "route_file": "backend/src/routes/api.js",
+      "field_naming": {
+        "status": "CRITICAL",
+        "issues": [
+          {
+            "severity": "critical",
+            "field": "teacher_id",
+            "issue": "Uses snake_case (teacher_id) - inconsistent with all other models using camelCase (teacherId)"
+          }
+        ]
+      },
+      "timestamps": {
+        "status": "MISSING",
+        "configured": false,
+        "note": "Classroom schema does not have timestamps enabled - should have createdAt, updatedAt"
+      },
+      "virtuals": {
+        "status": "MISSING",
+        "issues": [
+          {
+            "severity": "warning",
+            "issue": "No virtuals - consider adding: className (grade + section), studentCount, teacherName"
+          }
+        ]
+      },
+      "api_endpoints": {
+        "status": "PARTIAL",
+        "endpoints_found": [
+          "GET /api/classrooms",
+          "GET /api/classrooms/:id",
+          "POST /api/classrooms",
+          "PUT /api/classrooms/:id",
+          "DELETE /api/classrooms/:id"
+        ],
+        "missing_endpoints": [
+          "GET /api/classrooms/:id/students",
+          "POST /api/classrooms/:id/assign-teacher",
+          "POST /api/classrooms/:id/add-student",
+          "DELETE /api/classrooms/:id/remove-student"
+        ]
+      },
+      "dto_format": {
+        "status": "PASS",
+        "issues": []
+      },
+      "createdBy": {
+        "status": "MISSING",
+        "note": "Classroom model should have createdBy for audit trail"
+      }
+    }
+  },
+  "cross_cutting_issues": {
+    "field_naming_inconsistency": {
+      "severity": "critical",
+      "issue": "Classroom uses snake_case (teacher_id) while all other models use camelCase",
+      "impact": "Inconsistent API contracts, confusing for frontend developers",
+      "recommendation": "Rename teacher_id to teacherId in Classroom model"
+    },
+    "dto_response_formats": {
+      "severity": "warning",
+      "issue": "api.js has DTO helpers (toStudentDto, toPaymentDto, etc.) that convert to snake_case while model responses use camelCase",
+      "locations": [
+        "Payment DTO uses snake_case (payment_id, amount_paid)",
+        "Expense DTO uses snake_case (expense_id)",
+        "Student DTO uses snake_case (student_id, date_of_join)",
+        "Classroom DTO uses mixed case"
+      ],
+      "impact": "Inconsistent API response formats across endpoints",
+      "recommendation": "Standardize on camelCase throughout or consistently use snake_case everywhere"
+    },
+    "missing_timestamps": {
+      "severity": "critical",
+      "issue": "Subjects and Classroom models missing timestamps",
+      "models": ["Subject", "Classroom"],
+      "impact": "No createdAt/updatedAt for audit trail and analytics",
+      "recommendation": "Add { timestamps: true } to both schemas"
+    },
+    "missing_audit_trail": {
+      "severity": "warning",
+      "issue": "Parent and Classroom models missing createdBy field",
+      "impact": "Cannot track who created records",
+      "recommendation": "Add createdBy: { type: ObjectId, ref: 'User' } to both models"
+    },
+    "missing_toJSON_configuration": {
+      "severity": "warning",
+      "issue": "Exam and Timetable models have virtuals but don't explicitly configure toJSON to include them",
+      "models": ["Exam (isUpcoming, isPast)", "Timetable (durationMinutes)"],
+      "impact": "Virtuals may not serialize in API responses",
+      "recommendation": "Add toJSON configuration: { virtuals: true }"
+    },
+    "incomplete_api_coverage": {
+      "severity": "warning",
+      "issue": "Many models lack comprehensive CRUD endpoints",
+      "missing_patterns": [
+        "Subjects: Missing full CRUD operations",
+        "Attendance: Missing many query endpoints",
+        "Grades: Limited query endpoints",
+        "Staff: No dedicated endpoints (merged with Users)"
+      ],
+      "recommendation": "Create dedicated route files for each model"
+    },
+    "model_field_mismatches": {
+      "severity": "critical",
+      "issues": [
+        {
+          "model": "Staff",
+          "issue": "api.js toTeacherDto() references dateOfBirth and employmentDate which don't exist in Staff model",
+          "recommendation": "Add missing fields to Staff model or fix DTO"
+        },
+        {
+          "model": "Student",
+          "issue": "Routes reference 'classroomId' and 'parentId' which don't exist - should use 'parents' array",
+          "recommendation": "Fix route queries to match actual model schema"
+        }
+      ]
+    }
+  },
+  "standardization_recommendations": {
+    "field_naming_convention": {
+      "recommendation": "Adopt camelCase consistently across all models",
+      "rationale": "MongoDB/JavaScript standard, all models except Classroom already use it",
+      "required_changes": [
+        "Classroom: teacher_id -> teacherId",
+        "User: date_of_join -> dateOfJoin"
+      ]
+    },
+    "timestamps_standard": {
+      "recommendation": "Enable timestamps on all models",
+      "rationale": "Essential for audit trails and analytics",
+      "required_changes": [
+        "Subject: Add { timestamps: true }",
+        "Classroom: Add { timestamps: true }"
+      ]
+    },
+    "audit_fields_standard": {
+      "recommendation": "Add createdBy and updatedBy to all models",
+      "rationale": "Track who created/modified records for compliance",
+      "required_changes": [
+        "Parent: Add createdBy",
+        "Classroom: Add createdBy, updatedBy",
+        "Subject: Add updatedBy"
+      ]
+    },
+    "virtual_fields_standard": {
+      "recommendation": "Define computed fields as virtuals with toJSON configuration",
+      "examples": [
+        "Fees: balanceDue = (amount - amountPaid)",
+        "Fees: paymentPercentage = (amountPaid / amount) * 100",
+        "Attendance: presentCount, absentCount (aggregate)",
+        "Grades: gradeLabel (A, B, C based on finalGrade)",
+        "Student: age (from dateOfBirth)",
+        "Classroom: className (grade + section + teacher)"
+      ]
+    },
+    "dto_response_format": {
+      "recommendation": "Standardize response format - choose ONE approach",
+      "options": [
+        {
+          "option": "A - Pure camelCase (recommended)",
+          "description": "Return models exactly as stored in database",
+          "benefit": "Simpler, no transformation overhead"
+        },
+        {
+          "option": "B - Consistent snake_case",
+          "description": "Transform all responses to snake_case",
+          "benefit": "Traditional REST API convention, consistent"
+        }
+      ],
+      "current_state": "Mixed - models use camelCase, some DTO helpers use snake_case"
+    },
+    "api_endpoint_coverage": {
+      "recommendation": "Create standard CRUD pattern for all models",
+      "pattern": [
+        "GET /api/{resource} - List with filters/pagination",
+        "GET /api/{resource}/:id - Get single item",
+        "POST /api/{resource} - Create",
+        "PUT /api/{resource}/:id - Update",
+        "DELETE /api/{resource}/:id - Delete",
+        "GET /api/{resource}/search - Search/filter",
+        "GET /api/{resource}/stats - Aggregated statistics"
+      ],
+      "missing_implementations": [
+        "Subject endpoints",
+        "Staff endpoints (split between Teacher and Staff models)",
+        "Attendance query endpoints",
+        "Grade query endpoints"
+      ]
+    }
+  },
+  "critical_fixes_required": [
+    {
+      "priority": 1,
+      "issue": "Classroom field naming inconsistency (teacher_id vs teacherId)",
+      "file": "backend/src/models/classroom.js",
+      "fix": "Rename teacher_id to teacherId for consistency"
+    },
+    {
+      "priority": 2,
+      "issue": "Subject schema missing timestamps",
+      "file": "backend/src/models/subjects.js",
+      "fix": "Add { timestamps: true } to schema configuration"
+    },
+    {
+      "priority": 3,
+      "issue": "Classroom schema missing timestamps and createdBy",
+      "file": "backend/src/models/classroom.js",
+      "fix": "Add timestamps and audit fields"
+    },
+    {
+      "priority": 4,
+      "issue": "Staff DTO references non-existent fields",
+      "file": "backend/src/routes/api.js",
+      "fix": "Update toTeacherDto() to match actual Staff model or add missing fields"
+    },
+    {
+      "priority": 5,
+      "issue": "Inconsistent DTO response formats",
+      "file": "backend/src/routes/api.js",
+      "fix": "Standardize all DTOs to use camelCase (remove snake_case conversion)"
+    }
+  ],
+  "warning_items": [
+    {
+      "issue": "Exam and Timetable virtuals may not serialize",
+      "severity": "warning",
+      "recommendation": "Add explicit toJSON configuration"
+    },
+    {
+      "issue": "Many models missing virtual fields for computed properties",
+      "severity": "info",
+      "models": ["Attendance", "Fees", "Grades", "Payment", "Expense"],
+      "recommendation": "Add virtuals for common computed fields"
+    },
+    {
+      "issue": "Incomplete API endpoint coverage",
+      "severity": "warning",
+      "models": ["Subject", "Grades", "Attendance", "Staff"],
+      "recommendation": "Create comprehensive endpoint documentation and implement missing endpoints"
+    },
+    {
+      "issue": "Student route queries reference non-existent fields",
+      "severity": "critical",
+      "details": "Routes use 'classroomId' but model uses 'parents' array",
+      "file": "backend/src/routes/student-api.js",
+      "recommendation": "Fix queries to match model schema"
+    }
+  ],
+  "summary_statistics": {
+    "models_with_timestamps": 10,
+    "models_without_timestamps": 2,
+    "models_with_virtuals": 8,
+    "models_without_virtuals": 4,
+    "models_with_createdBy": 10,
+    "models_without_createdBy": 2,
+    "consistent_camelCase": 11,
+    "inconsistent_naming": 1,
+    "endpoint_coverage_percentage": "65%",
+    "dto_format_consistency": "40%"
+  },
+  "implementation_priority": {
+    "phase_1_critical": [
+      "Fix Classroom teacher_id naming",
+      "Fix Subject model timestamps",
+      "Fix Classroom model timestamps and createdBy",
+      "Fix Staff DTO field references",
+      "Standardize DTO response format"
+    ],
+    "phase_2_important": [
+      "Add Parent createdBy field",
+      "Add missing virtuals (10+ fields identified)",
+      "Implement missing API endpoints",
+      "Configure virtuals toJSON serialization"
+    ],
+    "phase_3_enhancement": [
+      "Add computed virtual fields",
+      "Create comprehensive API documentation",
+      "Implement filtering/search across all models",
+      "Add aggregation endpoints for analytics"
+    ]
+  }
+}

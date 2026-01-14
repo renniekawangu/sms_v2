@@ -46,6 +46,26 @@ gradeSchema.index({ studentId: 1, subject: 1 });
 gradeSchema.index({ classLevel: 1 });
 gradeSchema.index({ date: -1 });
 
+// Virtual for letter grade
+gradeSchema.virtual('letterGrade').get(function() {
+  const grade = this.finalGrade || this.grade;
+  if (grade >= 90) return 'A';
+  if (grade >= 80) return 'B';
+  if (grade >= 70) return 'C';
+  if (grade >= 60) return 'D';
+  return 'F';
+});
+
+// Virtual for passing status
+gradeSchema.virtual('isPassing').get(function() {
+  const grade = this.finalGrade || this.grade;
+  return grade >= 40;
+});
+
+// Ensure virtuals are included in JSON/Object serialization
+gradeSchema.set('toJSON', { virtuals: true });
+gradeSchema.set('toObject', { virtuals: true });
+
 const Grade = mongoose.model('Grade', gradeSchema);
 
 async function getAllGrades() {

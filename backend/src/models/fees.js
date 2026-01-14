@@ -19,10 +19,19 @@ const feeSchema = new mongoose.Schema({
   latePenaltyApplied: { type: Boolean, default: false }
 }, { timestamps: true });
 
-// Indexes for faster aggregations/filters
-feeSchema.index({ status: 1 });
-feeSchema.index({ dueDate: 1 });
-feeSchema.index({ studentId: 1 });
+// Virtual for remaining balance
+feeSchema.virtual('balance').get(function() {
+  return Math.max(0, this.amount - (this.amountPaid || 0));
+});
+
+// Virtual for payment percentage
+feeSchema.virtual('paidPercentage').get(function() {
+  return this.amount > 0 ? Math.round(((this.amountPaid || 0) / this.amount) * 100) : 0;
+});
+
+// Ensure virtuals are included in JSON/Object serialization
+feeSchema.set('toJSON', { virtuals: true });
+feeSchema.set('toObject', { virtuals: true });
 
 const Fee = mongoose.model('Fee', feeSchema);
 

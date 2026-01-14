@@ -8,11 +8,25 @@ const subjectSchema = new mongoose.Schema({
   students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } // Who assigned the teacher
-});
+}, { timestamps: true });
 
 subjectSchema.index({ classLevel: 1 });
 subjectSchema.index({ name: 1, classLevel: 1 }, { unique: true });
 subjectSchema.index({ code: 1, classLevel: 1 }, { unique: true });
+
+// Virtual for teacher name
+subjectSchema.virtual('teacherName').get(function() {
+  return this.populate ? this.teacherId?.name : undefined;
+});
+
+// Virtual for student count
+subjectSchema.virtual('studentCount').get(function() {
+  return (this.students || []).length;
+});
+
+// Ensure virtuals are included in JSON/Object serialization
+subjectSchema.set('toJSON', { virtuals: true });
+subjectSchema.set('toObject', { virtuals: true });
 
 // Pre-save middleware to generate code if not provided
 subjectSchema.pre('save', async function(next) {

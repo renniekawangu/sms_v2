@@ -116,6 +116,10 @@ timetableEntrySchema.virtual('durationMinutes').get(function() {
   return endTotalMinutes - startTotalMinutes;
 });
 
+// Ensure virtuals are included in JSON/Object serialization
+timetableEntrySchema.set('toJSON', { virtuals: true });
+timetableEntrySchema.set('toObject', { virtuals: true });
+
 // Method to check for conflicts
 timetableEntrySchema.statics.checkConflict = async function(classroom, teacher, dayOfWeek, startTime, endTime, excludeId = null) {
   const query = {

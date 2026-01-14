@@ -1,0 +1,19 @@
+// Virtual for letter grade
+gradeSchema.virtual('letterGrade').get(function() {
+  const grade = this.finalGrade || this.grade;
+  if (grade >= 90) return 'A';
+  if (grade >= 80) return 'B';
+  if (grade >= 70) return 'C';
+  if (grade >= 60) return 'D';
+  return 'F';
+});
+
+// Virtual for passing status
+gradeSchema.virtual('isPassing').get(function() {
+  const grade = this.finalGrade || this.grade;
+  return grade >= 40; // Assuming 40 is passing grade
+});
+
+// Ensure virtuals are included in JSON/Object serialization
+gradeSchema.set('toJSON', { virtuals: true });
+gradeSchema.set('toObject', { virtuals: true });

@@ -103,6 +103,10 @@ examSchema.virtual('isPast').get(function() {
   return this.date < new Date();
 });
 
+// Ensure virtuals are included in JSON/Object serialization
+examSchema.set('toJSON', { virtuals: true });
+examSchema.set('toObject', { virtuals: true });
+
 const Exam = mongoose.model('Exam', examSchema);
 
 module.exports = { Exam };
