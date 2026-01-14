@@ -62,11 +62,10 @@ const toTeacherDto = (teacher, teacherId) => ({
 
 const toClassroomDto = (classroom, teacher, students) => ({
   _id: classroom._id,
-  classroom_id: classroom.classroomId,
   grade: classroom.grade,
   section: classroom.section,
-  teacher_id: teacher ? (teacher.teacherId || teacher._id) : null,
-  students: students.map(s => s.studentId)
+  teacher_id: classroom.teacher_id || null,
+  students: (students || []).map(s => s._id)
 });
 
 const toPaymentDto = (payment) => ({
@@ -240,38 +239,18 @@ router.delete('/teachers/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_
 // ============= Classrooms API =============
 router.get('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (_req, res) => {
   const classrooms = await Classroom.find().lean();
-  const teacherIds = classrooms.map(c => c.teacher).filter(id => id && mongoose.isValidObjectId(id));
+  const teacherIds = classrooms.map(c => c.teacher_id).filter(id => id && mongoose.isValidObjectId(id));
   const teachers = teacherIds.length > 0 ? await Staff.find({ _id: { $in: teacherIds } }).lean() : [];
   
-  const allStudentIds = classrooms.flatMap(c => c.students || []);
-  const validObjectIds = allStudentIds.filter(id => typeof id !== 'number' && typeof id !== 'bigint' && mongoose.isValidObjectId(id));
-  const numericIds = allStudentIds.filter(id => typeof id === 'number' || (typeof id === 'string' && !mongoose.isValidObjectId(id)));
-  
-  let students = [];
-  if (validObjectIds.length > 0) {
-    students = students.concat(await Student.find({ _id: { $in: validObjectIds } }).lean());
-  }
-  if (numericIds.length > 0) {
-    const numericValues = numericIds.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(n => !isNaN(n));
-    if (numericValues.length > 0) {
-      students = students.concat(await Student.find({ studentId: { $in: numericValues } }).lean());
-    }
-  }
+  const allStudentIds = classrooms.flatMap(c => c.students || []).filter(id => mongoose.isValidObjectId(id));
+  const students = allStudentIds.length > 0 ? await Student.find({ _id: { $in: allStudentIds } }).lean() : [];
 
   const teacherMap = new Map(teachers.map(t => [t._id.toString(), t]));
   const studentMap = new Map(students.map(s => [s._id.toString(), s]));
-  const studentMapByStudentId = new Map(students.map(s => [s.studentId, s]));
 
   const response = classrooms.map(c => {
-    const t = c.teacher ? teacherMap.get(c.teacher.toString()) : null;
-    const sDocs = (c.students || []).map(id => {
-      if (mongoose.isValidObjectId(id)) {
-        return studentMap.get(id.toString());
-      } else {
-        const numVal = typeof id === 'string' ? parseInt(id, 10) : id;
-        return studentMapByStudentId.get(numVal);
-      }
-    }).filter(Boolean);
+    const t = c.teacher_id ? teacherMap.get(c.teacher_id.toString()) : null;
+    const sDocs = (c.students || []).map(id => studentMap.get(id.toString())).filter(Boolean);
     return toClassroomDto(c, t, sDocs);
   });
 
@@ -279,37 +258,20 @@ router.get('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
 }));
 
 router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  let classroom;
-  if (mongoose.isValidObjectId(req.params.id)) {
-    classroom = await Classroom.findById(req.params.id).lean();
-  } else {
-    const numId = parseInt(req.params.id);
-    if (!isNaN(numId)) {
-      classroom = await Classroom.findOne({ classroomId: numId }).lean();
-    }
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid classroom ID' });
   }
-  if (!classroom) return res.status(404).json({ error: 'Classroom not found' });
+  
+  const classroom = await Classroom.findById(req.params.id).lean();
   if (!classroom) return res.status(404).json({ error: 'Classroom not found' });
 
   let teacher = null;
-  if (classroom.teacher && mongoose.isValidObjectId(classroom.teacher)) {
-    teacher = await Staff.findById(classroom.teacher).lean();
+  if (classroom.teacher_id && mongoose.isValidObjectId(classroom.teacher_id)) {
+    teacher = await Staff.findById(classroom.teacher_id).lean();
   }
   
-  const studentIds = classroom.students || [];
-  const validObjectIds = studentIds.filter(id => typeof id !== 'number' && typeof id !== 'bigint' && mongoose.isValidObjectId(id));
-  const numericIds = studentIds.filter(id => typeof id === 'number' || (typeof id === 'string' && !mongoose.isValidObjectId(id)));
-  
-  let students = [];
-  if (validObjectIds.length > 0) {
-    students = students.concat(await Student.find({ _id: { $in: validObjectIds } }).lean());
-  }
-  if (numericIds.length > 0) {
-    const numericValues = numericIds.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(n => !isNaN(n));
-    if (numericValues.length > 0) {
-      students = students.concat(await Student.find({ studentId: { $in: numericValues } }).lean());
-    }
-  }
+  const studentIds = (classroom.students || []).filter(id => mongoose.isValidObjectId(id));
+  const students = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
   
   res.json(toClassroomDto(classroom, teacher, students));
 }));
@@ -317,100 +279,76 @@ router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
 router.post('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
   const { grade, section, teacher_id, students = [] } = req.body;
 
-  const classroomId = await getNextSequence('classroomId', 1);
-
   let teacherRef = null;
   if (teacher_id) {
     if (!mongoose.isValidObjectId(teacher_id)) return res.status(400).json({ error: 'Invalid teacher ID' });
     const t = await Staff.findById(teacher_id);
-    teacherRef = t?._id;
+    if (!t) return res.status(400).json({ error: 'Teacher not found' });
+    teacherRef = t._id;
   }
 
-  const validStudentIds = students.filter(id => typeof id !== 'number' && mongoose.isValidObjectId(id));
+  const validStudentIds = students.filter(id => mongoose.isValidObjectId(id));
   const classroom = new Classroom({
-    classroomId,
     grade,
     section,
-    teacher: teacherRef,
-    students: validStudentIds,
-    createdBy: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined
+    teacher_id: teacherRef,
+    students: validStudentIds
   });
 
   await classroom.save();
-  let finalStudents = [];
-  if (validStudentIds.length > 0) {
-    finalStudents = finalStudents.concat(await Student.find({ _id: { $in: validStudentIds } }).lean());
-  }
-  const numericStudentIds = students.filter(id => typeof id === 'number' || (typeof id === 'string' && !mongoose.isValidObjectId(id)));
-  if (numericStudentIds.length > 0) {
-    const numericValues = numericStudentIds.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(n => !isNaN(n));
-    if (numericValues.length > 0) {
-      const numericStudents = await Student.find({ studentId: { $in: numericValues } }).lean();
-      finalStudents = finalStudents.concat(numericStudents);
-    }
-  }
-  res.status(201).json(toClassroomDto(classroom.toObject(), teacherRef ? await Staff.findById(teacherRef).lean() : null, finalStudents));
+  
+  const finalStudents = validStudentIds.length > 0 
+    ? await Student.find({ _id: { $in: validStudentIds } }).lean() 
+    : [];
+  const teacher = teacherRef ? await Staff.findById(teacherRef).lean() : null;
+  
+  res.status(201).json(toClassroomDto(classroom.toObject(), teacher, finalStudents));
 }));
 
 router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  let classroom;
-  if (mongoose.isValidObjectId(req.params.id)) {
-    classroom = await Classroom.findById(req.params.id);
-  } else {
-    const numId = parseInt(req.params.id);
-    if (!isNaN(numId)) {
-      classroom = await Classroom.findOne({ classroomId: numId });
-    }
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid classroom ID' });
   }
-  if (!classroom) return res.status(404).json({ error: 'Classroom not found' });
+  
+  const classroom = await Classroom.findById(req.params.id);
   if (!classroom) return res.status(404).json({ error: 'Classroom not found' });
 
-  const { grade, section, teacher_id, students = [] } = req.body;
+  const { grade, section, teacher_id, students } = req.body;
   if (grade !== undefined) classroom.grade = grade;
   if (section !== undefined) classroom.section = section;
 
   if (teacher_id !== undefined) {
-    if (teacher_id && !mongoose.isValidObjectId(teacher_id)) return res.status(400).json({ error: 'Invalid teacher ID' });
-    const t = teacher_id ? await Staff.findById(teacher_id) : null;
-    classroom.teacher = t?._id || undefined;
+    if (teacher_id === null) {
+      classroom.teacher_id = null;
+    } else if (mongoose.isValidObjectId(teacher_id)) {
+      const t = await Staff.findById(teacher_id);
+      if (!t) return res.status(400).json({ error: 'Teacher not found' });
+      classroom.teacher_id = t._id;
+    } else {
+      return res.status(400).json({ error: 'Invalid teacher ID' });
+    }
   }
 
   if (Array.isArray(students)) {
-    const validObjectIds = students.filter(id => typeof id !== 'number' && typeof id !== 'bigint' && mongoose.isValidObjectId(id));
+    const validObjectIds = students.filter(id => mongoose.isValidObjectId(id));
     classroom.students = validObjectIds;
   }
 
   await classroom.save();
 
-  const teacher = classroom.teacher ? await Staff.findById(classroom.teacher).lean() : null;
+  const teacher = classroom.teacher_id ? await Staff.findById(classroom.teacher_id).lean() : null;
   const studentIds = classroom.students || [];
-  const validObjectIds = studentIds.filter(id => typeof id !== 'number' && typeof id !== 'bigint' && mongoose.isValidObjectId(id));
-  const numericIds = studentIds.filter(id => typeof id === 'number' || (typeof id === 'string' && !mongoose.isValidObjectId(id)));
+  const finalStudents = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
   
-  let finalStudents = [];
-  if (validObjectIds.length > 0) {
-    finalStudents = finalStudents.concat(await Student.find({ _id: { $in: validObjectIds } }).lean());
-  }
-  if (numericIds.length > 0) {
-    const numericValues = numericIds.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(n => !isNaN(n));
-    if (numericValues.length > 0) {
-      finalStudents = finalStudents.concat(await Student.find({ studentId: { $in: numericValues } }).lean());
-    }
-  }
-  
-  res.json(toClassroomDto(classroom, teacher, finalStudents));
+  res.json(toClassroomDto(classroom.toObject(), teacher, finalStudents));
 }));
 
 router.delete('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  let classroom;
-  if (mongoose.isValidObjectId(req.params.id)) {
-    classroom = await Classroom.findByIdAndDelete(req.params.id);
-  } else {
-    const numId = parseInt(req.params.id);
-    if (!isNaN(numId)) {
-      classroom = await Classroom.findOneAndDelete({ classroomId: numId });
-    }
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid classroom ID' });
   }
+  
+  const classroom = await Classroom.findByIdAndDelete(req.params.id);
   if (!classroom) return res.status(404).json({ error: 'Classroom not found' });
   res.json({ message: 'Classroom deleted' });
 }));

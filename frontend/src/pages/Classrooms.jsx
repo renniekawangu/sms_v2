@@ -54,7 +54,7 @@ function Classrooms() {
   const handleSubmit = async (formData) => {
     try {
       if (editingClassroom) {
-        await classroomsApi.update(editingClassroom.classroom_id, formData)
+        await classroomsApi.update(editingClassroom._id, formData)
         success('Classroom updated successfully')
       } else {
         await classroomsApi.create(formData)
@@ -69,10 +69,10 @@ function Classrooms() {
     }
   }
 
-  const handleDelete = async (classroom_id) => {
+  const handleDelete = async (_id) => {
     if (window.confirm('Are you sure you want to delete this classroom?')) {
       try {
-        await classroomsApi.delete(classroom_id)
+        await classroomsApi.delete(_id)
         success('Classroom deleted successfully')
         await loadData()
       } catch (err) {
@@ -83,7 +83,8 @@ function Classrooms() {
   }
 
   const getTeacherName = (teacher_id) => {
-    return teachers.find(t => t.teacher_id === teacher_id)?.name || `Teacher ${teacher_id}`
+    if (!teacher_id) return 'No teacher assigned'
+    return teachers.find(t => t._id === teacher_id)?.name || 'Unknown teacher'
   }
 
   const filteredClassrooms = useMemo(() => {
@@ -94,8 +95,7 @@ function Classrooms() {
       return (
         teacherName.includes(query) ||
         classroom.grade?.toString().includes(query) ||
-        classroom.section?.toLowerCase().includes(query) ||
-        classroom.classroom_id?.toString().includes(query)
+        classroom.section?.toLowerCase().includes(query)
       )
     })
   }, [classrooms, teachers, searchQuery])
@@ -166,7 +166,7 @@ function Classrooms() {
             </div>
           ) : (
             filteredClassrooms.map((classroom) => (
-              <div key={classroom.classroom_id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div key={classroom._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <School className="text-primary-blue" size={24} />
@@ -183,7 +183,7 @@ function Classrooms() {
                       <Edit size={16} />
                     </button>
                     <button
-                      onClick={() => handleDelete(classroom.classroom_id)}
+                      onClick={() => handleDelete(classroom._id)}
                       className="text-red-500 hover:text-red-600 p-1"
                       title="Delete"
                     >

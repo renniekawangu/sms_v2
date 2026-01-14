@@ -55,8 +55,8 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
       onSubmit({
         ...formData,
         grade: parseInt(formData.grade),
-        teacher_id: parseInt(formData.teacher_id),
-        students: selectedStudents.map(id => parseInt(id)),
+        teacher_id: formData.teacher_id || null,
+        students: selectedStudents
       })
     }
   }
@@ -141,8 +141,8 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
           >
             <option value="">Select a teacher</option>
             {teachers.map((teacher) => (
-              <option key={teacher.teacher_id} value={teacher.teacher_id}>
-                {teacher.name} (ID: {teacher.teacher_id})
+              <option key={teacher._id} value={teacher._id}>
+                {teacher.name}
               </option>
             ))}
           </select>
@@ -160,15 +160,15 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
           ) : (
             <div className="space-y-2">
               {students.map((student) => (
-                <label key={student.student_id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                <label key={student._id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
                   <input
                     type="checkbox"
-                    checked={selectedStudents.includes(student.student_id)}
-                    onChange={() => handleStudentToggle(student.student_id)}
+                    checked={selectedStudents.includes(student._id)}
+                    onChange={() => handleStudentToggle(student._id)}
                     className="w-4 h-4 text-primary-blue border-gray-300 rounded focus:ring-primary-blue"
                   />
                   <span className="text-sm text-text-dark">
-                    {student.name} (ID: {student.student_id})
+                    {student.name}
                   </span>
                 </label>
               ))}

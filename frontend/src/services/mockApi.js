@@ -40,7 +40,7 @@ const mockData = {
   ],
   teachers: [
     {
-      teacher_id: 1,
+      teacher_id: 'teacher1',
       email: 'emily.chen@school.com',
       name: 'Dr. Emily Chen',
       dob: '1985-04-12',
@@ -50,7 +50,7 @@ const mockData = {
       date_of_join: '2018-08-01'
     },
     {
-      teacher_id: 2,
+      teacher_id: 'teacher2',
       email: 'robert.taylor@school.com',
       name: 'Prof. Robert Taylor',
       dob: '1980-07-25',
@@ -71,18 +71,18 @@ const mockData = {
   ],
   classrooms: [
     {
-      classroom_id: 1,
+      _id: 'classroom1',
       grade: 7,
       section: 'A',
-      teacher_id: 1,
-      students: [1, 2]
+      teacher_id: 'teacher1',
+      students: ['student1', 'student2']
     },
     {
-      classroom_id: 2,
+      _id: 'classroom2',
       grade: 6,
       section: 'B',
-      teacher_id: 2,
-      students: [3]
+      teacher_id: 'teacher2',
+      students: ['student3']
     }
   ],
   subjects: [
