@@ -427,7 +427,10 @@ router.get('/subjects/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
 }));
 
 router.post('/subjects', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  const subject = new Subject(req.body);
+  const subject = new Subject({
+    ...req.body,
+    createdBy: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined
+  });
   await subject.save();
   res.status(201).json(subject);
 }));
