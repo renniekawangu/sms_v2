@@ -61,6 +61,7 @@ async function findClassroomById(id) {
 
 // DTO helpers to align with frontend expectations
 const toStudentDto = (student) => ({
+  _id: student._id,
   student_id: student.studentId,
   name: `${student.firstName || ''} ${student.lastName || ''}`.trim(),
   email: student.email,

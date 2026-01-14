@@ -46,7 +46,8 @@ function Teachers() {
   const handleSubmit = async (formData) => {
     try {
       if (editingTeacher) {
-        await teachersApi.update(editingTeacher.teacher_id, formData)
+        // Use _id (ObjectId) for update operations
+        await teachersApi.update(editingTeacher._id || editingTeacher.teacher_id, formData)
         success('Teacher updated successfully')
       } else {
         await teachersApi.create(formData)
@@ -61,10 +62,11 @@ function Teachers() {
     }
   }
 
-  const handleDelete = async (teacher_id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this teacher?')) {
       try {
-        await teachersApi.delete(teacher_id)
+        // Use _id (ObjectId) for delete operations
+        await teachersApi.delete(id)
         success('Teacher deleted successfully')
         await loadTeachers()
       } catch (err) {
@@ -168,7 +170,7 @@ function Teachers() {
                 </tr>
               ) : (
                 filteredTeachers.map((teacher) => (
-                  <tr key={teacher.teacher_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={teacher._id || teacher.teacher_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4 text-sm text-text-dark">{teacher.teacher_id}</td>
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{teacher.name}</td>
                     <td className="py-3 px-4 text-sm text-text-muted">{teacher.email}</td>
@@ -189,7 +191,7 @@ function Teachers() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(teacher.teacher_id)}
+                          onClick={() => handleDelete(teacher._id || teacher.teacher_id)}
                           className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
                         >
                           <Trash2 size={16} />

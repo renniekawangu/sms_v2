@@ -53,7 +53,7 @@ function Fees() {
   const handleSubmit = async (formData) => {
     try {
       if (editingFee) {
-        await feesApi.update(editingFee.fee_id, formData)
+        await feesApi.update(editingFee._id || editingFee.fee_id, formData)
         success('Fee updated successfully')
       } else {
         await feesApi.create(formData)
@@ -68,10 +68,10 @@ function Fees() {
     }
   }
 
-  const handleDelete = async (fee_id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this fee?')) {
       try {
-        await feesApi.delete(fee_id)
+        await feesApi.delete(id)
         success('Fee deleted successfully')
         await loadData()
       } catch (err) {
@@ -179,7 +179,7 @@ function Fees() {
                 </tr>
               ) : (
                 filteredFees.map((fee) => (
-                  <tr key={fee.fee_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={fee._id || fee.fee_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4 text-sm text-text-dark">{fee.fee_id}</td>
                     <td className="py-3 px-4 text-sm text-text-dark">{getStudentName(fee.student_id)}</td>
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{formatCurrency(fee.amount, currency)}</td>
@@ -208,7 +208,7 @@ function Fees() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(fee.fee_id)}
+                          onClick={() => handleDelete(fee._id || fee.fee_id)}
                           className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
                         >
                           <Trash2 size={16} />

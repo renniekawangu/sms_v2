@@ -46,7 +46,7 @@ function Students() {
   const handleSubmit = async (formData) => {
     try {
       if (editingStudent) {
-        await studentsApi.update(editingStudent.student_id, formData)
+        await studentsApi.update(editingStudent._id || editingStudent.student_id, formData)
         success('Student updated successfully')
       } else {
         await studentsApi.create(formData)
@@ -61,10 +61,10 @@ function Students() {
     }
   }
 
-  const handleDelete = async (student_id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       try {
-        await studentsApi.delete(student_id)
+        await studentsApi.delete(id)
         success('Student deleted successfully')
         await loadStudents()
       } catch (err) {
@@ -168,7 +168,7 @@ function Students() {
                 </tr>
               ) : (
                 filteredStudents.map((student) => (
-                  <tr key={student.student_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={student._id || student.student_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4 text-sm text-text-dark">{student.student_id}</td>
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{student.name}</td>
                     <td className="py-3 px-4 text-sm text-text-muted">{student.email}</td>
@@ -189,7 +189,7 @@ function Students() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(student.student_id)}
+                          onClick={() => handleDelete(student._id || student.student_id)}
                           className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
                         >
                           <Trash2 size={16} />

@@ -46,7 +46,7 @@ function Exams() {
   const handleSubmit = async (formData) => {
     try {
       if (editingExam) {
-        await examsApi.update(editingExam.exam_id, formData)
+        await examsApi.update(editingExam._id || editingExam.exam_id, formData)
         success('Exam updated successfully')
       } else {
         await examsApi.create(formData)
@@ -61,10 +61,10 @@ function Exams() {
     }
   }
 
-  const handleDelete = async (exam_id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this exam?')) {
       try {
-        await examsApi.delete(exam_id)
+        await examsApi.delete(id)
         success('Exam deleted successfully')
         await loadExams()
       } catch (err) {
@@ -169,7 +169,7 @@ function Exams() {
                 </tr>
               ) : (
                 filteredExams.map((exam) => (
-                  <tr key={exam.exam_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={exam._id || exam.exam_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4 text-sm text-text-dark">{exam.exam_id}</td>
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{exam.name}</td>
                     <td className="py-3 px-4 text-sm text-text-muted">
@@ -186,7 +186,7 @@ function Exams() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(exam.exam_id)}
+                          onClick={() => handleDelete(exam._id || exam.exam_id)}
                           className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
                         >
                           <Trash2 size={16} />
