@@ -88,7 +88,7 @@ const toClassroomDto = (classroom, teacher, students) => ({
   grade: classroom.grade,
   section: classroom.section,
   teacher_id: classroom.teacher_id || null,
-  students: (students || []).map(s => s._id)
+  students: students || []
 });
 
 const toPaymentDto = (payment) => ({
@@ -306,9 +306,17 @@ router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
     teacher = await Teacher.findById(classroom.teacher_id).lean();
   }
   
-  const studentIds = (classroom.students || []).filter(isValidObjectId);
+  const mongoose = require('mongoose');
+  console.log('[GET /classrooms/:id] classroom.students:', classroom.students, 'type:', typeof classroom.students);
+  const studentIds = (classroom.students || []).map(id => {
+    if (typeof id === 'string' && isValidObjectId(id)) return mongoose.Types.ObjectId(id);
+    if (typeof id === 'object' && id instanceof mongoose.Types.ObjectId) return id;
+    return null;
+  }).filter(Boolean);
+  console.log('[GET /classrooms/:id] Querying students with IDs:', studentIds);
   const students = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
-  
+  console.log('[GET /classrooms/:id] Found students:', students);
+
   res.json(toClassroomDto(classroom.toObject ? classroom.toObject() : classroom, teacher, students));
 }));
 
@@ -373,6 +381,9 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   let finalTeacherId = cleanTeacherId;
   let finalStudents = cleanStudents;
 
+  // Debug: log incoming student IDs
+  console.log('[PUT /classrooms/:id] Incoming students:', students);
+
   // Process teacher_id update
   if (teacher_id !== undefined) {
     if (teacher_id === null) {
@@ -389,7 +400,16 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   // Process students update
   if (Array.isArray(students)) {
     finalStudents = students.filter(isValidObjectId);
+    console.log('[PUT /classrooms/:id] Filtered valid students:', finalStudents);
   }
+
+  // Debug: log final update values
+  console.log('[PUT /classrooms/:id] Updating classroom:', {
+    grade: finalGrade,
+    section: finalSection,
+    teacher_id: finalTeacherId,
+    students: finalStudents
+  });
 
   // Update the document
   const classroom = await Classroom.findByIdAndUpdate(
@@ -406,7 +426,8 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   const teacher = classroom.teacher_id ? await Staff.findById(classroom.teacher_id).lean() : null;
   const studentIds = classroom.students || [];
   const finalResult = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
-  
+
+  console.log('[PUT /classrooms/:id] Updated classroom:', classroom);
   res.json(toClassroomDto(classroom, teacher, finalResult));
 }));
 
