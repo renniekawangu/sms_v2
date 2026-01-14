@@ -91,6 +91,16 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
     })
   }
 
+  const filteredTeachers = teachers.filter(t => 
+    !teacherSearch.trim() || 
+    t.name.toLowerCase().includes(teacherSearch.toLowerCase())
+  )
+
+  const filteredStudents = students.filter(s => 
+    !studentSearch.trim() || 
+    s.name.toLowerCase().includes(studentSearch.toLowerCase())
+  )
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

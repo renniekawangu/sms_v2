@@ -292,8 +292,8 @@ router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   }
 
   let teacher = null;
-  if (isValidObjectId(classroom.teacher_id)) {
-    teacher = await Staff.findById(classroom.teacher_id).lean();
+  if (classroom.teacher_id) {
+    teacher = await Teacher.findById(classroom.teacher_id).lean();
   }
   
   const studentIds = (classroom.students || []).filter(isValidObjectId);
@@ -332,8 +332,9 @@ router.post('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEAC
 }));
 
 router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  const classroom = await findClassroomById(req.params.id);
-  if (!classroom) {
+  // Use lean to get raw data without validation
+  let classroomData = await findClassroomById(req.params.id);
+  if (!classroomData) {
     return res.status(404).json({ 
       success: false,
       message: 'Classroom not found',
@@ -341,34 +342,62 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
     });
   }
 
-  const { grade, section, teacher_id, students } = req.body;
-  if (grade !== undefined) classroom.grade = grade;
-  if (section !== undefined) classroom.section = section;
+  const id = classroomData._id;
+  
+  // Clean up legacy data
+  let cleanTeacherId = classroomData.teacher_id;
+  if (cleanTeacherId && !isValidObjectId(cleanTeacherId)) {
+    cleanTeacherId = null;
+  }
+  
+  let cleanStudents = classroomData.students || [];
+  if (Array.isArray(cleanStudents)) {
+    cleanStudents = cleanStudents.filter(isValidObjectId);
+  }
 
+  const { grade, section, teacher_id, students } = req.body;
+  
+  // Start with current values
+  let finalGrade = grade !== undefined ? grade : classroomData.grade;
+  let finalSection = section !== undefined ? section : classroomData.section;
+  let finalTeacherId = cleanTeacherId;
+  let finalStudents = cleanStudents;
+
+  // Process teacher_id update
   if (teacher_id !== undefined) {
     if (teacher_id === null) {
-      classroom.teacher_id = null;
+      finalTeacherId = null;
     } else if (isValidObjectId(teacher_id)) {
       const t = await Staff.findById(teacher_id);
       if (!t) return res.status(400).json({ error: 'Teacher not found' });
-      classroom.teacher_id = t._id;
+      finalTeacherId = t._id;
     } else {
       return res.status(400).json({ error: 'Invalid teacher ID' });
     }
   }
 
+  // Process students update
   if (Array.isArray(students)) {
-    const validObjectIds = students.filter(isValidObjectId);
-    classroom.students = validObjectIds;
+    finalStudents = students.filter(isValidObjectId);
   }
 
-  await classroom.save();
+  // Update the document
+  const classroom = await Classroom.findByIdAndUpdate(
+    id,
+    {
+      grade: finalGrade,
+      section: finalSection,
+      teacher_id: finalTeacherId,
+      students: finalStudents
+    },
+    { new: true, runValidators: true }
+  ).lean();
 
   const teacher = classroom.teacher_id ? await Staff.findById(classroom.teacher_id).lean() : null;
   const studentIds = classroom.students || [];
-  const finalStudents = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
+  const finalResult = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
   
-  res.json(toClassroomDto(classroom.toObject(), teacher, finalStudents));
+  res.json(toClassroomDto(classroom, teacher, finalResult));
 }));
 
 router.delete('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {

@@ -45,7 +45,7 @@ function Login() {
         <div className="bg-card-white rounded-custom shadow-custom p-8">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center mb-4">
-              <img src="/logo.png" alt="Esync Logo" className="w-24 h-24 object-contain" />
+              <img src="/logo.png" alt="Esync Logo" className="w-40 h-24 object-contain" />
             </div>
           </div>
           <div className="mb-6">
