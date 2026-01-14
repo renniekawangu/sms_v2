@@ -408,6 +408,62 @@ function AccountsDashboard() {
     </div>
   )
 }
+// Head Teacher Dashboard
+function HeadTeacherDashboard (){
+  const { user } = useAuth()
+  const userName = user?.name || 'Head Teacher'
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-text-dark">Head Teacher Dashboard</h1>
+        <p className="text-text-muted mt-1">Welcome back, {userName}</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center gap-4">
+            <School className="text-primary-blue" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark">Classrooms</h3>
+              <p className="text-sm text-text-muted">View classes</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center gap-4">
+            <Calendar className="text-primary-blue" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark">Timetable</h3>
+              <p className="text-sm text-text-muted">View schedule</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center gap-4">
+            <Calendar className="text-primary-blue" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark">Attendance</h3>
+              <p className="text-sm text-text-muted">View attendance</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center gap-4">
+            <Award className="text-primary-blue" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark">Results</h3>
+              <p className="text-sm text-text-muted">View results</p>
+            </div>
+          </div>
+        </Link>
+      </div>
+    </div>
+  )       
+}
 
 // Main Dashboard Component
 function Dashboard() {
@@ -422,6 +478,8 @@ function Dashboard() {
     return <StudentDashboard />
   } else if (userRole === 'accounts') {
     return <AccountsDashboard />
+  } else if (userRole === 'head-teacher') {
+    return <HeadTeacherDashboard />
   }
 
   return (
