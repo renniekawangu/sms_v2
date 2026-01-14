@@ -43,6 +43,21 @@ async function fixIndexes() {
       console.log('Classrooms index fix:', err.message);
     }
 
+    // Fix Subjects collection
+    try {
+      const subjectIndexes = await db.collection('subjects').indexes();
+      console.log('\nSubjects indexes:', subjectIndexes.map(i => i.name).join(', '));
+      
+      // Drop the old subject_id_1 index if it exists
+      const hasSubjectIdIndex = subjectIndexes.some(idx => idx.name === 'subject_id_1');
+      if (hasSubjectIdIndex) {
+        await db.collection('subjects').dropIndex('subject_id_1');
+        console.log('✓ Dropped obsolete subject_id_1 index');
+      }
+    } catch (err) {
+      console.log('Subjects index fix:', err.message);
+    }
+
     console.log('\n✓ Database indexes fixed successfully');
     process.exit(0);
   } catch (error) {
