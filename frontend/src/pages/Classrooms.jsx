@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from 'react'
-import { School, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
+import { School, Search, Plus, Edit, Trash2, AlertCircle, Eye } from 'lucide-react'
 import { classroomsApi, adminApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import ClassroomForm from '../components/ClassroomForm'
+import { useNavigate } from 'react-router-dom'
 
 function Classrooms() {
   const [classrooms, setClassrooms] = useState([])
+  const navigate = useNavigate()
   const [teachers, setTeachers] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -185,6 +187,13 @@ function Classrooms() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => navigate(`/classrooms/${classroom._id}`)}
+                                          className="text-primary-blue hover:text-primary-blue/80 p-1"
+                                          title="View"
+                                        >
+                                          <Eye size={16} />
+                                        </button>
                     <button
                       onClick={() => handleEdit(classroom)}
                       className="text-primary-blue hover:text-primary-blue/80 p-1"
