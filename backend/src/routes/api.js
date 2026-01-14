@@ -24,6 +24,11 @@ const mongoose = require('mongoose');
 
 const router = express.Router();
 
+// Helper to strictly validate ObjectId (24-char hex string only)
+const isValidObjectId = (id) => {
+  return id && typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+};
+
 async function findStudentByIdOrStudentId(id) {
   // Try as numeric studentId first (more common case in this app)
   const numId = parseInt(id);
@@ -254,10 +259,14 @@ router.delete('/teachers/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_
 // ============= Classrooms API =============
 router.get('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (_req, res) => {
   const classrooms = await Classroom.find().lean();
-  const teacherIds = classrooms.map(c => c.teacher_id).filter(id => id && mongoose.isValidObjectId(id));
+  const teacherIds = classrooms
+    .map(c => c.teacher_id)
+    .filter(isValidObjectId);
   const teachers = teacherIds.length > 0 ? await Staff.find({ _id: { $in: teacherIds } }).lean() : [];
   
-  const allStudentIds = classrooms.flatMap(c => c.students || []).filter(id => mongoose.isValidObjectId(id));
+  const allStudentIds = classrooms
+    .flatMap(c => c.students || [])
+    .filter(isValidObjectId);
   const students = allStudentIds.length > 0 ? await Student.find({ _id: { $in: allStudentIds } }).lean() : [];
 
   const teacherMap = new Map(teachers.map(t => [t._id.toString(), t]));
@@ -283,11 +292,11 @@ router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   }
 
   let teacher = null;
-  if (classroom.teacher_id && mongoose.isValidObjectId(classroom.teacher_id)) {
+  if (isValidObjectId(classroom.teacher_id)) {
     teacher = await Staff.findById(classroom.teacher_id).lean();
   }
   
-  const studentIds = (classroom.students || []).filter(id => mongoose.isValidObjectId(id));
+  const studentIds = (classroom.students || []).filter(isValidObjectId);
   const students = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
   
   res.json(toClassroomDto(classroom.toObject ? classroom.toObject() : classroom, teacher, students));
@@ -298,13 +307,13 @@ router.post('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEAC
 
   let teacherRef = null;
   if (teacher_id) {
-    if (!mongoose.isValidObjectId(teacher_id)) return res.status(400).json({ error: 'Invalid teacher ID' });
+    if (!isValidObjectId(teacher_id)) return res.status(400).json({ error: 'Invalid teacher ID' });
     const t = await Staff.findById(teacher_id);
     if (!t) return res.status(400).json({ error: 'Teacher not found' });
     teacherRef = t._id;
   }
 
-  const validStudentIds = students.filter(id => mongoose.isValidObjectId(id));
+  const validStudentIds = students.filter(isValidObjectId);
   const classroom = new Classroom({
     grade,
     section,
@@ -339,7 +348,7 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   if (teacher_id !== undefined) {
     if (teacher_id === null) {
       classroom.teacher_id = null;
-    } else if (mongoose.isValidObjectId(teacher_id)) {
+    } else if (isValidObjectId(teacher_id)) {
       const t = await Staff.findById(teacher_id);
       if (!t) return res.status(400).json({ error: 'Teacher not found' });
       classroom.teacher_id = t._id;
@@ -349,7 +358,7 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   }
 
   if (Array.isArray(students)) {
-    const validObjectIds = students.filter(id => mongoose.isValidObjectId(id));
+    const validObjectIds = students.filter(isValidObjectId);
     classroom.students = validObjectIds;
   }
 
