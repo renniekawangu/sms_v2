@@ -260,27 +260,34 @@ router.delete('/teachers/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_
 
 // ============= Classrooms API =============
 router.get('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (_req, res) => {
-  const classrooms = await Classroom.find().lean();
-  const teacherIds = classrooms
-    .map(c => c.teacher_id)
-    .filter(isValidObjectId);
-  const teachers = teacherIds.length > 0 ? await Staff.find({ _id: { $in: teacherIds } }).lean() : [];
-  
-  const allStudentIds = classrooms
-    .flatMap(c => c.students || [])
-    .filter(isValidObjectId);
-  const students = allStudentIds.length > 0 ? await Student.find({ _id: { $in: allStudentIds } }).lean() : [];
+  console.log('[CLASSROOMS] Handler reached, user:', _req.user);
+  try {
+    const classrooms = await Classroom.find().lean();
+    const teacherIds = classrooms
+      .map(c => c.teacher_id)
+      .filter(isValidObjectId);
+    const teachers = teacherIds.length > 0 ? await Staff.find({ _id: { $in: teacherIds } }).lean() : [];
+    
+    const allStudentIds = classrooms
+      .flatMap(c => c.students || [])
+      .filter(isValidObjectId);
+    const students = allStudentIds.length > 0 ? await Student.find({ _id: { $in: allStudentIds } }).lean() : [];
 
-  const teacherMap = new Map(teachers.map(t => [t._id.toString(), t]));
-  const studentMap = new Map(students.map(s => [s._id.toString(), s]));
+    const teacherMap = new Map(teachers.map(t => [t._id.toString(), t]));
+    const studentMap = new Map(students.map(s => [s._id.toString(), s]));
 
-  const response = classrooms.map(c => {
-    const t = c.teacher_id ? teacherMap.get(c.teacher_id.toString()) : null;
-    const sDocs = (c.students || []).map(id => studentMap.get(id.toString())).filter(Boolean);
-    return toClassroomDto(c, t, sDocs);
-  });
+    const response = classrooms.map(c => {
+      const t = c.teacher_id ? teacherMap.get(c.teacher_id.toString()) : null;
+      const sDocs = (c.students || []).map(id => studentMap.get(id.toString())).filter(Boolean);
+      return toClassroomDto(c, t, sDocs);
+    });
 
-  res.json(response);
+    console.log('[CLASSROOMS] Success, returning response');
+    res.json(response);
+  } catch (err) {
+    console.error('[CLASSROOMS] Error:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
+  }
 }));
 
 router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {

@@ -34,11 +34,13 @@ const extractToken = (req) => {
 const requireAuth = (req, res, next) => {
   try {
     const token = extractToken(req);
+    console.log('[AUTH] Extracted token:', token);
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized: Missing token' });
     }
 
     const decoded = verifyToken(token);
+    console.log('[AUTH] Decoded user:', decoded);
     if (!decoded) {
       return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
     }
@@ -46,6 +48,7 @@ const requireAuth = (req, res, next) => {
     req.user = decoded;
     return next();
   } catch (err) {
+    console.log('[AUTH] Token verification error:', err);
     return res.status(401).json({ error: 'Unauthorized: Token verification failed' });
   }
 };
@@ -60,13 +63,29 @@ const requireRole = (...allowedRoles) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    const userRole = req.user.role;
+
     // Admin can access everything
-    if (req.user.role === ROLES.ADMIN) {
+    if (userRole === ROLES.ADMIN || userRole === 'admin') {
       return next();
     }
 
+    // Normalize role comparison (handle head-teacher, head_teacher variations)
+    const normalizeRole = (role) => String(role || '').toLowerCase().replace(/_/g, '-');
+    const normalizedUserRole = normalizeRole(userRole);
+    const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
+
+    // Debug logging
+    console.log('[RBAC] Role check:', {
+      userRole,
+      normalizedUserRole,
+      allowedRoles,
+      normalizedAllowedRoles,
+      matches: normalizedAllowedRoles.includes(normalizedUserRole)
+    });
+
     // Check if user's role is in allowed roles
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!normalizedAllowedRoles.includes(normalizedUserRole)) {
       return res.status(403).json({
         error: 'Forbidden: Insufficient permissions',
         requiredRoles: allowedRoles,

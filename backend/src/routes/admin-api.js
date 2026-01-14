@@ -234,7 +234,7 @@ router.delete('/users/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(
  * GET /api/admin/students
  * List all students
  */
-router.get('/students-list', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.get('/students-list', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
   const { page = 1, limit = 50, search, classLevel } = req.query;
   const skip = (page - 1) * limit;
 
@@ -270,7 +270,7 @@ router.get('/students-list', requireAuth, requireRole(ROLES.ADMIN), asyncHandler
  * POST /api/admin/students/bulk-delete
  * Delete multiple students
  */
-router.post('/students/bulk-delete', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.post('/students/bulk-delete', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
   const { ids = [] } = req.body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -286,7 +286,7 @@ router.post('/students/bulk-delete', requireAuth, requireRole(ROLES.ADMIN), asyn
  * GET /api/admin/staff
  * List all staff
  */
-router.get('/staff-list', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.get('/staff-list', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
   const { page = 1, limit = 50, search, role } = req.query;
   const skip = (page - 1) * limit;
 
