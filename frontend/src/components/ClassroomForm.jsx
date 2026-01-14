@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -9,6 +9,8 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
   })
   const [errors, setErrors] = useState({})
   const [selectedStudents, setSelectedStudents] = useState([])
+  const [teacherQuery, setTeacherQuery] = useState('')
+  const [studentQuery, setStudentQuery] = useState('')
 
   useEffect(() => {
     if (classroom) {
@@ -29,6 +31,18 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
       setSelectedStudents([])
     }
   }, [classroom])
+
+  const filteredTeachers = useMemo(() => {
+    if (!teacherQuery.trim()) return teachers
+    const q = teacherQuery.toLowerCase()
+    return teachers.filter(t => (t.name || '').toLowerCase().includes(q))
+  }, [teachers, teacherQuery])
+
+  const filteredStudents = useMemo(() => {
+    if (!studentQuery.trim()) return students
+    const q = studentQuery.toLowerCase()
+    return students.filter(s => (s.name || '').toLowerCase().includes(q))
+  }, [students, studentQuery])
 
   const validate = () => {
     const newErrors = {}
@@ -124,8 +138,15 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
 
         <div>
           <label htmlFor="teacher_id" className="block text-sm font-medium text-text-dark mb-2">
-            Teacher <span className="text-red-500">*</span>
+            Teacher <span className="text-text-muted text-xs">(optional)</span>
           </label>
+          <input
+            type="text"
+            value={teacherQuery}
+            onChange={(e) => setTeacherQuery(e.target.value)}
+            placeholder="Filter teachers..."
+            className="mb-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+          />
           <select
             id="teacher_id"
             name="teacher_id"
@@ -138,7 +159,7 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
             }`}
           >
             <option value="">Select a teacher</option>
-            {teachers.map((teacher) => (
+            {filteredTeachers.map((teacher) => (
               <option key={teacher._id} value={teacher._id}>
                 {teacher.name}
               </option>
@@ -153,11 +174,20 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
           Students
         </label>
         <div className="border border-gray-200 rounded-lg p-4 max-h-48 overflow-y-auto">
-          {students.length === 0 ? (
+          <div className="mb-3">
+            <input
+              type="text"
+              value={studentQuery}
+              onChange={(e) => setStudentQuery(e.target.value)}
+              placeholder="Search students..."
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            />
+          </div>
+          {filteredStudents.length === 0 ? (
             <p className="text-sm text-text-muted">No students available</p>
           ) : (
             <div className="space-y-2">
-              {students.map((student) => (
+              {filteredStudents.map((student) => (
                 <label key={student._id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
                   <input
                     type="checkbox"
