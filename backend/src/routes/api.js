@@ -71,6 +71,7 @@ const toStudentDto = (student) => ({
 });
 
 const toTeacherDto = (teacher, teacherId) => ({
+  _id: teacher._id,
   teacher_id: teacherId,
   name: `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim(),
   email: teacher.email,
