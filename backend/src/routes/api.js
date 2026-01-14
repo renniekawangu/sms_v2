@@ -39,6 +39,21 @@ async function findStudentByIdOrStudentId(id) {
   return null;
 }
 
+async function findClassroomById(id) {
+  // Try as ObjectId (must be 24-character hex string)
+  if (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id)) {
+    return await Classroom.findById(id);
+  }
+  
+  // If numeric, check if old data with numeric _id exists (legacy support)
+  const numId = parseInt(id);
+  if (!isNaN(numId) && String(numId) === String(id).trim()) {
+    return await Classroom.findOne({ _id: numId });
+  }
+  
+  return null;
+}
+
 // DTO helpers to align with frontend expectations
 const toStudentDto = (student) => ({
   student_id: student.studentId,
@@ -258,12 +273,14 @@ router.get('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
 }));
 
 router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    return res.status(400).json({ error: 'Invalid classroom ID' });
+  const classroom = await findClassroomById(req.params.id);
+  if (!classroom) {
+    return res.status(404).json({ 
+      success: false,
+      message: 'Classroom not found',
+      field: '_id'
+    });
   }
-  
-  const classroom = await Classroom.findById(req.params.id).lean();
-  if (!classroom) return res.status(404).json({ error: 'Classroom not found' });
 
   let teacher = null;
   if (classroom.teacher_id && mongoose.isValidObjectId(classroom.teacher_id)) {
@@ -273,7 +290,7 @@ router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   const studentIds = (classroom.students || []).filter(id => mongoose.isValidObjectId(id));
   const students = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
   
-  res.json(toClassroomDto(classroom, teacher, students));
+  res.json(toClassroomDto(classroom.toObject ? classroom.toObject() : classroom, teacher, students));
 }));
 
 router.post('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
@@ -306,12 +323,14 @@ router.post('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEAC
 }));
 
 router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    return res.status(400).json({ error: 'Invalid classroom ID' });
+  const classroom = await findClassroomById(req.params.id);
+  if (!classroom) {
+    return res.status(404).json({ 
+      success: false,
+      message: 'Classroom not found',
+      field: '_id'
+    });
   }
-  
-  const classroom = await Classroom.findById(req.params.id);
-  if (!classroom) return res.status(404).json({ error: 'Classroom not found' });
 
   const { grade, section, teacher_id, students } = req.body;
   if (grade !== undefined) classroom.grade = grade;
@@ -344,13 +363,17 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
 }));
 
 router.delete('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    return res.status(400).json({ error: 'Invalid classroom ID' });
+  const classroom = await findClassroomById(req.params.id);
+  if (!classroom) {
+    return res.status(404).json({ 
+      success: false,
+      message: 'Classroom not found',
+      field: '_id'
+    });
   }
   
-  const classroom = await Classroom.findByIdAndDelete(req.params.id);
-  if (!classroom) return res.status(404).json({ error: 'Classroom not found' });
-  res.json({ message: 'Classroom deleted' });
+  await Classroom.findByIdAndDelete(classroom._id);
+  res.json({ success: true, message: 'Classroom deleted' });
 }));
 
 // ============= Subjects API =============
