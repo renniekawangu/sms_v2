@@ -883,6 +883,20 @@ export const parentsApi = {
     });
   },
 
+  downloadChildReport: async (student_id) => {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/parents/children/${student_id}/report`, {
+      method: 'GET',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to download report');
+    }
+    return await response.blob();
+  },
+
   createPayment: async (data) => {
     return apiCall('/parents/payments', {
       method: 'POST',

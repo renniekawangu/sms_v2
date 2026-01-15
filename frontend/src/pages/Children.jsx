@@ -56,6 +56,22 @@ function Children() {
     }
   }
 
+  const handleDownloadReport = async (childId, nameLabel) => {
+    try {
+      const blob = await parentsApi.downloadChildReport(childId)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Report_${nameLabel || childId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      URL.revokeObjectURL(url)
+      a.remove()
+    } catch (err) {
+      showError(err.message || 'Failed to download report')
+    }
+  }
+
   const calculateAttendancePercentage = (attendance) => {
     if (attendance.length === 0) return 0
     const present = attendance.filter(a => a.status === 'present').length
@@ -137,10 +153,23 @@ function Children() {
                       <p className="text-xs text-text-muted">ID: {child.studentId}</p>
                     </div>
                   </div>
-                  <ChevronRight
-                    size={20}
-                    className={`text-text-muted transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
-                  />
+                  <div className="flex items-center gap-3">
+                    {isExpanded && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownloadReport(child._id, `${child.firstName}_${child.lastName}`)
+                        }}
+                        className="px-3 py-1.5 text-sm rounded bg-primary-blue text-white hover:bg-blue-700"
+                      >
+                        Download Report
+                      </button>
+                    )}
+                    <ChevronRight
+                      size={20}
+                      className={`text-text-muted transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+                    />
+                  </div>
                 </div>
 
                 {/* Quick Stats */}
