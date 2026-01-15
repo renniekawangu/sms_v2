@@ -590,20 +590,45 @@ router.get('/results/student/:student_id', requireAuth, requireRole(ROLES.ADMIN,
 }));
 
 router.post('/results', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const { student_id, ...rest } = req.body;
-  const student = student_id ? await findStudentByIdOrStudentId(student_id) : null;
-  if (student_id && !student) return res.status(404).json({ error: 'Student not found' });
-  const grade = new Grade({ ...rest, studentId: student?._id || student_id });
+  const { student_id, subject, marks, ...rest } = req.body;
+  
+  // Validate required fields
+  if (!student_id) {
+    return res.status(400).json({ error: 'student_id is required' });
+  }
+  if (!subject) {
+    return res.status(400).json({ error: 'subject is required' });
+  }
+  
+  const student = await findStudentByIdOrStudentId(student_id);
+  if (!student) {
+    return res.status(404).json({ error: 'Student not found' });
+  }
+  
+  const grade = new Grade({
+    studentId: student._id,
+    subject,
+    marks: marks || 0,
+    createdBy: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+    ...rest
+  });
+  
   await grade.save();
   res.status(201).json(grade);
 }));
 
 router.put('/results/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
   const update = { ...req.body };
+  
   if (req.body.student_id) {
     const student = await findStudentByIdOrStudentId(req.body.student_id);
     if (!student) return res.status(404).json({ error: 'Student not found' });
     update.studentId = student._id;
+  }
+  
+  // Add updatedBy to track who modified the grade
+  if (req.user?.id) {
+    update.updatedBy = new mongoose.Types.ObjectId(req.user.id);
   }
 
   const grade = await Grade.findByIdAndUpdate(req.params.id, update, { new: true });
@@ -741,10 +766,84 @@ router.get('/timetable/classroom/:classroom_id', requireAuth, requireRole(ROLES.
 }));
 
 router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  const { classroom, subject, teacher, dayOfWeek, startTime, endTime, room, period } = req.body;
+  // Map frontend field names to backend field names
+  const { classroom_id, classroom, subject, teacher, day, dayOfWeek, time, startTime, endTime, room, period } = req.body;
+  
+  // Validate required fields
+  if (!classroom && !classroom_id) {
+    return res.status(400).json({ error: 'classroom or classroom_id is required' });
+  }
+  if (!subject) {
+    return res.status(400).json({ error: 'subject is required' });
+  }
+  if (!teacher) {
+    return res.status(400).json({ error: 'teacher is required' });
+  }
+  if (!dayOfWeek && !day) {
+    return res.status(400).json({ error: 'dayOfWeek or day is required' });
+  }
+  if (!startTime && !time) {
+    return res.status(400).json({ error: 'startTime or time is required' });
+  }
+  if (!endTime && !time) {
+    return res.status(400).json({ error: 'endTime is required or provide time' });
+  }
+  
+  // Use provided values or map from alternative names
+  let classroomId = classroom || classroom_id;
+  const dayOfWeekValue = dayOfWeek || day;
+  
+  // Validate and convert classroom ID to ObjectId
+  if (!mongoose.Types.ObjectId.isValid(classroomId)) {
+    return res.status(400).json({ 
+      error: 'Invalid classroom ID format. Must be a valid MongoDB ObjectId.',
+      received: classroomId,
+      type: typeof classroomId
+    });
+  }
+  classroomId = new mongoose.Types.ObjectId(classroomId);
+  
+  // Validate and convert teacher to ObjectId
+  if (!mongoose.Types.ObjectId.isValid(teacher)) {
+    return res.status(400).json({ 
+      error: 'Invalid teacher ID format. Must be a valid MongoDB ObjectId.',
+      received: teacher,
+      type: typeof teacher
+    });
+  }
+  const teacherId = new mongoose.Types.ObjectId(teacher);
+  
+  // Handle subject - can be either an ObjectId or a subject name
+  let subjectId;
+  if (mongoose.Types.ObjectId.isValid(subject)) {
+    // Subject is an ObjectId
+    subjectId = new mongoose.Types.ObjectId(subject);
+  } else {
+    // Subject is a name, find or create it
+    let subjectDoc = await Subject.findOne({ name: subject });
+    if (!subjectDoc) {
+      // Create new subject
+      subjectDoc = new Subject({ name: subject, code: subject.substring(0, 3).toUpperCase() });
+      await subjectDoc.save();
+    }
+    subjectId = subjectDoc._id;
+  }
+  
+  // Parse time if provided in "HH:MM" format
+  let start = startTime;
+  let end = endTime;
+  
+  // If only time is provided, we need a teacher to calculate end time
+  // For now, just use the time as startTime and add 1 hour for endTime
+  if (time && !startTime) {
+    start = time;
+    const [hours, mins] = time.split(':');
+    const endHour = (parseInt(hours) + 1).toString().padStart(2, '0');
+    end = `${endHour}:${mins}`;
+  }
   
   // Check for conflicts
-  const conflict = await Timetable.checkConflict(classroom, teacher, dayOfWeek, startTime, endTime);
+  const conflict = await Timetable.checkConflict(classroomId, teacherId, dayOfWeekValue, start, end);
   if (conflict.hasConflict) {
     return res.status(409).json({ 
       error: 'Schedule conflict detected',
@@ -753,12 +852,12 @@ router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
   }
   
   const timetable = new Timetable({
-    classroom,
-    subject,
-    teacher,
-    dayOfWeek,
-    startTime,
-    endTime,
+    classroom: classroomId,
+    subject: subjectId,
+    teacher: teacherId,
+    dayOfWeek: dayOfWeekValue,
+    startTime: start,
+    endTime: end,
     room,
     period,
     createdBy: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined
@@ -776,14 +875,62 @@ router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
 router.put('/timetable/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
   const { classroom, subject, teacher, dayOfWeek, startTime, endTime, room, period, isActive } = req.body;
   
+  // Validate ID format
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid timetable ID format' });
+  }
+  
+  // Get existing entry first
+  const existing = await Timetable.findById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Timetable entry not found' });
+  
+  // Validate classroom ID before conversion
+  let classroomId = existing.classroom;
+  if (classroom) {
+    if (!mongoose.Types.ObjectId.isValid(classroom)) {
+      return res.status(400).json({ 
+        error: 'Invalid classroom ID format. Must be a valid MongoDB ObjectId.',
+        received: classroom
+      });
+    }
+    classroomId = new mongoose.Types.ObjectId(classroom);
+  }
+  
+  // Validate teacher ID before conversion
+  let teacherId = existing.teacher;
+  if (teacher) {
+    if (!mongoose.Types.ObjectId.isValid(teacher)) {
+      return res.status(400).json({ 
+        error: 'Invalid teacher ID format. Must be a valid MongoDB ObjectId.',
+        received: teacher
+      });
+    }
+    teacherId = new mongoose.Types.ObjectId(teacher);
+  }
+  
+  // Handle subject - can be either an ObjectId or a subject name
+  let subjectId = existing.subject;
+  if (subject) {
+    if (mongoose.Types.ObjectId.isValid(subject)) {
+      // Subject is an ObjectId
+      subjectId = new mongoose.Types.ObjectId(subject);
+    } else {
+      // Subject is a name, find or create it
+      let subjectDoc = await Subject.findOne({ name: subject });
+      if (!subjectDoc) {
+        // Create new subject
+        subjectDoc = new Subject({ name: subject, code: subject.substring(0, 3).toUpperCase() });
+        await subjectDoc.save();
+      }
+      subjectId = subjectDoc._id;
+    }
+  }
+  
   // Check for conflicts if time/classroom/teacher changed
   if (dayOfWeek || startTime || endTime || classroom || teacher) {
-    const existing = await Timetable.findById(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Timetable entry not found' });
-    
     const conflict = await Timetable.checkConflict(
-      classroom || existing.classroom,
-      teacher || existing.teacher,
+      classroomId,
+      teacherId,
       dayOfWeek || existing.dayOfWeek,
       startTime || existing.startTime,
       endTime || existing.endTime,
@@ -798,7 +945,18 @@ router.put('/timetable/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TE
     }
   }
   
-  const updateData = { ...req.body };
+  const updateData = {
+    dayOfWeek: dayOfWeek || existing.dayOfWeek,
+    startTime: startTime || existing.startTime,
+    endTime: endTime || existing.endTime,
+    classroom: classroomId,
+    teacher: teacherId,
+    subject: subjectId,
+    room: room !== undefined ? room : existing.room,
+    period: period !== undefined ? period : existing.period,
+    isActive: isActive !== undefined ? isActive : existing.isActive
+  };
+  
   if (req.user?.id) {
     updateData.updatedBy = new mongoose.Types.ObjectId(req.user.id);
   }

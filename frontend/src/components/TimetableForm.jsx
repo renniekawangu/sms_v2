@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 
-function TimetableForm({ timetable, classrooms, subjects, onSubmit, onCancel }) {
+function TimetableForm({ timetable, classrooms, subjects, teachers, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     classroom_id: '',
+    teacher_id: '',
     day: 'Monday',
     time: '',
     subject: '',
@@ -12,14 +13,16 @@ function TimetableForm({ timetable, classrooms, subjects, onSubmit, onCancel }) 
   useEffect(() => {
     if (timetable) {
       setFormData({
-        classroom_id: timetable.classroom_id || '',
-        day: timetable.day || 'Monday',
-        time: timetable.time || '',
-        subject: timetable.subject || '',
+        classroom_id: timetable.classroom_id || timetable.classroom?._id || '',
+        teacher_id: timetable.teacher_id || timetable.teacher?._id || '',
+        day: timetable.day || timetable.dayOfWeek || 'Monday',
+        time: timetable.time || timetable.startTime || '',
+        subject: timetable.subject || timetable.subject?.name || '',
       })
     } else {
       setFormData({
         classroom_id: '',
+        teacher_id: '',
         day: 'Monday',
         time: '',
         subject: '',
@@ -32,6 +35,10 @@ function TimetableForm({ timetable, classrooms, subjects, onSubmit, onCancel }) 
 
     if (!formData.classroom_id) {
       newErrors.classroom_id = 'Classroom is required'
+    }
+
+    if (!formData.teacher_id) {
+      newErrors.teacher_id = 'Teacher is required'
     }
 
     if (!formData.day) {
@@ -54,8 +61,11 @@ function TimetableForm({ timetable, classrooms, subjects, onSubmit, onCancel }) 
     e.preventDefault()
     if (validate()) {
       onSubmit({
-        ...formData,
-        classroom_id: parseInt(formData.classroom_id),
+        classroom: formData.classroom_id,
+        teacher: formData.teacher_id,
+        dayOfWeek: formData.day,
+        time: formData.time,
+        subject: formData.subject,
       })
     }
   }
@@ -94,12 +104,37 @@ function TimetableForm({ timetable, classrooms, subjects, onSubmit, onCancel }) 
         >
           <option value="">Select a classroom</option>
           {classrooms.map((classroom) => (
-            <option key={classroom.classroom_id} value={classroom.classroom_id}>
+            <option key={classroom._id || classroom.classroom_id} value={classroom._id || classroom.classroom_id}>
               Grade {classroom.grade} - Section {classroom.section}
             </option>
           ))}
         </select>
         {errors.classroom_id && <p className="mt-1 text-sm text-red-500">{errors.classroom_id}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="teacher_id" className="block text-sm font-medium text-text-dark mb-2">
+          Teacher <span className="text-red-500">*</span>
+        </label>
+        <select
+          id="teacher_id"
+          name="teacher_id"
+          value={formData.teacher_id}
+          onChange={handleChange}
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+            errors.teacher_id
+              ? 'border-red-300 focus:ring-red-500'
+              : 'border-gray-200 focus:ring-primary-blue'
+          }`}
+        >
+          <option value="">Select a teacher</option>
+          {teachers && teachers.map((teacher) => (
+            <option key={teacher._id || teacher.staff_id} value={teacher._id || teacher.staff_id}>
+              {teacher.firstName || teacher.name} {teacher.lastName || ''}
+            </option>
+          ))}
+        </select>
+        {errors.teacher_id && <p className="mt-1 text-sm text-red-500">{errors.teacher_id}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -177,7 +212,7 @@ function TimetableForm({ timetable, classrooms, subjects, onSubmit, onCancel }) 
             <div className="flex flex-wrap gap-2">
               {subjects.map((subject) => (
                 <button
-                  key={subject.subject_id}
+                  key={subject._id || subject.subject_id}
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, subject: subject.name }))}
                   className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded text-text-dark"

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Calendar, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
-import { timetableApi, classroomsApi, subjectsApi } from '../services/api'
+import { timetableApi, classroomsApi, subjectsApi, teachersApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import TimetableForm from '../components/TimetableForm'
@@ -8,6 +8,7 @@ import TimetableForm from '../components/TimetableForm'
 function Timetable() {
   const [classrooms, setClassrooms] = useState([])
   const [subjects, setSubjects] = useState([])
+  const [teachers, setTeachers] = useState([])
   const [selectedClassroom, setSelectedClassroom] = useState(null)
   const [timetable, setTimetable] = useState([])
   const [loading, setLoading] = useState(true)
@@ -31,14 +32,16 @@ function Timetable() {
     try {
       setLoading(true)
       setError(null)
-      const [classroomsData, subjectsData] = await Promise.all([
+      const [classroomsData, subjectsData, teachersData] = await Promise.all([
         classroomsApi.list(),
-        subjectsApi.list()
+        subjectsApi.list(),
+        teachersApi.list()
       ])
       setClassrooms(classroomsData)
       setSubjects(subjectsData)
+      setTeachers(teachersData)
       if (classroomsData.length > 0) {
-        setSelectedClassroom(classroomsData[0].classroom_id)
+        setSelectedClassroom(classroomsData[0]._id || classroomsData[0].classroom_id)
       }
     } catch (err) {
       const errorMessage = err.message || 'Failed to load data'
@@ -105,16 +108,16 @@ function Timetable() {
   }
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-  const timeSlots = [...new Set(timetable.map(t => t.time))].sort()
+  const timeSlots = [...new Set(timetable.map(t => t.startTime || t.time))].filter(Boolean).sort()
 
   const filteredTimetable = useMemo(() => {
     if (!searchQuery.trim()) return timetable
     const query = searchQuery.toLowerCase()
     return timetable.filter((entry) => {
       return (
-        entry.day?.toLowerCase().includes(query) ||
-        entry.time?.includes(query) ||
-        entry.subject?.toLowerCase().includes(query)
+        (entry.dayOfWeek || entry.day)?.toLowerCase().includes(query) ||
+        (entry.startTime || entry.time)?.includes(query) ||
+        (entry.subject?.name || entry.subject)?.toLowerCase().includes(query)
       )
     })
   }, [timetable, searchQuery])
@@ -159,11 +162,11 @@ function Timetable() {
           {classrooms.length > 0 && (
             <select
               value={selectedClassroom || ''}
-              onChange={(e) => setSelectedClassroom(Number(e.target.value))}
+              onChange={(e) => setSelectedClassroom(e.target.value)}
               className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
             >
               {classrooms.map((classroom) => (
-                <option key={classroom.classroom_id} value={classroom.classroom_id}>
+                <option key={classroom._id || classroom.classroom_id} value={classroom._id || classroom.classroom_id}>
                   Grade {classroom.grade} - Section {classroom.section}
                 </option>
               ))}
@@ -215,22 +218,22 @@ function Timetable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {timeSlots.map((time) => (
-                    <tr key={time} className="border-b border-gray-100">
+                  {timeSlots.map((time, timeIndex) => (
+                    <tr key={`${time}-${timeIndex}`} className="border-b border-gray-100">
                       <td className="py-3 px-4 text-sm font-medium text-text-dark">{time}</td>
                       {days.map((day) => {
-                        const slot = filteredTimetable.find(t => t.day === day && t.time === time)
+                        const slot = filteredTimetable.find(t => (t.dayOfWeek || t.day) === day && (t.startTime || t.time) === time)
                         return (
-                          <td key={day} className="py-3 px-4 text-sm text-text-muted">
-                            {slot?.subject || '-'}
+                          <td key={`${day}-${time}`} className="py-3 px-4 text-sm text-text-muted">
+                            {slot?.subject?.name || slot?.subject || '-'}
                           </td>
                         )
                       })}
                       <td className="py-3 px-4">
-                        {filteredTimetable.filter(t => t.time === time).length > 0 && (
+                        {filteredTimetable.filter(t => (t.startTime || t.time) === time).length > 0 && (
                           <div className="flex items-center gap-2">
                             {filteredTimetable
-                              .filter(t => t.time === time)
+                              .filter(t => (t.startTime || t.time) === time)
                               .map((entry) => (
                                 <div key={entry._id} className="flex items-center gap-1">
                                   <button
@@ -278,6 +281,7 @@ function Timetable() {
           timetable={editingEntry}
           classrooms={classrooms}
           subjects={subjects}
+          teachers={teachers}
           onSubmit={handleSubmit}
           onCancel={() => {
             setIsModalOpen(false)
