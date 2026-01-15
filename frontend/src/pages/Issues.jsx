@@ -130,20 +130,18 @@ function Issues() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-text-dark">Issues</h1>
-          <p className="text-text-muted mt-1">View and manage issues</p>
-        </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors"
-        >
-          <Plus size={20} />
-          Create Issue
-        </button>
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Issues</h1>
+        <p className="text-sm sm:text-base text-text-muted mt-1">View and manage issues</p>
       </div>
+      <button
+        onClick={handleCreate}
+        className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
+      >
+        <Plus size={18} />
+        <span>Create Issue</span>
+      </button>
 
       <div className="bg-card-white rounded-custom shadow-custom p-6">
         {issues.length > 0 && (

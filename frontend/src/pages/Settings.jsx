@@ -130,35 +130,37 @@ function Settings() {
   ]
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <SettingsIcon className="w-8 h-8 text-primary-blue" />
-        <h1 className="text-3xl font-bold text-text-dark">School Settings</h1>
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex items-start gap-3 mb-6">
+        <SettingsIcon className="w-6 sm:w-8 h-6 sm:h-8 text-primary-blue flex-shrink-0" />
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-text-dark">School Settings</h1>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 sm:gap-2 mb-6 overflow-x-auto border-b border-gray-200">
         {tabs.map((tab) => {
           const Icon = tab.icon
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'text-primary-blue border-b-2 border-primary-blue'
                   : 'text-text-muted hover:text-text-dark'
               }`}
             >
-              <Icon size={18} />
-              {tab.label}
+              <Icon size={16} className="hidden sm:inline" />
+              <span className="text-xs sm:text-sm">{tab.label}</span>
             </button>
           )
         })}
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-lg shadow-custom p-6">
+      <div className="bg-white rounded-lg shadow-custom p-3 sm:p-4 lg:p-6">
         {loading ? (
           <div className="text-center py-8 text-text-muted">Loading...</div>
         ) : (

@@ -311,8 +311,8 @@ const Messages = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <Mail className="text-blue-500" size={28} /> Messages
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              <Mail className="text-blue-500 flex-shrink-0" size={20} /> <span>Messages</span>
             </h1>
             {unreadCount > 0 && activeTab === 'inbox' && (
               <p className="text-xs sm:text-sm text-gray-600 mt-1">
@@ -327,17 +327,17 @@ const Messages = () => {
                 loadContacts()
               }
             }}
-            className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm font-medium"
           >
-            <Send size={18} /> Compose
+            <Send size={16} /> <span>Compose</span>
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex gap-2 sm:gap-3 mb-4 sm:mb-6 overflow-x-auto">
           <button
             onClick={() => setActiveTab('inbox')}
-            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition ${
+            className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
               activeTab === 'inbox'
                 ? 'bg-blue-500 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-500'
@@ -347,7 +347,7 @@ const Messages = () => {
           </button>
           <button
             onClick={() => setActiveTab('sent')}
-            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition ${
+            className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap ${
               activeTab === 'sent'
                 ? 'bg-blue-500 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:border-blue-500'
@@ -359,20 +359,20 @@ const Messages = () => {
 
         {/* Search */}
         <form onSubmit={handleSearch} className="mb-4 sm:mb-6">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-col sm:flex-row">
             <div className="flex-1 relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search messages..."
+                placeholder="Search..."
                 className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
               />
-              <Search className="absolute right-3 top-2.5 text-gray-400" size={18} />
+              <Search className="absolute right-3 top-2.5 text-gray-400 flex-shrink-0" size={16} />
             </div>
             <button
               type="submit"
-              className="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-xs sm:text-sm font-semibold"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-xs sm:text-sm font-semibold"
             >
               Search
             </button>

@@ -120,33 +120,29 @@ function Expenses() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-text-dark">Expenses</h1>
-          <p className="text-text-muted mt-1">Manage school expenses</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {expenses.length > 0 && (
-            <div className="text-right">
-              <p className="text-sm text-text-muted">Total Expenses</p>
-              <p className="text-2xl font-semibold text-text-dark">{formatCurrency(totalExpenses, currency)}</p>
-            </div>
-          )}
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors"
-          >
-            <Plus size={20} />
-            Add Expense
-          </button>
-        </div>
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Expenses</h1>
+        <p className="text-sm sm:text-base text-text-muted mt-1">Manage school expenses</p>
       </div>
+      {expenses.length > 0 && (
+        <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 mb-4">
+          <p className="text-xs sm:text-sm text-text-muted">Total Expenses</p>
+          <p className="text-xl sm:text-2xl font-semibold text-text-dark">{formatCurrency(totalExpenses, currency)}</p>
+        </div>
+      )}
+      <button
+        onClick={handleCreate}
+        className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
+      >
+        <Plus size={18} />
+        <span>Add Expense</span>
+      </button>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-6">
+      <div className="bg-card-white rounded-custom shadow-custom p-4 md:p-6">
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
             <input
               type="text"
               placeholder="Search expenses by category or description..."
