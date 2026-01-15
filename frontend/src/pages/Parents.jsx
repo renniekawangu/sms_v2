@@ -273,24 +273,24 @@ function Parents() {
               <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-4">
                 {/* Parent Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div key="email">
                     <p className="text-xs text-text-muted uppercase font-semibold">Email</p>
                     <p className="text-sm text-text-dark break-all">{parent.email}</p>
                   </div>
-                  <div>
+                  <div key="phone">
                     <p className="text-xs text-text-muted uppercase font-semibold">Phone</p>
                     <p className="text-sm text-text-dark">{parent.phone || 'N/A'}</p>
                   </div>
-                  <div>
+                  <div key="relationship">
                     <p className="text-xs text-text-muted uppercase font-semibold">Relationship</p>
                     <p className="text-sm text-text-dark">{parent.relationship || 'Not specified'}</p>
                   </div>
-                  <div>
+                  <div key="occupation">
                     <p className="text-xs text-text-muted uppercase font-semibold">Occupation</p>
                     <p className="text-sm text-text-dark">{parent.occupation || 'Not specified'}</p>
                   </div>
                   {parent.address && (
-                    <div className="md:col-span-2">
+                    <div key="address" className="md:col-span-2">
                       <p className="text-xs text-text-muted uppercase font-semibold">Address</p>
                       <p className="text-sm text-text-dark">{parent.address}</p>
                     </div>
@@ -370,7 +370,7 @@ function Parents() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'create' ? 'Create Parent' : 'Edit Parent'}>
         <form onSubmit={handleSaveParent} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div key="firstName">
               <label className="block text-sm font-medium text-text-dark mb-1">First Name</label>
               <input
                 type="text"
@@ -380,7 +380,7 @@ function Parents() {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
               />
             </div>
-            <div>
+            <div key="lastName">
               <label className="block text-sm font-medium text-text-dark mb-1">Last Name</label>
               <input
                 type="text"
@@ -404,7 +404,7 @@ function Parents() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div key="phone">
               <label className="block text-sm font-medium text-text-dark mb-1">Phone</label>
               <input
                 type="tel"
@@ -414,7 +414,7 @@ function Parents() {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
               />
             </div>
-            <div>
+            <div key="relationship">
               <label className="block text-sm font-medium text-text-dark mb-1">Relationship</label>
               <select
                 value={formData.relationship}
