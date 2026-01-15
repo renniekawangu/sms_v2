@@ -175,13 +175,13 @@ function Parents() {
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+        <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
         <input
           type="text"
           placeholder="Search parents by name, email, or phone..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+          className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
         />
       </div>
 
@@ -199,16 +199,16 @@ function Parents() {
       )}
 
       {/* Parents List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {filteredParents.map(parent => (
           <div
             key={parent._id}
-            className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+            className="bg-card-white rounded-custom shadow-custom border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
           >
             {/* Parent Header */}
             <div
               onClick={() => setExpandedParentId(expandedParentId === parent._id ? null : parent._id)}
-              className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+              className="p-3 sm:p-4 cursor-pointer hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 flex-1">
@@ -232,20 +232,20 @@ function Parents() {
                       e.stopPropagation()
                       handleOpenModal('edit', parent)
                     }}
-                    className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                    className="p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
                     title="Edit"
                   >
-                    <Edit size={18} />
+                    <Edit size={16} className="sm:size-[18px]" />
                   </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       handleDeleteParent(parent._id)
                     }}
-                    className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                    className="p-1.5 sm:p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
                     title="Delete"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} className="sm:size-[18px]" />
                   </button>
                   {expandedParentId === parent._id ? (
                     <ChevronUp className="text-gray-400" />
@@ -270,9 +270,11 @@ function Parents() {
 
             {/* Expanded Content */}
             {expandedParentId === parent._id && (
-              <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-4">
+              <div className="border-t border-gray-200 bg-gray-50 space-y-3 sm:space-y-4">
                 {/* Parent Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 sm:p-4 border-b border-gray-200">
+                  <h4 className="font-semibold text-text-dark mb-3 text-sm sm:text-base">Parent Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div key="email">
                     <p className="text-xs text-text-muted uppercase font-semibold">Email</p>
                     <p className="text-sm text-text-dark break-all">{parent.email}</p>
@@ -296,10 +298,11 @@ function Parents() {
                     </div>
                   )}
                 </div>
+                </div>
 
                 {/* Linked Students */}
-                <div>
-                  <h4 className="font-semibold text-text-dark mb-3 flex items-center gap-2">
+                <div className="p-3 sm:p-4 border-b border-gray-200">
+                  <h4 className="font-semibold text-text-dark mb-3 flex items-center gap-2 text-sm sm:text-base">
                     <LinkIcon size={16} />
                     Linked Students ({(parent.students || []).length})
                   </h4>
@@ -332,8 +335,8 @@ function Parents() {
                 </div>
 
                 {/* Link New Student */}
-                <div>
-                  <h4 className="font-semibold text-text-dark mb-3">Link New Student</h4>
+                <div className="p-3 sm:p-4">
+                  <h4 className="font-semibold text-text-dark mb-3 text-sm sm:text-base">Link New Student</h4>
                   <div className="space-y-2">
                     {getAvailableStudents(parent._id).length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

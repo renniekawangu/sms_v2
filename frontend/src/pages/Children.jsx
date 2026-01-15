@@ -105,11 +105,11 @@ function Children() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
       {/* Page Header */}
-      <div className="bg-gradient-to-r from-primary-blue to-blue-600 text-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">My Children</h1>
-        <p className="text-blue-100">View your children's academic progress, attendance, and fees status</p>
+      <div>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">My Children</h1>
+        <p className="text-sm sm:text-base text-text-muted mt-1">View your children's academic progress, attendance, and fees status</p>
       </div>
 
       {/* No Children Message */}
@@ -126,7 +126,7 @@ function Children() {
       )}
 
       {/* Children Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {children.map((child) => {
           const isExpanded = expandedChild === child._id
           const details = childDetails[child._id]
@@ -134,12 +134,12 @@ function Children() {
           return (
             <div
               key={child._id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+              className="bg-card-white rounded-custom shadow-custom border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
             >
               {/* Card Header */}
               <div
                 onClick={() => loadChildDetails(child._id)}
-                className="p-4 sm:p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="p-3 sm:p-4 lg:p-6 cursor-pointer hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3 flex-1">
@@ -160,7 +160,7 @@ function Children() {
                           e.stopPropagation()
                           handleDownloadReport(child._id, `${child.firstName}_${child.lastName}`)
                         }}
-                        className="px-3 py-1.5 text-sm rounded bg-primary-blue text-white hover:bg-blue-700"
+                        className="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-primary-blue text-white hover:bg-primary-blue/90 transition-colors font-medium"
                       >
                         Download Report
                       </button>
@@ -199,9 +199,9 @@ function Children() {
 
               {/* Expanded Details */}
               {isExpanded && details && (
-                <div className="border-t border-gray-100 bg-gray-50">
+                <div className="border-t border-gray-200 bg-gray-50">
                   {/* Grades Section */}
-                  <div className="p-4 border-b border-gray-200">
+                  <div className="p-3 sm:p-4 border-b border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
                       <BookOpen size={18} className="text-primary-blue" />
                       <h4 className="font-semibold text-text-dark">Academic Performance</h4>
@@ -234,7 +234,7 @@ function Children() {
                   </div>
 
                   {/* Attendance Section */}
-                  <div className="p-4 border-b border-gray-200">
+                  <div className="p-3 sm:p-4 border-b border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
                       <CheckCircle size={18} className="text-green-600" />
                       <h4 className="font-semibold text-text-dark">Attendance</h4>
@@ -274,7 +274,7 @@ function Children() {
                   </div>
 
                   {/* Fees Section */}
-                  <div className="p-4">
+                  <div className="p-3 sm:p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <DollarSign size={18} className="text-orange-600" />
                       <h4 className="font-semibold text-text-dark">Fees & Payments</h4>
