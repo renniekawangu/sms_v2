@@ -20,6 +20,7 @@ import Timetable from './pages/Timetable'
 import Exams from './pages/Exams'
 import Results from './pages/Results'
 import Children from './pages/Children'
+import Parents from './pages/Parents'
 import Attendance from './pages/Attendance'
 import Fees from './pages/Fees'
 import Payments from './pages/Payments'
@@ -99,6 +100,18 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Students />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Parents - accessible to admin */}
+              <Route
+                path="/parents"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Layout>
+                      <Parents />
                     </Layout>
                   </ProtectedRoute>
                 }

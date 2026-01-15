@@ -11,6 +11,7 @@ const adminMenuItems = [
   { label: 'Users & Roles', icon: Users, path: '/roles' },
   { label: 'Users', icon: UserCog, path: '/users' },
   { label: 'Students', icon: GraduationCap, path: '/students' },
+  { label: 'Parents', icon: Users, path: '/parents' },
   { label: 'Teachers', icon: User, path: '/teachers' },
   { label: 'Staffs', icon: UserCog, path: '/staffs' },
   { label: 'Classrooms', icon: School, path: '/classrooms' },

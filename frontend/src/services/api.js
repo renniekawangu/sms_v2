@@ -895,4 +895,29 @@ export const parentsApi = {
       method: 'GET',
     });
   },
+
+  update: async (parentId, data) => {
+    return apiCall(`/parents/${parentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (parentId) => {
+    return apiCall(`/parents/${parentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  linkStudent: async (parentId, studentId) => {
+    return apiCall(`/parents/${parentId}/link/${studentId}`, {
+      method: 'POST',
+    });
+  },
+
+  unlinkStudent: async (parentId, studentId) => {
+    return apiCall(`/parents/${parentId}/unlink/${studentId}`, {
+      method: 'POST',
+    });
+  },
 };
