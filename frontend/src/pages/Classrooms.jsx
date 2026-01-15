@@ -142,36 +142,36 @@ function Classrooms() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-text-dark">Classrooms</h1>
-          <p className="text-text-muted mt-1">Manage all classrooms</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Classrooms</h1>
+          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all classrooms</p>
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors"
+          className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
         >
-          <Plus size={20} />
-          Add Classroom
+          <Plus size={18} className="sm:size-5" />
+          <span>Add Classroom</span>
         </button>
       </div>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-6">
-        <div className="mb-6">
+      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+        <div className="mb-4 sm:mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
             <input
               type="text"
               placeholder="Search classrooms by grade, section, or teacher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {filteredClassrooms.length === 0 ? (
             <div className="col-span-full text-center py-8 text-text-muted">
               No classrooms found

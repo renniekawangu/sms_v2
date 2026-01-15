@@ -139,7 +139,7 @@ function AdminDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
         <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <Award className="text-primary-blue" size={32} />
@@ -365,7 +365,7 @@ function AccountsDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-center gap-4">
             <DollarSign className="text-primary-blue" size={32} />
@@ -405,13 +405,13 @@ function HeadTeacherDashboard (){
   const userName = user?.name || 'Head Teacher'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
       <div>
-        <h1 className="text-2xl font-semibold text-text-dark">Head Teacher Dashboard</h1>
-        <p className="text-text-muted mt-1">Welcome back, {userName}</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Head Teacher Dashboard</h1>
+        <p className="text-sm sm:text-base text-text-muted mt-1">Welcome back, {userName}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Link to="/subjects" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <FileText className="text-primary-blue" size={32} />

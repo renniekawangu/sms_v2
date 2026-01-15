@@ -51,19 +51,19 @@ function Notice() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-text-dark">Notice Board</h1>
-          <p className="text-text-muted mt-1">View and manage school notices</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Notice Board</h1>
+          <p className="text-sm sm:text-base text-text-muted mt-1">View and manage school notices</p>
         </div>
-        <button className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors">
-          <Plus size={20} />
-          Create Notice
+        <button className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium">
+          <Plus size={18} className="sm:size-5" />
+          <span>Create Notice</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <div className="bg-card-white rounded-custom shadow-custom p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-3 bg-red-100 rounded-lg">
