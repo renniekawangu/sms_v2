@@ -38,8 +38,24 @@ function Settings() {
     year: '',
     startDate: '',
     endDate: '',
-    isCurrent: false
+    isCurrent: false,
+    terms: []
   })
+  const [newTerm, setNewTerm] = useState({
+    name: '',
+    startDate: '',
+    endDate: ''
+  })
+
+  // Term Management State
+  const [expandedYearId, setExpandedYearId] = useState(null)
+  const [editingTermId, setEditingTermId] = useState(null)
+  const [editingTermData, setEditingTermData] = useState({
+    name: '',
+    startDate: '',
+    endDate: ''
+  })
+  const [showAddTermForm, setShowAddTermForm] = useState(null)
 
   const [showNewFeeStructure, setShowNewFeeStructure] = useState(false)
   const [newFeeStructureForm, setNewFeeStructureForm] = useState({
@@ -112,17 +128,42 @@ function Settings() {
       await settingsApi.createAcademicYear(yearData)
       showToast('Academic year created successfully', 'success')
       setShowNewAcademicYear(false)
-      setNewAcademicYearForm({ year: '', startDate: '', endDate: '', isCurrent: false })
+      setNewAcademicYearForm({ year: '', startDate: '', endDate: '', isCurrent: false, terms: [] })
+      setNewTerm({ name: '', startDate: '', endDate: '' })
       loadTabData()
     } catch (error) {
       showToast(error.message, 'error')
     }
   }
 
+  const handleAddTerm = () => {
+    if (!newTerm.name || !newTerm.startDate || !newTerm.endDate) {
+      showToast('Please fill in all term fields', 'error')
+      return
+    }
+    setNewAcademicYearForm({
+      ...newAcademicYearForm,
+      terms: [...newAcademicYearForm.terms, { ...newTerm, isActive: false }]
+    })
+    setNewTerm({ name: '', startDate: '', endDate: '' })
+    showToast('Term added', 'success')
+  }
+
+  const handleRemoveTerm = (index) => {
+    setNewAcademicYearForm({
+      ...newAcademicYearForm,
+      terms: newAcademicYearForm.terms.filter((_, i) => i !== index)
+    })
+  }
+
   const handleSubmitNewAcademicYear = (e) => {
     e.preventDefault()
     if (!newAcademicYearForm.year || !newAcademicYearForm.startDate || !newAcademicYearForm.endDate) {
       showToast('Please fill in all required fields', 'error')
+      return
+    }
+    if (newAcademicYearForm.terms.length === 0) {
+      showToast('Please add at least one term', 'error')
       return
     }
     handleCreateAcademicYear(newAcademicYearForm)
@@ -132,6 +173,86 @@ function Settings() {
     try {
       await settingsApi.setCurrentAcademicYear(yearId)
       showToast('Current academic year updated', 'success')
+      loadTabData()
+    } catch (error) {
+      showToast(error.message, 'error')
+    }
+  }
+
+  // Term CRUD Operations
+  const handleEditTerm = (yearId, termIndex, term) => {
+    setEditingTermId(`${yearId}-${termIndex}`)
+    setEditingTermData({
+      name: term.name,
+      startDate: term.startDate,
+      endDate: term.endDate
+    })
+  }
+
+  const handleSaveTermEdit = async (yearId, termIndex) => {
+    if (!editingTermData.name || !editingTermData.startDate || !editingTermData.endDate) {
+      showToast('Please fill in all term fields', 'error')
+      return
+    }
+
+    try {
+      const year = academicYears.find(y => y._id === yearId)
+      if (!year) return
+
+      const updatedTerms = [...year.terms]
+      updatedTerms[termIndex] = editingTermData
+
+      await settingsApi.updateAcademicYear(yearId, {
+        terms: updatedTerms
+      })
+
+      showToast('Term updated successfully', 'success')
+      setEditingTermId(null)
+      loadTabData()
+    } catch (error) {
+      showToast(error.message, 'error')
+    }
+  }
+
+  const handleDeleteTerm = async (yearId, termIndex) => {
+    if (!window.confirm('Delete this term?')) return
+
+    try {
+      const year = academicYears.find(y => y._id === yearId)
+      if (!year) return
+
+      const updatedTerms = year.terms.filter((_, i) => i !== termIndex)
+
+      await settingsApi.updateAcademicYear(yearId, {
+        terms: updatedTerms
+      })
+
+      showToast('Term deleted successfully', 'success')
+      loadTabData()
+    } catch (error) {
+      showToast(error.message, 'error')
+    }
+  }
+
+  const handleAddTermToYear = async (yearId) => {
+    const year = academicYears.find(y => y._id === yearId)
+    if (!year) return
+
+    if (!editingTermData.name || !editingTermData.startDate || !editingTermData.endDate) {
+      showToast('Please fill in all term fields', 'error')
+      return
+    }
+
+    try {
+      const updatedTerms = [...(year.terms || []), editingTermData]
+
+      await settingsApi.updateAcademicYear(yearId, {
+        terms: updatedTerms
+      })
+
+      showToast('Term added successfully', 'success')
+      setShowAddTermForm(null)
+      setEditingTermData({ name: '', startDate: '', endDate: '' })
       loadTabData()
     } catch (error) {
       showToast(error.message, 'error')
@@ -415,6 +536,81 @@ function Settings() {
                       </div>
                     </div>
 
+                    {/* Terms Section */}
+                    <div className="mt-6 pt-6 border-t border-blue-300">
+                      <h4 className="text-sm font-semibold text-text-dark mb-4">Add Terms</h4>
+                      
+                      <div className="bg-white p-3 rounded mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                          <div>
+                            <label className="block text-xs font-medium text-text-dark mb-1">
+                              Term Name (e.g., Term 1) *
+                            </label>
+                            <input
+                              type="text"
+                              value={newTerm.name}
+                              onChange={(e) => setNewTerm({ ...newTerm, name: e.target.value })}
+                              placeholder="Term 1"
+                              className="w-full px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-text-dark mb-1">
+                              Start Date *
+                            </label>
+                            <input
+                              type="date"
+                              value={newTerm.startDate}
+                              onChange={(e) => setNewTerm({ ...newTerm, startDate: e.target.value })}
+                              className="w-full px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-text-dark mb-1">
+                              End Date *
+                            </label>
+                            <input
+                              type="date"
+                              value={newTerm.endDate}
+                              onChange={(e) => setNewTerm({ ...newTerm, endDate: e.target.value })}
+                              className="w-full px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddTerm}
+                          className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                        >
+                          Add Term
+                        </button>
+                      </div>
+
+                      {/* Terms List */}
+                      {newAcademicYearForm.terms.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-text-dark">Added Terms ({newAcademicYearForm.terms.length}):</p>
+                          {newAcademicYearForm.terms.map((term, index) => (
+                            <div key={index} className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
+                              <div className="text-sm">
+                                <span className="font-medium">{term.name}</span>
+                                <p className="text-xs text-text-muted">
+                                  {new Date(term.startDate).toLocaleDateString()} - {new Date(term.endDate).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTerm(index)}
+                                className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     <button
                       type="submit"
                       className="mt-4 px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -424,36 +620,180 @@ function Settings() {
                   </form>
                 )}
 
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {academicYears.length === 0 ? (
                     <p className="text-text-muted">No academic years configured</p>
                   ) : (
                     academicYears.map((year) => (
-                      <div
-                        key={year._id}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                      >
-                        <div>
-                          <span className="font-medium">{year.year}</span>
-                          {year.isCurrent && (
-                            <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
-                              Current
-                            </span>
-                          )}
-                          <p className="text-sm text-text-muted">
-                            {year.startDate ? new Date(year.startDate).toLocaleDateString() : 'Start'} - {year.endDate ? new Date(year.endDate).toLocaleDateString() : 'End'}
-                          </p>
-                          {year.terms && year.terms.length > 0 && (
-                            <p className="text-xs text-text-muted">Terms: {year.terms.length}</p>
-                          )}
+                      <div key={year._id} className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100" onClick={() => setExpandedYearId(expandedYearId === year._id ? null : year._id)}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-lg">{year.year}</span>
+                              {year.isCurrent && (
+                                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
+                                  Current
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-text-muted mt-1">
+                              {year.startDate ? new Date(year.startDate).toLocaleDateString() : 'Start'} - {year.endDate ? new Date(year.endDate).toLocaleDateString() : 'End'}
+                            </p>
+                            <p className="text-xs text-text-muted mt-1">
+                              {year.terms && year.terms.length > 0 ? `${year.terms.length} term(s)` : 'No terms'}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            {!year.isCurrent && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleSetCurrentYear(year._id)
+                                }}
+                                className="px-4 py-2 text-sm bg-primary-blue text-white rounded hover:bg-blue-600"
+                              >
+                                Set as Current
+                              </button>
+                            )}
+                            <button className="px-2 py-2 text-gray-600">
+                              {expandedYearId === year._id ? '▲' : '▼'}
+                            </button>
+                          </div>
                         </div>
-                        {!year.isCurrent && (
-                          <button
-                            onClick={() => handleSetCurrentYear(year._id)}
-                            className="px-4 py-2 text-sm bg-primary-blue text-white rounded hover:bg-blue-600"
-                          >
-                            Set as Current
-                          </button>
+
+                        {/* Expanded Terms Section */}
+                        {expandedYearId === year._id && (
+                          <div className="p-4 border-t border-gray-200">
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-sm mb-3">Terms Management</h4>
+
+                              {/* Terms List */}
+                              {year.terms && year.terms.length > 0 && (
+                                <div className="mb-4 space-y-2">
+                                  {year.terms.map((term, termIndex) => (
+                                    <div key={termIndex} className="p-3 bg-gray-50 rounded border border-gray-200">
+                                      {editingTermId === `${year._id}-${termIndex}` ? (
+                                        <div className="space-y-3">
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <input
+                                              type="text"
+                                              value={editingTermData.name}
+                                              onChange={(e) => setEditingTermData({ ...editingTermData, name: e.target.value })}
+                                              placeholder="Term name"
+                                              className="px-2 py-1 text-sm border border-gray-300 rounded"
+                                            />
+                                            <input
+                                              type="date"
+                                              value={editingTermData.startDate}
+                                              onChange={(e) => setEditingTermData({ ...editingTermData, startDate: e.target.value })}
+                                              className="px-2 py-1 text-sm border border-gray-300 rounded"
+                                            />
+                                            <input
+                                              type="date"
+                                              value={editingTermData.endDate}
+                                              onChange={(e) => setEditingTermData({ ...editingTermData, endDate: e.target.value })}
+                                              className="px-2 py-1 text-sm border border-gray-300 rounded"
+                                            />
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <button
+                                              onClick={() => handleSaveTermEdit(year._id, termIndex)}
+                                              className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                                            >
+                                              Save
+                                            </button>
+                                            <button
+                                              onClick={() => setEditingTermId(null)}
+                                              className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex justify-between items-start">
+                                          <div className="text-sm">
+                                            <p className="font-medium">{term.name}</p>
+                                            <p className="text-xs text-text-muted">
+                                              {term.startDate ? new Date(term.startDate).toLocaleDateString() : ''} - {term.endDate ? new Date(term.endDate).toLocaleDateString() : ''}
+                                            </p>
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <button
+                                              onClick={() => handleEditTerm(year._id, termIndex, term)}
+                                              className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                                            >
+                                              Edit
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteTerm(year._id, termIndex)}
+                                              className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                                            >
+                                              Delete
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Add Term Form */}
+                              {showAddTermForm === year._id ? (
+                                <div className="p-3 bg-blue-50 rounded border border-blue-300">
+                                  <div className="grid grid-cols-3 gap-2 mb-2">
+                                    <input
+                                      type="text"
+                                      value={editingTermData.name}
+                                      onChange={(e) => setEditingTermData({ ...editingTermData, name: e.target.value })}
+                                      placeholder="Term name"
+                                      className="px-2 py-1 text-sm border border-gray-300 rounded"
+                                    />
+                                    <input
+                                      type="date"
+                                      value={editingTermData.startDate}
+                                      onChange={(e) => setEditingTermData({ ...editingTermData, startDate: e.target.value })}
+                                      className="px-2 py-1 text-sm border border-gray-300 rounded"
+                                    />
+                                    <input
+                                      type="date"
+                                      value={editingTermData.endDate}
+                                      onChange={(e) => setEditingTermData({ ...editingTermData, endDate: e.target.value })}
+                                      className="px-2 py-1 text-sm border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleAddTermToYear(year._id)}
+                                      className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                                    >
+                                      Add Term
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setShowAddTermForm(null)
+                                        setEditingTermData({ name: '', startDate: '', endDate: '' })
+                                      }}
+                                      className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setShowAddTermForm(year._id)
+                                    setEditingTermData({ name: '', startDate: '', endDate: '' })
+                                  }}
+                                  className="w-full px-3 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                                >
+                                  + Add Term
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                     ))
