@@ -2,14 +2,14 @@ const express = require('express')
 const { asyncHandler } = require('../middleware/errorHandler')
 const { requireAuth } = require('../middleware/rbac')
 const ReportGenerator = require('../services/reportGenerator')
-const Attendance = require('../models/attendance')
-const Grades = require('../models/grades')
-const Fees = require('../models/fees')
-const Student = require('../models/student')
-const Staff = require('../models/staff')
-const Classroom = require('../models/classroom')
-const Subjects = require('../models/subjects')
-const Payment = require('../models/payment')
+const { Attendance } = require('../models/attendance')
+const { Grade } = require('../models/grades')
+const { Fee } = require('../models/fees')
+const { Student } = require('../models/student')
+const { Staff } = require('../models/staff')
+const { Classroom } = require('../models/classroom')
+const { Subject } = require('../models/subjects')
+const { Payment } = require('../models/payment')
 
 const router = express.Router()
 
@@ -22,7 +22,7 @@ router.get('/attendance', requireAuth, asyncHandler(async (req, res) => {
   // Build filter
   const filter = {}
   if (studentId) filter.studentId = studentId
-  if (classId) filter.classId = classId
+  if (classId) filter.classLevel = classId
   if (startDate || endDate) {
     filter.date = {}
     if (startDate) filter.date.$gte = new Date(startDate)
@@ -31,7 +31,6 @@ router.get('/attendance', requireAuth, asyncHandler(async (req, res) => {
 
   const attendanceRecords = await Attendance.find(filter)
     .populate('studentId', 'firstName lastName')
-    .populate('classId', 'className')
     .sort({ date: -1 })
     .lean()
 
@@ -75,23 +74,21 @@ router.get('/grades', requireAuth, asyncHandler(async (req, res) => {
 
   const filter = {}
   if (studentId) filter.studentId = studentId
-  if (classId) filter.classId = classId
+  if (classId) filter.classLevel = classId
   if (term) filter.term = term
 
-  const gradeRecords = await Grades.find(filter)
+  const gradeRecords = await Grade.find(filter)
     .populate('studentId', 'firstName lastName')
-    .populate('classId', 'className')
-    .populate('subjectId', 'subjectName')
     .lean()
 
   console.log('[REPORT] Found grade records:', gradeRecords.length)
 
   // Transform to report format
   const formattedGrades = gradeRecords.map(g => ({
-    subject: g.subjectId?.subjectName || g.subject || '-',
-    marksObtained: g.marksObtained || 0,
-    totalMarks: g.totalMarks || 100,
-    grade: g.grade || '-'
+    subject: g.subject || '-',
+    marksObtained: g.finalGrade || g.midTermGrade || g.endTermGrade || 0,
+    totalMarks: 100,
+    percentage: g.finalGrade || g.midTermGrade || g.endTermGrade || 0
   }))
 
   // Get student and class details
@@ -133,20 +130,15 @@ router.get('/fees', requireAuth, asyncHandler(async (req, res) => {
   }
 
   // Get student info
-  const student = await Student.findById(studentId).select('firstName lastName').lean()
+  const student = await Student.findById(studentId).select('firstName lastName classLevel').lean()
   if (!student) {
     return res.status(404).json({ error: 'Student not found' })
   }
 
-  // Get class info
-  const studentWithClass = await Student.findById(studentId)
-    .populate('classId', 'className')
-    .lean()
-  
-  const className = studentWithClass?.classId?.className || '-'
+  const className = student.classLevel || '-'
 
   // Get all fees for student
-  const fees = await Fees.find({ studentId })
+  const fees = await Fee.find({ studentId })
     .select('feeName amount amountPaid paymentStatus dueDate')
     .lean()
 
@@ -190,7 +182,7 @@ router.get('/analytics', requireAuth, asyncHandler(async (req, res) => {
     Student.countDocuments(),
     Staff.countDocuments(),
     Classroom.countDocuments(),
-    Subjects.countDocuments()
+    Subject.countDocuments()
   ])
 
   // Get class statistics
@@ -223,11 +215,11 @@ router.get('/analytics', requireAuth, asyncHandler(async (req, res) => {
   const attendanceSummary = {
     presentToday: todayAttendance.filter(a => a.status === 'present').length,
     absentToday: todayAttendance.filter(a => a.status === 'absent').length,
-    average: attendanceSummary?.average || 85
+    average: 85
   }
 
   // Get finance summary
-  const allFees = await Fees.find().lean()
+  const allFees = await Fee.find().lean()
   const totalCollected = allFees.reduce((sum, f) => sum + (f.amountPaid || 0), 0)
   const totalAmount = allFees.reduce((sum, f) => sum + (f.amount || 0), 0)
   const outstanding = totalAmount - totalCollected
@@ -267,7 +259,7 @@ router.get('/analytics', requireAuth, asyncHandler(async (req, res) => {
 router.get('/available', requireAuth, asyncHandler(async (req, res) => {
   const classes = await Classroom.find().select('_id className').lean()
   const students = await Student.find().select('_id firstName lastName classId').lean()
-  const subjects = await Subjects.find().select('_id subjectName').lean()
+  const subjects = await Subject.find().select('_id subjectName').lean()
 
   res.json({
     success: true,

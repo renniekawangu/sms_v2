@@ -46,7 +46,7 @@ function Subjects() {
   const handleSubmit = async (formData) => {
     try {
       if (editingSubject) {
-        await subjectsApi.update(editingSubject.subject_id, formData)
+        await subjectsApi.update(editingSubject._id || editingSubject.subject_id, formData)
         success('Subject updated successfully')
       } else {
         await subjectsApi.create(formData)
@@ -165,7 +165,7 @@ function Subjects() {
                 </tr>
               ) : (
                 filteredSubjects.map((subject) => (
-                  <tr key={subject.subject_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={subject._id || subject.subject_id || Math.random()} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4 text-sm text-text-dark">{subject.subject_id}</td>
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{subject.name}</td>
                     <td className="py-3 px-4 text-sm text-text-muted">Grade {subject.grade}</td>
@@ -180,7 +180,7 @@ function Subjects() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(subject.subject_id)}
+                          onClick={() => handleDelete(subject._id || subject.subject_id)}
                           className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
                         >
                           <Trash2 size={16} />
