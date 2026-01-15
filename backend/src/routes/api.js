@@ -24,6 +24,7 @@ const { Parent } = require('../models/parent');
 const { getNextSequence } = require('../models/counter');
 const mongoose = require('mongoose');
 const messageRoutes = require('./message-api');
+const reportRoutes = require('./reports-api');
 
 const router = express.Router();
 
@@ -952,5 +953,8 @@ router.get('/parents', requireAuth, asyncHandler(async (_req, res) => {
 
 // ============= Messages API =============
 router.use('/messages', messageRoutes);
+
+// ============= Reports API =============
+router.use('/reports', reportRoutes);
 
 module.exports = router;

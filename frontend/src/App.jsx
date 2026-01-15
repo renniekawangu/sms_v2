@@ -26,6 +26,7 @@ import Issues from './pages/Issues'
 import Settings from './pages/Settings'
 import UsersManagement from './pages/UsersManagement'
 import Messages from './pages/Messages'
+import Reports from './pages/Reports'
 import { PermissionGate } from './components/PermissionGate'
 import { PERMISSIONS } from './config/permissions'
 
@@ -263,6 +264,18 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Messages />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Reports - accessible to all authenticated users */}
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Reports />
                     </Layout>
                   </ProtectedRoute>
                 }
