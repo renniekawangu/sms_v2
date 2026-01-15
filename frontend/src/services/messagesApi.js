@@ -2,7 +2,26 @@ const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/
 
 // Helper function to get auth token
 function getAuthToken() {
-  return localStorage.getItem('authToken')
+  // First try to get from user object
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr)
+      if (user.token) {
+        console.log('[AUTH] Found token in user object')
+        return user.token
+      }
+    } catch (e) {
+      console.error('[AUTH] Error parsing user:', e)
+    }
+  }
+  
+  // Fallback to direct authToken if it exists
+  const token = localStorage.getItem('authToken')
+  if (token) {
+    console.log('[AUTH] Found token in localStorage')
+  }
+  return token
 }
 
 // Helper function for API requests
@@ -15,15 +34,25 @@ async function apiRequest(endpoint, options = {}) {
 
   if (token) {
     headers.Authorization = `Bearer ${token}`
+    console.log('[API] Sending with Bearer token')
+  } else {
+    console.warn('[API] No token found! This request will likely fail with 401')
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const url = `${API_URL}${endpoint}`
+  console.log('[API] Request:', { url, method: options.method || 'GET', headers: { ...headers, Authorization: headers.Authorization ? '***' : 'none' } })
+
+  const response = await fetch(url, {
     ...options,
     headers
   })
 
+  console.log('[API] Response status:', response.status)
+
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`)
+    const errorData = await response.text()
+    console.error('[API] Error response:', errorData)
+    throw new Error(`API error: ${response.status} - ${errorData}`)
   }
 
   return response.json()
