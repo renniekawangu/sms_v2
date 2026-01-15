@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Mail, Send, Trash2, Check, Search } from 'lucide-react'
 import { messagesApi } from '../services/messagesApi'
-import { useToast } from '../hooks/useToast'
+import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 
 const Messages = () => {

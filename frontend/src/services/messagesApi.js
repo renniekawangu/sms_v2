@@ -1,59 +1,84 @@
-import axiosInstance from '../config/axios'
+const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/messages` : '/api/messages'
 
-const API_URL = '/api/messages'
+// Helper function to get auth token
+function getAuthToken() {
+  return localStorage.getItem('authToken')
+}
+
+// Helper function for API requests
+async function apiRequest(endpoint, options = {}) {
+  const token = getAuthToken()
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers
+  })
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`)
+  }
+
+  return response.json()
+}
 
 export const messagesApi = {
   // Get inbox (received messages)
   getInbox: async () => {
-    const response = await axiosInstance.get(`${API_URL}/inbox`)
-    return response.data
+    return apiRequest('/inbox')
   },
 
   // Get sent messages
   getSent: async () => {
-    const response = await axiosInstance.get(`${API_URL}/sent`)
-    return response.data
+    return apiRequest('/sent')
   },
 
   // Get conversation with a specific user
   getConversation: async (userId) => {
-    const response = await axiosInstance.get(`${API_URL}/conversation/${userId}`)
-    return response.data
+    return apiRequest(`/conversation/${userId}`)
   },
 
   // Send a message
   sendMessage: async (data) => {
-    const response = await axiosInstance.post(`${API_URL}/send`, data)
-    return response.data
+    return apiRequest('/send', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
   },
 
   // Mark message as read
   markAsRead: async (messageId) => {
-    const response = await axiosInstance.patch(`${API_URL}/${messageId}/read`)
-    return response.data
+    return apiRequest(`/${messageId}/read`, {
+      method: 'PATCH'
+    })
   },
 
   // Get unread message count
   getUnreadCount: async () => {
-    const response = await axiosInstance.get(`${API_URL}/unread/count`)
-    return response.data
+    return apiRequest('/unread/count')
   },
 
   // Get list of contacts
   getContacts: async () => {
-    const response = await axiosInstance.get(`${API_URL}/contacts/list`)
-    return response.data
+    return apiRequest('/contacts/list')
   },
 
   // Delete a message
   deleteMessage: async (messageId) => {
-    const response = await axiosInstance.delete(`${API_URL}/${messageId}`)
-    return response.data
+    return apiRequest(`/${messageId}`, {
+      method: 'DELETE'
+    })
   },
 
   // Search messages
   searchMessages: async (query) => {
-    const response = await axiosInstance.get(`${API_URL}/search/${query}`)
-    return response.data
+    return apiRequest(`/search/${query}`)
   }
 }
