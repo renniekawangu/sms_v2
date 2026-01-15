@@ -32,6 +32,31 @@ function Settings() {
   // Holidays State
   const [holidays, setHolidays] = useState([])
 
+  // Form States for Creating New Items
+  const [showNewAcademicYear, setShowNewAcademicYear] = useState(false)
+  const [newAcademicYearForm, setNewAcademicYearForm] = useState({
+    year: '',
+    startDate: '',
+    endDate: '',
+    isCurrent: false
+  })
+
+  const [showNewFeeStructure, setShowNewFeeStructure] = useState(false)
+  const [newFeeStructureForm, setNewFeeStructureForm] = useState({
+    academicYear: '',
+    classLevel: '',
+    fees: []
+  })
+
+  const [showNewHoliday, setShowNewHoliday] = useState(false)
+  const [newHolidayForm, setNewHolidayForm] = useState({
+    name: '',
+    startDate: '',
+    endDate: '',
+    type: 'school',
+    description: ''
+  })
+
   // Load data based on active tab
   useEffect(() => {
     loadTabData()
@@ -86,10 +111,21 @@ function Settings() {
     try {
       await settingsApi.createAcademicYear(yearData)
       showToast('Academic year created successfully', 'success')
+      setShowNewAcademicYear(false)
+      setNewAcademicYearForm({ year: '', startDate: '', endDate: '', isCurrent: false })
       loadTabData()
     } catch (error) {
       showToast(error.message, 'error')
     }
+  }
+
+  const handleSubmitNewAcademicYear = (e) => {
+    e.preventDefault()
+    if (!newAcademicYearForm.year || !newAcademicYearForm.startDate || !newAcademicYearForm.endDate) {
+      showToast('Please fill in all required fields', 'error')
+      return
+    }
+    handleCreateAcademicYear(newAcademicYearForm)
   }
 
   const handleSetCurrentYear = async (yearId) => {
@@ -106,20 +142,42 @@ function Settings() {
     try {
       await settingsApi.createFeeStructure(feeData)
       showToast('Fee structure created successfully', 'success')
+      setShowNewFeeStructure(false)
+      setNewFeeStructureForm({ academicYear: '', classLevel: '', fees: [] })
       loadTabData()
     } catch (error) {
       showToast(error.message, 'error')
     }
   }
 
+  const handleSubmitNewFeeStructure = (e) => {
+    e.preventDefault()
+    if (!newFeeStructureForm.academicYear || !newFeeStructureForm.classLevel) {
+      showToast('Please fill in academic year and class level', 'error')
+      return
+    }
+    handleCreateFeeStructure(newFeeStructureForm)
+  }
+
   const handleCreateHoliday = async (holidayData) => {
     try {
       await settingsApi.createHoliday(holidayData)
       showToast('Holiday created successfully', 'success')
+      setShowNewHoliday(false)
+      setNewHolidayForm({ name: '', startDate: '', endDate: '', type: 'school', description: '' })
       loadTabData()
     } catch (error) {
       showToast(error.message, 'error')
     }
+  }
+
+  const handleSubmitNewHoliday = (e) => {
+    e.preventDefault()
+    if (!newHolidayForm.name || !newHolidayForm.startDate || !newHolidayForm.endDate) {
+      showToast('Please fill in all required fields', 'error')
+      return
+    }
+    handleCreateHoliday(newHolidayForm)
   }
 
   const tabs = [
@@ -290,7 +348,82 @@ function Settings() {
             {/* Academic Years Tab */}
             {activeTab === 'academic' && (
               <div>
-                <h3 className="text-xl font-semibold mb-4">Academic Years</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold">Academic Years</h3>
+                  <button
+                    onClick={() => setShowNewAcademicYear(!showNewAcademicYear)}
+                    className="px-4 py-2 text-sm bg-primary-blue text-white rounded hover:bg-blue-600"
+                  >
+                    {showNewAcademicYear ? 'Cancel' : 'Add New Year'}
+                  </button>
+                </div>
+
+                {showNewAcademicYear && (
+                  <form onSubmit={handleSubmitNewAcademicYear} className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          Academic Year *
+                        </label>
+                        <input
+                          type="text"
+                          value={newAcademicYearForm.year}
+                          onChange={(e) => setNewAcademicYearForm({ ...newAcademicYearForm, year: e.target.value })}
+                          placeholder="e.g., 2024 or 2024-2025"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          Start Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={newAcademicYearForm.startDate}
+                          onChange={(e) => setNewAcademicYearForm({ ...newAcademicYearForm, startDate: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          End Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={newAcademicYearForm.endDate}
+                          onChange={(e) => setNewAcademicYearForm({ ...newAcademicYearForm, endDate: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="isCurrent"
+                          checked={newAcademicYearForm.isCurrent}
+                          onChange={(e) => setNewAcademicYearForm({ ...newAcademicYearForm, isCurrent: e.target.checked })}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <label htmlFor="isCurrent" className="ml-2 text-sm font-medium text-text-dark">
+                          Set as Current Year
+                        </label>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="mt-4 px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Create Academic Year
+                    </button>
+                  </form>
+                )}
+
                 <div className="space-y-2">
                   {academicYears.length === 0 ? (
                     <p className="text-text-muted">No academic years configured</p>
@@ -332,7 +465,60 @@ function Settings() {
             {/* Fee Structures Tab */}
             {activeTab === 'fees' && (
               <div>
-                <h3 className="text-xl font-semibold mb-4">Fee Structures</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold">Fee Structures</h3>
+                  <button
+                    onClick={() => setShowNewFeeStructure(!showNewFeeStructure)}
+                    className="px-4 py-2 text-sm bg-primary-blue text-white rounded hover:bg-blue-600"
+                  >
+                    {showNewFeeStructure ? 'Cancel' : 'Add New Structure'}
+                  </button>
+                </div>
+
+                {showNewFeeStructure && (
+                  <form onSubmit={handleSubmitNewFeeStructure} className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          Academic Year *
+                        </label>
+                        <select
+                          value={newFeeStructureForm.academicYear}
+                          onChange={(e) => setNewFeeStructureForm({ ...newFeeStructureForm, academicYear: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select Academic Year</option>
+                          {academicYears.map((year) => (
+                            <option key={year._id} value={year.year}>{year.year}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          Class Level *
+                        </label>
+                        <input
+                          type="text"
+                          value={newFeeStructureForm.classLevel}
+                          onChange={(e) => setNewFeeStructureForm({ ...newFeeStructureForm, classLevel: e.target.value })}
+                          placeholder="e.g., Grade 1, Form 1"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="mt-4 px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Create Fee Structure
+                    </button>
+                  </form>
+                )}
+
                 <div className="space-y-2">
                   {feeStructures.length === 0 ? (
                     <p className="text-text-muted">No fee structures configured</p>
@@ -385,7 +571,97 @@ function Settings() {
             {/* Holidays Tab */}
             {activeTab === 'holidays' && (
               <div>
-                <h3 className="text-xl font-semibold mb-4">School Holidays</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold">School Holidays</h3>
+                  <button
+                    onClick={() => setShowNewHoliday(!showNewHoliday)}
+                    className="px-4 py-2 text-sm bg-primary-blue text-white rounded hover:bg-blue-600"
+                  >
+                    {showNewHoliday ? 'Cancel' : 'Add Holiday'}
+                  </button>
+                </div>
+
+                {showNewHoliday && (
+                  <form onSubmit={handleSubmitNewHoliday} className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          Holiday Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={newHolidayForm.name}
+                          onChange={(e) => setNewHolidayForm({ ...newHolidayForm, name: e.target.value })}
+                          placeholder="e.g., Christmas Break"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          Start Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={newHolidayForm.startDate}
+                          onChange={(e) => setNewHolidayForm({ ...newHolidayForm, startDate: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          End Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={newHolidayForm.endDate}
+                          onChange={(e) => setNewHolidayForm({ ...newHolidayForm, endDate: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          Holiday Type
+                        </label>
+                        <select
+                          value={newHolidayForm.type}
+                          onChange={(e) => setNewHolidayForm({ ...newHolidayForm, type: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                        >
+                          <option value="school">School Holiday</option>
+                          <option value="public">Public Holiday</option>
+                          <option value="exam">Exam Break</option>
+                        </select>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-text-dark mb-2">
+                          Description
+                        </label>
+                        <textarea
+                          value={newHolidayForm.description}
+                          onChange={(e) => setNewHolidayForm({ ...newHolidayForm, description: e.target.value })}
+                          placeholder="Optional description"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                          rows="2"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="mt-4 px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Create Holiday
+                    </button>
+                  </form>
+                )}
+
                 <div className="space-y-2">
                   {holidays.length === 0 ? (
                     <p className="text-text-muted">No holidays configured</p>

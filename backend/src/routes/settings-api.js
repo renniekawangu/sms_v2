@@ -40,14 +40,30 @@ router.get('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, 
  * Update school settings
  */
 router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
-  const { name, address, phone, email, logo } = req.body;
+  const {
+    schoolName,
+    schoolLogo,
+    schoolDescription,
+    schoolPhone,
+    schoolEmail,
+    schoolAddress,
+    currency,
+    timezone,
+    language,
+    academicYearFormat
+  } = req.body;
 
   const settings = await updateSchoolSettings({
-    name,
-    address,
-    phone,
-    email,
-    logo
+    schoolName,
+    schoolLogo,
+    schoolDescription,
+    schoolPhone,
+    schoolEmail,
+    schoolAddress,
+    currency,
+    timezone,
+    language,
+    academicYearFormat
   });
 
   res.json({ message: 'Settings updated', settings });
