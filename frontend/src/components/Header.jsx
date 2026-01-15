@@ -20,10 +20,10 @@ function Header({ onMenuClick }) {
   }
 
   return (
-    <header className="bg-card-white shadow-sm border-b border-gray-100 px-4 lg:px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-left gap-2 lg:hidden ml-2">
-          <img src="/logo.png" alt="Esync Logo" className="w-30 h-20 object-contain ml-4" />
+    <header className="bg-card-white shadow-sm border-b border-gray-100 px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-1 sm:gap-2 md:hidden flex-shrink-0">
+          <img src="/logo.png" alt="Esync Logo" className="w-24 sm:w-30 h-16 sm:h-20 object-contain" />
         </div>
         
         <div className="flex-1 max-w-md hidden md:block">
@@ -32,7 +32,7 @@ function Header({ onMenuClick }) {
             <input
               type="text"
               placeholder="Search"
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue focus:border-2"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue focus:border-2"
             />
           </div>
         </div>
@@ -40,10 +40,10 @@ function Header({ onMenuClick }) {
         {/* Hamburger menu button for mobile */}
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="md:hidden p-2 -mr-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
           aria-label="Open menu"
         >
-          <Menu size={24} className="text-text-dark" />
+          <Menu size={20} className="text-text-dark" />
         </button>
       </div>
     </header>

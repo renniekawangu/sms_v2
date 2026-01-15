@@ -121,26 +121,27 @@ function Sidebar({ isOpen, onClose }) {
       
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50
-        w-[260px] bg-card-white shadow-custom flex flex-col
+        fixed md:static inset-y-0 left-0 z-50
+        w-64 bg-card-white shadow-custom flex flex-col
         transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        h-screen md:h-auto
       `}>
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Esync Logo" className="w-40 h-24 object-contain" />
+        <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <img src="/logo.png" alt="Esync Logo" className="w-32 sm:w-40 h-20 sm:h-24 object-contain" />
           </div>
           {/* Close button for mobile */}
           <button
             onClick={onClose}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
             aria-label="Close menu"
           >
-            <X size={24} className="text-text-dark" />
+            <X size={20} className="text-text-dark" />
           </button>
         </div>
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <ul className="space-y-2">
+        <nav className="flex-1 p-2 sm:p-4 overflow-y-auto">
+          <ul className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.path
@@ -149,14 +150,15 @@ function Sidebar({ isOpen, onClose }) {
                   <Link
                     to={item.path}
                     onClick={handleLinkClick}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors border-l-4 ${
+                    className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors border-l-4 text-sm sm:text-base ${
                       isActive
                         ? 'bg-primary-blue text-white border-l-white'
                         : 'text-text-muted hover:bg-gray-50 hover:text-text-dark border-l-transparent hover:border-l-primary-blue'
                     }`}
                   >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon size={18} className="flex-shrink-0" />
+                  <span className="font-medium hidden sm:inline">{item.label}</span>
+                  <span className="font-medium sm:hidden truncate">{item.label}</span>
                 </Link>
               </li>
               )
@@ -165,13 +167,13 @@ function Sidebar({ isOpen, onClose }) {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-6 border-t border-gray-100">
+        <div className="p-4 sm:p-6 border-t border-gray-100">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-2 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none"
+            className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none text-sm sm:text-base"
           >
-            <LogOut size={18} />
-            <span className="text-sm font-medium">Logout</span>
+            <LogOut size={18} className="flex-shrink-0" />
+            <span className="font-medium hidden sm:inline">Logout</span>
           </button>
         </div>
       </aside>

@@ -196,6 +196,7 @@ router.put('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
   // Handle parent linking
   if (parentId !== undefined) {
     student.parents = parentId ? [parentId] : [];
+    student.markModified('parents');
   }
 
   await student.save();

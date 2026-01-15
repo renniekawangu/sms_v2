@@ -118,84 +118,86 @@ function Teachers() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-text-dark">Teachers</h1>
-          <p className="text-text-muted mt-1">Manage all teacher records</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Teachers</h1>
+          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all teacher records</p>
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors"
+          className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
         >
-          <Plus size={20} />
-          Add Teacher
+          <Plus size={18} className="sm:size-5" />
+          <span>Add Teacher</span>
         </button>
       </div>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-6">
-        <div className="mb-6">
+      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+        <div className="mb-4 sm:mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
             <input
               type="text"
               placeholder="Search teachers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
               aria-label="Search teachers"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">ID</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Name</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Email</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Phone</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">DOB</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Date of Join</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Actions</th>
+                <th className="hidden sm:table-cell text-left py-3 px-2 sm:px-4 font-semibold text-text-dark">ID</th>
+                <th className="text-left py-3 px-2 sm:px-4 font-semibold text-text-dark">Name</th>
+                <th className="hidden md:table-cell text-left py-3 px-4 font-semibold text-text-dark">Email</th>
+                <th className="hidden lg:table-cell text-left py-3 px-4 font-semibold text-text-dark">Phone</th>
+                <th className="hidden lg:table-cell text-left py-3 px-4 font-semibold text-text-dark">DOB</th>
+                <th className="hidden xl:table-cell text-left py-3 px-4 font-semibold text-text-dark">Date of Join</th>
+                <th className="text-left py-3 px-2 sm:px-4 font-semibold text-text-dark">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-text-muted">
+                  <td colSpan="7" className="py-8 text-center text-xs sm:text-sm text-text-muted">
                     No teachers found
                   </td>
                 </tr>
               ) : (
                 filteredTeachers.map((teacher) => (
                   <tr key={teacher._id || teacher.teacher_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 text-sm text-text-dark">{teacher.teacher_id}</td>
-                    <td className="py-3 px-4 text-sm text-text-dark font-medium">{teacher.name}</td>
-                    <td className="py-3 px-4 text-sm text-text-muted">{teacher.email}</td>
-                    <td className="py-3 px-4 text-sm text-text-muted">{teacher.phone}</td>
-                    <td className="py-3 px-4 text-sm text-text-muted">
+                    <td className="hidden sm:table-cell py-3 px-2 sm:px-4 text-text-dark">{teacher.teacher_id}</td>
+                    <td className="py-3 px-2 sm:px-4 text-text-dark font-medium">{teacher.name}</td>
+                    <td className="hidden md:table-cell py-3 px-4 text-sm text-text-muted">{teacher.email}</td>
+                    <td className="hidden lg:table-cell py-3 px-4 text-sm text-text-muted">{teacher.phone}</td>
+                    <td className="hidden lg:table-cell py-3 px-4 text-sm text-text-muted">
                       {teacher.dob ? (teacher.dob.includes('T') ? teacher.dob.split('T')[0] : teacher.dob) : '-'}
                     </td>
-                    <td className="py-3 px-4 text-sm text-text-muted">
+                    <td className="hidden xl:table-cell py-3 px-4 text-sm text-text-muted">
                       {teacher.date_of_join ? (teacher.date_of_join.includes('T') ? teacher.date_of_join.split('T')[0] : teacher.date_of_join) : '-'}
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
+                    <td className="py-3 px-2 sm:px-4">
+                      <div className="flex items-center gap-1 sm:gap-3">
                         <button
                           onClick={() => handleEdit(teacher)}
-                          className="text-primary-blue hover:text-primary-blue/80 text-sm font-medium flex items-center gap-1"
+                          className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-blue-50"
+                          title="Edit"
                         >
-                          <Edit size={16} />
-                          Edit
+                          <Edit size={14} className="sm:size-4" />
+                          <span className="hidden sm:inline">Edit</span>
                         </button>
                         <button
                           onClick={() => handleDelete(teacher._id || teacher.teacher_id)}
-                          className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
+                          className="text-red-500 hover:text-red-600 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-red-50"
+                          title="Delete"
                         >
-                          <Trash2 size={16} />
-                          Delete
+                          <Trash2 size={14} className="sm:size-4" />
+                          <span className="hidden sm:inline">Delete</span>
                         </button>
                       </div>
                     </td>
@@ -206,8 +208,8 @@ function Teachers() {
           </table>
         </div>
 
-        <div className="mt-6">
-          <p className="text-sm text-text-muted">
+        <div className="mt-4 sm:mt-6">
+          <p className="text-xs sm:text-sm text-text-muted">
             Showing {filteredTeachers.length} of {teachers.length} teachers
           </p>
         </div>
