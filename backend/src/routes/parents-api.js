@@ -10,6 +10,7 @@ const { ROLES } = require('../config/rbac');
 const { User } = require('../models/user');
 const { Parent } = require('../models/parent');
 const { Student } = require('../models/student');
+const { Staff } = require('../models/staff');
 
 const router = express.Router();
 
@@ -242,17 +243,27 @@ router.get('/children/:student_id/report', requireAuth, requireRole('parent', RO
   const { Attendance } = require('../models/attendance');
   const { Fee } = require('../models/fees');
   const PDFDocument = require('pdfkit');
+  const fs = require('fs');
+  const path = require('path');
+  const { getSchoolSettings, getCurrentAcademicYear } = require('../models/school-settings');
 
   const student = await Student.findById(req.params.student_id).lean();
   if (!student) {
     return res.status(404).json({ error: 'Student not found' });
   }
 
-  const [grades, attendance, fees] = await Promise.all([
+  const [grades, attendance, fees, schoolSettings, currentYear] = await Promise.all([
     Grade.find({ studentId: req.params.student_id }).lean(),
     Attendance.find({ studentId: req.params.student_id }).lean(),
-    Fee.find({ studentId: req.params.student_id }).lean()
+    Fee.find({ studentId: req.params.student_id }).lean(),
+    getSchoolSettings(),
+    getCurrentAcademicYear()
   ]);
+
+  let headTeacher = null;
+  try {
+    headTeacher = await Staff.findOne({ role: 'head-teacher' }).lean();
+  } catch {}
 
   const present = attendance.filter(a => a.status === 'present').length;
   const totalAttendance = attendance.length;
@@ -268,41 +279,136 @@ router.get('/children/:student_id/report', requireAuth, requireRole('parent', RO
   const doc = new PDFDocument({ margin: 50 });
   doc.pipe(res);
 
-  // Header
-  doc.fontSize(20).text('Student Report Card', { align: 'center' });
+  // Header and Branding
+  const schoolName = schoolSettings?.schoolName || 'School Management System';
+  const logoPath = schoolSettings?.schoolLogo;
+  const termName = (currentYear?.terms || []).find(t => t.isActive)?.name || 'Current Term';
+  const academicYearLabel = currentYear?.year || new Date().getFullYear();
+
+  if (logoPath) {
+    try {
+      const resolved = logoPath.startsWith('/') ? path.join(process.cwd(), logoPath.replace(/^\//, '')) : path.join(process.cwd(), logoPath);
+      if (fs.existsSync(resolved)) {
+        doc.image(resolved, 40, 40, { fit: [60, 60] });
+      }
+    } catch {}
+  }
+
+  // Title block
+  doc.fontSize(20).font('Helvetica-Bold').text(schoolName, { align: 'center' });
+  doc.fontSize(12).font('Helvetica').text('Student Report Card', { align: 'center' });
   doc.moveDown();
 
-  // Student Info
+  // Student & School Info
   doc.fontSize(12);
   doc.text(`Parent: ${parent.firstName || ''} ${parent.lastName || ''}`);
   doc.text(`Student: ${student.firstName || ''} ${student.lastName || ''}`);
   doc.text(`Student ID: ${student.studentId || student._id}`);
+  if (student.classLevel) doc.text(`Class: ${student.classLevel}${student.stream ? ' - ' + student.stream : ''}`);
+  doc.text(`Academic Year: ${academicYearLabel}`);
+  doc.text(`Term: ${termName}`);
+  if (schoolSettings?.schoolAddress) doc.text(`School Address: ${schoolSettings.schoolAddress}`);
+  if (schoolSettings?.schoolPhone) doc.text(`School Phone: ${schoolSettings.schoolPhone}`);
+  if (schoolSettings?.schoolEmail) doc.text(`School Email: ${schoolSettings.schoolEmail}`);
   doc.moveDown();
 
-  // Grades
-  doc.fontSize(14).text('Academic Performance');
-  doc.fontSize(12).text(`Average Grade: ${avgGrade}`);
-  grades.slice(0, 10).forEach(g => {
-    doc.text(`• ${g.subject || 'Subject'}: ${g.grade ?? 'N/A'}`);
+  // Grades - Table
+  doc.fontSize(14).font('Helvetica-Bold').text('Academic Performance');
+  doc.fontSize(11).font('Helvetica').text(`Average Grade: ${avgGrade}`);
+  doc.moveDown(0.5);
+  const gradeHeaders = ['Subject', 'Marks', 'Total', 'Percentage', 'Grade'];
+  const gradeRows = grades.map(g => {
+    const marks = g.marksObtained ?? g.grade ?? g.marks ?? 0;
+    const total = g.totalMarks ?? 100;
+    const pct = total ? `${((marks / total) * 100).toFixed(1)}%` : '-';
+    const letter = g.gradeLetter ?? (typeof g.grade === 'string' ? g.grade : '-');
+    return [g.subject || '-', marks, total, pct, letter];
   });
-  if (grades.length > 10) doc.text(`+ ${grades.length - 10} more entries`);
+  if (gradeRows.length > 0) {
+    const { addTable } = require('../services/reportGenerator');
+  }
+  try {
+    const ReportGenerator = require('../services/reportGenerator');
+    ReportGenerator.addTable(doc, gradeHeaders, gradeRows, {
+      columnWidths: [160, 85, 85, 95, 90]
+    });
+  } catch {}
   doc.moveDown();
 
-  // Attendance
-  doc.fontSize(14).text('Attendance');
-  doc.fontSize(12).text(`Attendance Rate: ${attendanceRate}%`);
+  // Subject Comments (if any)
+  const commentEntries = grades.filter(g => g.comments).map(g => [g.subject || '-', g.comments]);
+  if (commentEntries.length > 0) {
+    doc.fontSize(13).font('Helvetica-Bold').text('Subject Comments');
+    doc.moveDown(0.5);
+    try {
+      const ReportGenerator = require('../services/reportGenerator');
+      ReportGenerator.addTable(doc, ['Subject', 'Comment'], commentEntries, {
+        columnWidths: [160, 355]
+      });
+    } catch {
+      commentEntries.forEach(([subj, comment]) => doc.text(`• ${subj}: ${comment}`));
+    }
+    doc.moveDown();
+  }
+
+  // Attendance - Summary + Table
+  doc.fontSize(14).font('Helvetica-Bold').text('Attendance');
+  doc.fontSize(11).font('Helvetica').text(`Attendance Rate: ${attendanceRate}%`);
   doc.text(`Present: ${present}`);
   doc.text(`Absent: ${attendance.filter(a => a.status === 'absent').length}`);
+  doc.moveDown(0.5);
+  const attHeaders = ['Date', 'Status', 'Notes'];
+  const attRows = attendance.slice(0, 50).map(a => [
+    new Date(a.date).toLocaleDateString(),
+    a.status?.charAt(0).toUpperCase() + a.status?.slice(1),
+    a.notes || '-'
+  ]);
+  try {
+    const ReportGenerator = require('../services/reportGenerator');
+    ReportGenerator.addTable(doc, attHeaders, attRows, {
+      columnWidths: [150, 120, 245]
+    });
+  } catch {}
   doc.moveDown();
 
-  // Fees
-  doc.fontSize(14).text('Fees & Payments');
-  doc.fontSize(12).text(`Total Fees: $${totalFees.toFixed(2)}`);
+  // Fees - Summary + Table
+  doc.fontSize(14).font('Helvetica-Bold').text('Fees & Payments');
+  doc.fontSize(11).font('Helvetica').text(`Total Fees: $${totalFees.toFixed(2)}`);
   doc.text(`Total Paid: $${totalPaid.toFixed(2)}`);
   doc.text(`Pending: $${totalPending.toFixed(2)}`);
+  doc.moveDown(0.5);
+  const feeHeaders = ['Type', 'Amount Due', 'Amount Paid', 'Balance', 'Status'];
+  const feeRows = fees.map(f => [
+    f.type || f.name || '-',
+    `$${(f.amount || 0).toFixed(2)}`,
+    `$${(f.amountPaid || 0).toFixed(2)}`,
+    `$${((f.amount || 0) - (f.amountPaid || 0)).toFixed(2)}`,
+    f.paymentStatus || 'Pending'
+  ]);
+  try {
+    const ReportGenerator = require('../services/reportGenerator');
+    ReportGenerator.addTable(doc, feeHeaders, feeRows, {
+      columnWidths: [160, 85, 85, 95, 90]
+    });
+  } catch {}
   doc.moveDown();
 
-  doc.text('Generated by School Management System', { align: 'right' });
+  try {
+    const ReportGenerator = require('../services/reportGenerator');
+    ReportGenerator.addFooters(doc);
+  } catch {
+    doc.text('Generated by School Management System', { align: 'right' });
+  }
+  // Signature block
+  doc.moveDown(2);
+  doc.fontSize(11).font('Helvetica-Bold').text('Approvals');
+  doc.moveDown(0.5);
+  const startY = doc.y;
+  const headTeacherName = headTeacher ? `${headTeacher.firstName || ''} ${headTeacher.lastName || ''}`.trim() : '';
+  doc.fontSize(10).font('Helvetica').text(`Head Teacher${headTeacherName ? ` (${headTeacherName})` : ''} Signature:`, 40, startY);
+  doc.moveTo(180, startY + 12).lineTo(370, startY + 12).stroke();
+  doc.text('Parent/Guardian Signature:', 40, startY + 30);
+  doc.moveTo(200, startY + 42).lineTo(370, startY + 42).stroke();
   doc.end();
 }));
 
