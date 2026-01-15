@@ -47,7 +47,6 @@ const studentMenuItems = [
   { label: 'Timetable', icon: Calendar, path: '/timetable' },
   { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
   { label: 'Results', icon: Award, path: '/results' },
-  { label: 'Issues', icon: AlertCircle, path: '/issues' },
   { label: 'Messages', icon: Mail, path: '/messages' },
   { label: 'Reports', icon: BarChart3, path: '/reports' }
 ]
@@ -61,7 +60,6 @@ const accountsMenuItems = [
   { label: 'Expenses', icon: TrendingDown, path: '/expenses' },
   { label: 'Messages', icon: Mail, path: '/messages' },
   { label: 'Reports', icon: BarChart3, path: '/reports' },
-  { label: 'Settings', icon: Settings, path: '/settings' }
 ]
 
 // Head Teacher menu items
@@ -80,9 +78,7 @@ const headTeacherMenuItems = [
 const parentMenuItems = [
   { label: 'Dashboard', icon: Grid, path: '/' },
   { label: 'My Children', icon: Users, path: '/children' },
-  { label: 'Fees & Payments', icon: DollarSign, path: '/fees' },
   { label: 'Messages', icon: Mail, path: '/messages' },
-  { label: 'Reports', icon: BarChart3, path: '/reports' }
 ]
 
 function Sidebar({ isOpen, onClose }) {
