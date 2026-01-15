@@ -21,6 +21,41 @@ body.modal-open {
   }
 }
 
+/* Mobile viewport safety */
+@media (max-width: 640px) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  input, textarea, select {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  
+  /* Ensure buttons don't get zoomed */
+  button {
+    font-size: 14px;
+  }
+}
+
+/* Ensure full viewport coverage */
+main, .main-content, [role="main"] {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 /* Tables - Mobile Card View on Small Screens */
 @media (max-width: 768px) {
   .responsive-table {

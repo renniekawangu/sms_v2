@@ -150,11 +150,11 @@ function StudentForm({ student, onSubmit, onCancel }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 overflow-y-auto max-h-[75vh]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {/* Name Fields */}
         <div>
-          <label htmlFor="firstName" className="block text-sm font-medium text-text-dark mb-2">
+          <label htmlFor="firstName" className="block text-xs sm:text-sm font-medium text-text-dark mb-1">
             First Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -163,17 +163,17 @@ function StudentForm({ student, onSubmit, onCancel }) {
             name="firstName"
             value={formData.firstName}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+            className={`w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border rounded-lg focus:outline-none focus:ring-2 ${
               errors.firstName
                 ? 'border-red-300 focus:ring-red-500'
                 : 'border-gray-200 focus:ring-primary-blue'
             }`}
             placeholder="Enter first name"
           />
-          {errors.firstName && <p className="mt-1 text-sm text-red-500">{errors.firstName}</p>}
+          {errors.firstName && <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>}
         </div>
         <div>
-          <label htmlFor="lastName" className="block text-sm font-medium text-text-dark mb-2">
+          <label htmlFor="lastName" className="block text-xs sm:text-sm font-medium text-text-dark mb-1">
             Last Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -182,19 +182,19 @@ function StudentForm({ student, onSubmit, onCancel }) {
             name="lastName"
             value={formData.lastName}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+            className={`w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border rounded-lg focus:outline-none focus:ring-2 ${
               errors.lastName
                 ? 'border-red-300 focus:ring-red-500'
                 : 'border-gray-200 focus:ring-primary-blue'
             }`}
             placeholder="Enter last name"
           />
-          {errors.lastName && <p className="mt-1 text-sm text-red-500">{errors.lastName}</p>}
+          {errors.lastName && <p className="mt-1 text-xs text-red-500">{errors.lastName}</p>}
         </div>
 
         {/* Contact Fields */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-text-dark mb-2">
+          <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-text-dark mb-1">
             Email <span className="text-red-500">*</span>
           </label>
           <input
