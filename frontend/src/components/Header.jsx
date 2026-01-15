@@ -1,13 +1,11 @@
 import { Search, Mic, LogOut, User, Menu } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import { useSettings } from '../contexts/SettingsContext'
 import { useNavigate } from 'react-router-dom'
 
 function Header({ onMenuClick }) {
   const { user, logout } = useAuth()
   const { success } = useToast()
-  const { schoolSettings, currentAcademicYear } = useSettings()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -26,17 +24,7 @@ function Header({ onMenuClick }) {
       <div className="flex items-center justify-between gap-2 sm:gap-4">
         <div className="flex items-center gap-2 flex-1">
           <div className="flex items-center gap-2 flex-shrink-0">
-            {schoolSettings.schoolLogo ? (
-              <img src={schoolSettings.schoolLogo} alt={schoolSettings.schoolName} className="w-12 h-12 object-contain rounded" />
-            ) : (
-              <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
-            )}
-            <div className="hidden sm:block">
-              <h2 className="text-sm font-semibold text-text-dark">{schoolSettings.schoolName}</h2>
-              {currentAcademicYear && (
-                <p className="text-xs text-text-muted">Year: {currentAcademicYear.year}</p>
-              )}
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
           </div>
         </div>
         
