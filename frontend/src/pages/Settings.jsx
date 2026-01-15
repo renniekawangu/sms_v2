@@ -57,6 +57,14 @@ function Settings() {
   })
   const [showAddTermForm, setShowAddTermForm] = useState(null)
 
+  // Academic Year Editing State
+  const [editingYearId, setEditingYearId] = useState(null)
+  const [editingYearData, setEditingYearData] = useState({
+    year: '',
+    startDate: '',
+    endDate: ''
+  })
+
   const [showNewFeeStructure, setShowNewFeeStructure] = useState(false)
   const [newFeeStructureForm, setNewFeeStructureForm] = useState({
     academicYear: '',
@@ -253,6 +261,51 @@ function Settings() {
       showToast('Term added successfully', 'success')
       setShowAddTermForm(null)
       setEditingTermData({ name: '', startDate: '', endDate: '' })
+      loadTabData()
+    } catch (error) {
+      showToast(error.message, 'error')
+    }
+  }
+
+  // Academic Year Edit/Delete Handlers
+  const handleEditAcademicYear = (year) => {
+    setEditingYearId(year._id)
+    setEditingYearData({
+      year: year.year,
+      startDate: year.startDate,
+      endDate: year.endDate
+    })
+  }
+
+  const handleSaveAcademicYear = async () => {
+    if (!editingYearData.year || !editingYearData.startDate || !editingYearData.endDate) {
+      showToast('Please fill in all required fields', 'error')
+      return
+    }
+
+    try {
+      await settingsApi.updateAcademicYear(editingYearId, {
+        year: editingYearData.year,
+        startDate: editingYearData.startDate,
+        endDate: editingYearData.endDate
+      })
+
+      showToast('Academic year updated successfully', 'success')
+      setEditingYearId(null)
+      loadTabData()
+    } catch (error) {
+      showToast(error.message, 'error')
+    }
+  }
+
+  const handleDeleteAcademicYear = async (yearId) => {
+    if (!window.confirm('Are you sure you want to delete this academic year? This will delete all associated terms.')) {
+      return
+    }
+
+    try {
+      await settingsApi.deleteAcademicYear(yearId)
+      showToast('Academic year deleted successfully', 'success')
       loadTabData()
     } catch (error) {
       showToast(error.message, 'error')
@@ -626,40 +679,109 @@ function Settings() {
                   ) : (
                     academicYears.map((year) => (
                       <div key={year._id} className="border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100" onClick={() => setExpandedYearId(expandedYearId === year._id ? null : year._id)}>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-lg">{year.year}</span>
-                              {year.isCurrent && (
-                                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
-                                  Current
-                                </span>
-                              )}
+                        {editingYearId === year._id ? (
+                          /* Edit Mode */
+                          <div className="p-4 bg-yellow-50 border-b border-yellow-300">
+                            <h4 className="font-semibold text-sm mb-3">Edit Academic Year</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                              <div>
+                                <label className="block text-xs font-medium text-text-dark mb-1">Academic Year *</label>
+                                <input
+                                  type="text"
+                                  value={editingYearData.year}
+                                  onChange={(e) => setEditingYearData({ ...editingYearData, year: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-text-dark mb-1">Start Date *</label>
+                                <input
+                                  type="date"
+                                  value={editingYearData.startDate}
+                                  onChange={(e) => setEditingYearData({ ...editingYearData, startDate: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-text-dark mb-1">End Date *</label>
+                                <input
+                                  type="date"
+                                  value={editingYearData.endDate}
+                                  onChange={(e) => setEditingYearData({ ...editingYearData, endDate: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                                />
+                              </div>
                             </div>
-                            <p className="text-sm text-text-muted mt-1">
-                              {year.startDate ? new Date(year.startDate).toLocaleDateString() : 'Start'} - {year.endDate ? new Date(year.endDate).toLocaleDateString() : 'End'}
-                            </p>
-                            <p className="text-xs text-text-muted mt-1">
-                              {year.terms && year.terms.length > 0 ? `${year.terms.length} term(s)` : 'No terms'}
-                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleSaveAcademicYear}
+                                className="px-4 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                              >
+                                Save Changes
+                              </button>
+                              <button
+                                onClick={() => setEditingYearId(null)}
+                                className="px-4 py-2 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            {!year.isCurrent && (
+                        ) : (
+                          /* View Mode */
+                          <div className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100" onClick={() => setExpandedYearId(expandedYearId === year._id ? null : year._id)}>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-lg">{year.year}</span>
+                                {year.isCurrent && (
+                                  <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
+                                    Current
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-text-muted mt-1">
+                                {year.startDate ? new Date(year.startDate).toLocaleDateString() : 'Start'} - {year.endDate ? new Date(year.endDate).toLocaleDateString() : 'End'}
+                              </p>
+                              <p className="text-xs text-text-muted mt-1">
+                                {year.terms && year.terms.length > 0 ? `${year.terms.length} term(s)` : 'No terms'}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              {!year.isCurrent && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleSetCurrentYear(year._id)
+                                  }}
+                                  className="px-3 py-2 text-sm bg-primary-blue text-white rounded hover:bg-blue-600"
+                                >
+                                  Set as Current
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleSetCurrentYear(year._id)
+                                  handleEditAcademicYear(year)
                                 }}
-                                className="px-4 py-2 text-sm bg-primary-blue text-white rounded hover:bg-blue-600"
+                                className="px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
                               >
-                                Set as Current
+                                Edit
                               </button>
-                            )}
-                            <button className="px-2 py-2 text-gray-600">
-                              {expandedYearId === year._id ? '▲' : '▼'}
-                            </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteAcademicYear(year._id)
+                                }}
+                                className="px-3 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+                              >
+                                Delete
+                              </button>
+                              <button className="px-2 py-2 text-gray-600">
+                                {expandedYearId === year._id ? '▲' : '▼'}
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Expanded Terms Section */}
                         {expandedYearId === year._id && (
