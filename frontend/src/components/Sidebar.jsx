@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText, Award, CheckCircle, DollarSign, CreditCard, TrendingDown, AlertCircle, Settings, UserCog, Lock, X, Search, LogOut } from 'lucide-react'
+import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText, Award, CheckCircle, DollarSign, CreditCard, TrendingDown, AlertCircle, Settings, UserCog, Lock, X, Search, LogOut, Mail } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
@@ -23,6 +23,7 @@ const adminMenuItems = [
   { label: 'Payments', icon: CreditCard, path: '/payments' },
   { label: 'Expenses', icon: TrendingDown, path: '/expenses' },
   { label: 'Issues', icon: AlertCircle, path: '/issues' },
+  { label: 'Messages', icon: Mail, path: '/messages' },
   { label: 'Settings', icon: Settings, path: '/settings' }
 ]
 
@@ -32,7 +33,8 @@ const teacherMenuItems = [
   { label: 'Classrooms', icon: School, path: '/classrooms' },
   { label: 'Timetable', icon: Calendar, path: '/timetable' },
   { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
-  { label: 'Results', icon: Award, path: '/results' }
+  { label: 'Results', icon: Award, path: '/results' },
+  { label: 'Messages', icon: Mail, path: '/messages' }
 ]
 
 // Student menu items
@@ -42,7 +44,8 @@ const studentMenuItems = [
   { label: 'Timetable', icon: Calendar, path: '/timetable' },
   { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
   { label: 'Results', icon: Award, path: '/results' },
-  { label: 'Issues', icon: AlertCircle, path: '/issues' }
+  { label: 'Issues', icon: AlertCircle, path: '/issues' },
+  { label: 'Messages', icon: Mail, path: '/messages' }
 ]
 
 // Accounts menu items
@@ -52,6 +55,7 @@ const accountsMenuItems = [
   { label: 'Fees', icon: DollarSign, path: '/fees' },
   { label: 'Payments', icon: CreditCard, path: '/payments' },
   { label: 'Expenses', icon: TrendingDown, path: '/expenses' },
+  { label: 'Messages', icon: Mail, path: '/messages' },
   { label: 'Settings', icon: Settings, path: '/settings' }
 ]
 
@@ -62,14 +66,16 @@ const headTeacherMenuItems = [
   { label: 'Subjects', icon: BookOpen, path: '/subjects' },
   { label: 'Staffs', icon: UserCog, path: '/staffs' },
   { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
-  { label: 'Results', icon: Award, path: '/results' }
+  { label: 'Results', icon: Award, path: '/results' },
+  { label: 'Messages', icon: Mail, path: '/messages' }
 ]
 
 // Parent menu items
 const parentMenuItems = [
   { label: 'Dashboard', icon: Grid, path: '/' },
   { label: 'My Children', icon: Users, path: '/children' },
-  { label: 'Fees & Payments', icon: DollarSign, path: '/fees' }
+  { label: 'Fees & Payments', icon: DollarSign, path: '/fees' },
+  { label: 'Messages', icon: Mail, path: '/messages' }
 ]
 
 function Sidebar({ isOpen, onClose }) {

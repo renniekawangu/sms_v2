@@ -25,6 +25,7 @@ import Expenses from './pages/Expenses'
 import Issues from './pages/Issues'
 import Settings from './pages/Settings'
 import UsersManagement from './pages/UsersManagement'
+import Messages from './pages/Messages'
 import { PermissionGate } from './components/PermissionGate'
 import { PERMISSIONS } from './config/permissions'
 
@@ -250,6 +251,18 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Issues />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Messages - accessible to all authenticated users */}
+              <Route
+                path="/messages"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Messages />
                     </Layout>
                   </ProtectedRoute>
                 }
