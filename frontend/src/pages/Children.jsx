@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { User, BookOpen, CheckCircle, DollarSign, TrendingUp, ChevronRight, AlertCircle, Loader } from 'lucide-react'
-import { parentsApi, resultsApi, attendanceApi, feesApi } from '../services/api'
+import { parentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -37,9 +37,9 @@ function Children() {
 
     try {
       const [grades, attendance, fees] = await Promise.all([
-        resultsApi.getByStudent(childId).catch(() => []),
-        attendanceApi.list().then(all => all.filter(a => a.studentId === childId)).catch(() => []),
-        feesApi.list().then(all => all.filter(f => f.studentId === childId)).catch(() => [])
+        parentsApi.getChildGrades(childId).catch(() => []),
+        parentsApi.getChildAttendance(childId).catch(() => []),
+        parentsApi.getChildFees(childId).catch(() => [])
       ])
 
       setChildDetails(prev => ({

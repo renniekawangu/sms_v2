@@ -94,6 +94,127 @@ router.get('/dashboard', requireAuth, requireRole('parent', ROLES.ADMIN), asyncH
   });
 }));
 
+/**
+ * GET /api/parents/children
+ * Get all children linked to the parent
+ */
+router.get('/children', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  
+  let parent = null;
+  if (user.parentId) {
+    parent = await Parent.findById(user.parentId)
+      .populate('students', 'firstName lastName studentId class')
+      .lean();
+  } else {
+    parent = await Parent.findOne({ email: user.email })
+      .populate('students', 'firstName lastName studentId class')
+      .lean();
+    
+    if (parent) {
+      await User.findByIdAndUpdate(req.user.id, { parentId: parent._id });
+    }
+  }
+
+  if (!parent) {
+    return res.json({ children: [] });
+  }
+
+  res.json({ children: parent.students });
+}));
+
+/**
+ * GET /api/parents/children/:student_id/grades
+ * Get a child's grades
+ */
+router.get('/children/:student_id/grades', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  
+  // Verify parent owns this child
+  let parent = null;
+  if (user.parentId) {
+    parent = await Parent.findById(user.parentId).lean();
+  } else {
+    parent = await Parent.findOne({ email: user.email }).lean();
+  }
+
+  if (!parent) {
+    return res.status(403).json({ error: 'Parent not found' });
+  }
+
+  const studentObjectId = require('mongoose').Types.ObjectId;
+  const childIsLinked = parent.students.some(s => s.toString() === req.params.student_id);
+  
+  if (!childIsLinked) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const { Grade } = require('../models/grades');
+  const grades = await Grade.find({ studentId: req.params.student_id }).lean();
+  
+  res.json(grades);
+}));
+
+/**
+ * GET /api/parents/children/:student_id/attendance
+ * Get a child's attendance records
+ */
+router.get('/children/:student_id/attendance', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  
+  let parent = null;
+  if (user.parentId) {
+    parent = await Parent.findById(user.parentId).lean();
+  } else {
+    parent = await Parent.findOne({ email: user.email }).lean();
+  }
+
+  if (!parent) {
+    return res.status(403).json({ error: 'Parent not found' });
+  }
+
+  const childIsLinked = parent.students.some(s => s.toString() === req.params.student_id);
+  
+  if (!childIsLinked) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const { Attendance } = require('../models/attendance');
+  const attendance = await Attendance.find({ studentId: req.params.student_id }).lean();
+  
+  res.json(attendance);
+}));
+
+/**
+ * GET /api/parents/children/:student_id/fees
+ * Get a child's fee information
+ */
+router.get('/children/:student_id/fees', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  
+  let parent = null;
+  if (user.parentId) {
+    parent = await Parent.findById(user.parentId).lean();
+  } else {
+    parent = await Parent.findOne({ email: user.email }).lean();
+  }
+
+  if (!parent) {
+    return res.status(403).json({ error: 'Parent not found' });
+  }
+
+  const childIsLinked = parent.students.some(s => s.toString() === req.params.student_id);
+  
+  if (!childIsLinked) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const { Fee } = require('../models/fees');
+  const fees = await Fee.find({ studentId: req.params.student_id }).lean();
+  
+  res.json(fees);
+}));
+
 // ============= Parents Management =============
 /**
  * GET /api/parents
