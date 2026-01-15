@@ -1,5 +1,26 @@
 /* Mobile-First Responsive Utilities and Overrides */
 
+/* Prevent layout shift and overflow issues on mobile */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure modal doesn't cause viewport issues */
+body.modal-open {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Fix for iOS Safari viewport issues */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
 /* Tables - Mobile Card View on Small Screens */
 @media (max-width: 768px) {
   .responsive-table {
