@@ -96,11 +96,8 @@ function Footer() {
             © {currentYear} {schoolSettings.schoolName}. All rights reserved.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
-            <a href="/settings" className="text-primary-blue hover:text-blue-600 transition-colors font-medium">
-              Settings
-            </a>
             <p>
-              eSync School Management System v1.0
+              eSync School Management System v2.0
             </p>
           </div>
         </div>
