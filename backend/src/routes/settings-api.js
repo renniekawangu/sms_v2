@@ -28,9 +28,9 @@ const router = express.Router();
 // ============= School Settings =============
 /**
  * GET /api/settings
- * Get school settings
+ * Get school settings (public read for all authenticated users)
  */
-router.get('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const settings = await getSchoolSettings();
   res.json(settings);
 }));
@@ -72,9 +72,9 @@ router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req,
 // ============= Academic Years =============
 /**
  * GET /api/settings/academic-years
- * Get all academic years
+ * Get all academic years (readable by all authenticated users)
  */
-router.get('/academic-years', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.get('/academic-years', requireAuth, asyncHandler(async (req, res) => {
   const years = await getAllAcademicYears();
   const current = await getCurrentAcademicYear();
 
@@ -159,9 +159,9 @@ router.delete('/academic-years/:id', requireAuth, requireRole(ROLES.ADMIN), asyn
 // ============= Fee Structures =============
 /**
  * GET /api/settings/fee-structures
- * Get all fee structures
+ * Get all fee structures (readable by all authenticated users)
  */
-router.get('/fee-structures', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.get('/fee-structures', requireAuth, asyncHandler(async (req, res) => {
   const feeStructures = await getAllFeeStructures();
   res.json(feeStructures);
 }));
@@ -213,9 +213,9 @@ router.delete('/fee-structures/:id', requireAuth, requireRole(ROLES.ADMIN), asyn
 // ============= Holidays =============
 /**
  * GET /api/settings/holidays
- * Get all holidays
+ * Get all holidays (readable by all authenticated users)
  */
-router.get('/holidays', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.get('/holidays', requireAuth, asyncHandler(async (req, res) => {
   const holidays = await getAllHolidays();
   res.json(holidays);
 }));
