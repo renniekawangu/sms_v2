@@ -139,7 +139,7 @@ const Messages = () => {
       success('Reply sent successfully')
       setReplyText('')
       loadConversation(selectedMessage)
-    } catch (error) {
+    } catch (err) {
       error('Error sending reply')
     } finally {
       setLoading(false)
@@ -152,7 +152,7 @@ const Messages = () => {
         await messagesApi.deleteMessage(messageId)
         success('Message deleted successfully')
         loadMessages()
-      } catch (error) {
+      } catch (err) {
         error('Error deleting message')
       }
     }
@@ -169,7 +169,7 @@ const Messages = () => {
       setLoading(true)
       const result = await messagesApi.searchMessages(searchQuery)
       setMessages(result.messages || [])
-    } catch (error) {
+    } catch (err) {
       error('Error searching messages')
     } finally {
       setLoading(false)
