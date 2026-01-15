@@ -28,7 +28,8 @@ const userSchema = new mongoose.Schema({
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
   teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff' },
   headTeacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'HeadTeacher' },
-  accountsId: { type: mongoose.Schema.Types.ObjectId, ref: 'Accounts' }
+  accountsId: { type: mongoose.Schema.Types.ObjectId, ref: 'Accounts' },
+  parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Parent' }
 }, {
   timestamps: true
 });

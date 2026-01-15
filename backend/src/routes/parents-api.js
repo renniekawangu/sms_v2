@@ -32,7 +32,7 @@ async function findStudentByIdOrStudentId(id) {
  */
 router.get('/dashboard', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
-  const parent = await Parent.findOne({ userId: user._id })
+  const parent = await Parent.findById(user.parentId)
     .populate('students', 'firstName lastName studentId')
     .lean();
 

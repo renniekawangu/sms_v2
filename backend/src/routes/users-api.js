@@ -72,6 +72,10 @@ router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req,
         relationship: 'Guardian'
       });
       await parent.save();
+      
+      // Link the parent to the user
+      user.parentId = parent._id;
+      await user.save();
       console.log(`[PARENT] Created Parent record for ${email}`);
     } catch (error) {
       console.error(`[PARENT] Error creating Parent record for ${email}:`, error.message);
