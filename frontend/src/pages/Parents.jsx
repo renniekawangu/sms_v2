@@ -421,11 +421,11 @@ function Parents() {
                 onChange={(e) => setFormData(prev => ({ ...prev, relationship: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
               >
-                <option value="Father">Father</option>
-                <option value="Mother">Mother</option>
-                <option value="Guardian">Guardian</option>
-                <option value="Sibling">Sibling</option>
-                <option value="Other">Other</option>
+                <option key="Father" value="Father">Father</option>
+                <option key="Mother" value="Mother">Mother</option>
+                <option key="Guardian" value="Guardian">Guardian</option>
+                <option key="Sibling" value="Sibling">Sibling</option>
+                <option key="Other" value="Other">Other</option>
               </select>
             </div>
           </div>
