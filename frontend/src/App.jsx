@@ -19,6 +19,7 @@ import Subjects from './pages/Subjects'
 import Timetable from './pages/Timetable'
 import Exams from './pages/Exams'
 import Results from './pages/Results'
+import Children from './pages/Children'
 import Attendance from './pages/Attendance'
 import Fees from './pages/Fees'
 import Payments from './pages/Payments'
@@ -194,6 +195,18 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Results />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Children - accessible to parents */}
+              <Route
+                path="/children"
+                element={
+                  <ProtectedRoute requiredRole="parent">
+                    <Layout>
+                      <Children />
                     </Layout>
                   </ProtectedRoute>
                 }

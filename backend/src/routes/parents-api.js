@@ -33,7 +33,7 @@ async function findStudentByIdOrStudentId(id) {
 router.get('/dashboard', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
   const parent = await Parent.findOne({ userId: user._id })
-    .populate('children', 'firstName lastName studentId')
+    .populate('students', 'firstName lastName studentId')
     .lean();
 
   if (!parent) {
@@ -48,7 +48,7 @@ router.get('/dashboard', requireAuth, requireRole('parent', ROLES.ADMIN), asyncH
   const { Grade } = require('../models/grades');
 
   // Get summary data for all children
-  const childrenIds = parent.children.map(c => c._id);
+  const childrenIds = parent.students.map(c => c._id);
   
   const [fees, attendance, grades] = await Promise.all([
     Fee.find({ studentId: { $in: childrenIds } }).lean(),
@@ -62,9 +62,9 @@ router.get('/dashboard', requireAuth, requireRole('parent', ROLES.ADMIN), asyncH
       email: parent.email,
       phone: parent.phone
     },
-    children: parent.children,
+    children: parent.students,
     summary: {
-      totalChildren: parent.children.length,
+      totalChildren: parent.students.length,
       totalFees: fees.reduce((sum, f) => sum + f.amount, 0),
       totalPaid: fees.reduce((sum, f) => sum + (f.amountPaid || 0), 0),
       pendingFees: fees.reduce((sum, f) => sum + Math.max(0, f.amount - (f.amountPaid || 0)), 0),
