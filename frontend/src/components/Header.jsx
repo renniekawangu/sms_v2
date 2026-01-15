@@ -24,7 +24,7 @@ function Header({ onMenuClick }) {
       <div className="flex items-center justify-between gap-2 sm:gap-4">
         <div className="flex items-center gap-2 flex-1">
           <div className="flex items-center gap-2 flex-shrink-0">
-            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+            <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
           </div>
         </div>
         
