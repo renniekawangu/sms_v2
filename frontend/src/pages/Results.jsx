@@ -114,20 +114,28 @@ function Results() {
     }
   }
 
-  const getSubjectName = (subject_id) => {
+  const getSubjectName = (result) => {
+    // If subject is already a string (subject name from backend), return it
+    if (result.subject && typeof result.subject === 'string') {
+      return result.subject
+    }
+    // Otherwise try to look up by subject_id
+    const subject_id = result.subject_id || result.subject
     return subjects.find(s => s.subject_id === subject_id)?.name || `Subject ${subject_id}`
   }
 
-  const getExamName = (exam_id) => {
-    return exams.find(e => e.exam_id === exam_id)?.name || `Exam ${exam_id}`
+  const getExamName = (result) => {
+    // Try to look up exam by exam_id
+    const exam_id = result.exam_id
+    return exams.find(e => e.exam_id === exam_id)?.name || exam_id ? `Exam ${exam_id}` : 'N/A'
   }
 
   const filteredResults = useMemo(() => {
     if (!searchQuery.trim()) return results
     const query = searchQuery.toLowerCase()
     return results.filter((result) => {
-      const examName = getExamName(result.exam_id).toLowerCase()
-      const subjectName = getSubjectName(result.subject_id).toLowerCase()
+      const examName = getExamName(result).toLowerCase()
+      const subjectName = getSubjectName(result).toLowerCase()
       return (
         examName.includes(query) ||
         subjectName.includes(query) ||
@@ -236,9 +244,9 @@ function Results() {
               ) : (
                 filteredResults.map((result) => (
                   <tr key={result._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 text-sm text-text-dark">{getExamName(result.exam_id)}</td>
-                    <td className="py-3 px-4 text-sm text-text-dark">{getSubjectName(result.subject_id)}</td>
-                    <td className="py-3 px-4 text-sm text-text-dark font-medium">{result.marks}</td>
+                    <td className="py-3 px-4 text-sm text-text-dark">{getExamName(result)}</td>
+                    <td className="py-3 px-4 text-sm text-text-dark">{getSubjectName(result)}</td>
+                    <td className="py-3 px-4 text-sm text-text-dark font-medium">{result.marks || result.grade || 'N/A'}</td>
                     {user?.role !== 'student' && (
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">

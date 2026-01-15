@@ -578,26 +578,36 @@ router.delete('/exams/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
 
 // ============= Grades/Results API =============
 router.get('/results', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const grades = await Grade.find().populate('studentId');
-  res.json(grades);
+  const grades = await Grade.find().populate('studentId').lean();
+  // Format grades to include marks field for frontend compatibility
+  const formattedGrades = grades.map(g => ({
+    ...g,
+    marks: g.marks || g.grade || g.finalGrade || 0
+  }));
+  res.json(formattedGrades);
 }));
 
 router.get('/results/student/:student_id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
   const student = await findStudentByIdOrStudentId(req.params.student_id);
   if (!student) return res.status(404).json({ error: 'Student not found' });
-  const grades = await Grade.find({ studentId: student._id });
-  res.json(grades);
+  const grades = await Grade.find({ studentId: student._id }).lean();
+  // Format grades to include marks field for frontend compatibility
+  const formattedGrades = grades.map(g => ({
+    ...g,
+    marks: g.marks || g.grade || g.finalGrade || 0
+  }));
+  res.json(formattedGrades);
 }));
 
 router.post('/results', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const { student_id, subject, marks, ...rest } = req.body;
+  const { student_id, subject, subject_id, marks, exam_id, ...rest } = req.body;
   
   // Validate required fields
   if (!student_id) {
     return res.status(400).json({ error: 'student_id is required' });
   }
-  if (!subject) {
-    return res.status(400).json({ error: 'subject is required' });
+  if (!subject && !subject_id) {
+    return res.status(400).json({ error: 'subject or subject_id is required' });
   }
   
   const student = await findStudentByIdOrStudentId(student_id);
@@ -605,16 +615,44 @@ router.post('/results', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER
     return res.status(404).json({ error: 'Student not found' });
   }
   
-  const grade = new Grade({
-    studentId: student._id,
-    subject,
-    marks: marks || 0,
-    createdBy: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined,
-    ...rest
-  });
+  // Handle subject - either a string name or a subject_id to look up
+  let subjectName = subject;
+  if (!subjectName && subject_id) {
+    const subjectDoc = await Subject.findOne({ subject_id: subject_id });
+    if (!subjectDoc) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+    subjectName = subjectDoc.name;
+  }
   
+  // Get user ID from token (could be _id, id, or userId depending on how token was generated)
+  const userId = req.user?._id || req.user?.id || req.user?.userId;
+  if (!userId) {
+    return res.status(401).json({ error: 'User ID not found in token' });
+  }
+  
+  // Map marks to the grade field (backward compatibility)
+  // and store exam_id if provided
+  const gradeData = {
+    studentId: student._id,
+    subject: subjectName,
+    grade: marks || 0, // Store marks in the legacy grade field
+    createdBy: new mongoose.Types.ObjectId(userId),
+    ...rest
+  };
+  
+  // Store exam_id if provided (even though model doesn't define it, Mongoose allows it)
+  if (exam_id) {
+    gradeData.exam_id = exam_id;
+  }
+  
+  const grade = new Grade(gradeData);
   await grade.save();
-  res.status(201).json(grade);
+  
+  // Return the grade with exam_id and marks for frontend compatibility
+  const gradeObj = grade.toObject();
+  gradeObj.marks = gradeObj.grade || gradeObj.finalGrade;
+  res.status(201).json(gradeObj);
 }));
 
 router.put('/results/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
@@ -626,13 +664,31 @@ router.put('/results/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEAC
     update.studentId = student._id;
   }
   
+  // Handle subject_id if provided (convert to subject name)
+  if (req.body.subject_id && !req.body.subject) {
+    const subjectDoc = await Subject.findOne({ subject_id: req.body.subject_id });
+    if (!subjectDoc) return res.status(404).json({ error: 'Subject not found' });
+    update.subject = subjectDoc.name;
+    delete update.subject_id; // Remove subject_id from update object
+  }
+  
+  // Map marks to grade field if provided
+  if (req.body.marks !== undefined) {
+    update.grade = req.body.marks;
+    delete update.marks; // Remove marks from update object since model doesn't have it
+  }
+  
   // Add updatedBy to track who modified the grade
-  if (req.user?.id) {
-    update.updatedBy = new mongoose.Types.ObjectId(req.user.id);
+  const userId = req.user?._id || req.user?.id || req.user?.userId;
+  if (userId) {
+    update.updatedBy = new mongoose.Types.ObjectId(userId);
   }
 
-  const grade = await Grade.findByIdAndUpdate(req.params.id, update, { new: true });
+  const grade = await Grade.findByIdAndUpdate(req.params.id, update, { new: true }).lean();
   if (!grade) return res.status(404).json({ error: 'Grade not found' });
+  
+  // Format response to include marks field
+  grade.marks = grade.marks || grade.grade || grade.finalGrade || 0;
   res.json(grade);
 }));
 
