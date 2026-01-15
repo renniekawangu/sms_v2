@@ -220,9 +220,9 @@ function Parents() {
                       {parent.firstName} {parent.lastName}
                     </h3>
                     <div className="flex gap-4 text-xs text-text-muted mt-1">
-                      <span>{parent.email}</span>
-                      {parent.phone && <span>•</span>}
-                      {parent.phone && <span>{parent.phone}</span>}
+                      <span key="email">{parent.email}</span>
+                      {parent.phone && <span key="separator">•</span>}
+                      {parent.phone && <span key="phone">{parent.phone}</span>}
                     </div>
                   </div>
                 </div>
