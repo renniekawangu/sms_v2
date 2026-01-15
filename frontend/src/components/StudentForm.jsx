@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { parentsApi } from '../services/api'
 
 function StudentForm({ student, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -11,9 +12,15 @@ function StudentForm({ student, onSubmit, onCancel }) {
     classLevel: 'Grade 1',
     gender: 'Male',
     enrollmentDate: new Date().toISOString().split('T')[0],
-    parentName: '',
+    parentId: '',
   })
+  const [parents, setParents] = useState([])
+  const [loadingParents, setLoadingParents] = useState(false)
   const [errors, setErrors] = useState({})
+
+  useEffect(() => {
+    loadParents()
+  }, [])
 
   useEffect(() => {
     if (student) {
@@ -26,6 +33,12 @@ function StudentForm({ student, onSubmit, onCancel }) {
         const nameParts = student.name.trim().split(' ');
         firstName = nameParts[0] || '';
         lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      // Handle parent linking - check if parents array exists and has items
+      let parentId = '';
+      if (student.parents && Array.isArray(student.parents) && student.parents.length > 0) {
+        parentId = student.parents[0]._id || student.parents[0];
       }
       
       setFormData({
@@ -46,7 +59,7 @@ function StudentForm({ student, onSubmit, onCancel }) {
           : student.date_of_join
             ? (student.date_of_join.includes('T') ? student.date_of_join.split('T')[0] : student.date_of_join)
             : new Date().toISOString().split('T')[0],
-        parentName: student.parentName || '',
+        parentId,
       })
     } else {
       setFormData({
@@ -59,10 +72,23 @@ function StudentForm({ student, onSubmit, onCancel }) {
         classLevel: 'Grade 1',
         gender: 'Male',
         enrollmentDate: new Date().toISOString().split('T')[0],
-        parentName: '',
+        parentId: '',
       })
     }
   }, [student])
+
+  const loadParents = async () => {
+    try {
+      setLoadingParents(true)
+      const data = await parentsApi.list()
+      setParents(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error loading parents:', error)
+      setParents([])
+    } finally {
+      setLoadingParents(false)
+    }
+  }
 
   const validate = () => {
     const newErrors = {}
@@ -109,7 +135,7 @@ function StudentForm({ student, onSubmit, onCancel }) {
         date_of_join: formData.enrollmentDate ? new Date(formData.enrollmentDate).toISOString() : undefined,
         gender: formData.gender,
         classLevel: formData.classLevel,
-        parentName: formData.parentName,
+        parentId: formData.parentId || undefined,
       }
       onSubmit(backendData)
     }
@@ -312,20 +338,27 @@ function StudentForm({ student, onSubmit, onCancel }) {
         {errors.address && <p className="mt-1 text-sm text-red-500">{errors.address}</p>}
       </div>
 
-      {/* Parent Name - Full Width */}
+      {/* Parent Selection - Full Width */}
       <div>
-        <label htmlFor="parentName" className="block text-sm font-medium text-text-dark mb-2">
-          Parent Name
+        <label htmlFor="parentId" className="block text-sm font-medium text-text-dark mb-2">
+          Parent/Guardian
         </label>
-        <input
-          type="text"
-          id="parentName"
-          name="parentName"
-          value={formData.parentName}
+        <select
+          id="parentId"
+          name="parentId"
+          value={formData.parentId}
           onChange={handleChange}
           className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
-          placeholder="Enter parent/guardian name"
-        />
+          disabled={loadingParents}
+        >
+          <option value="">No parent assigned</option>
+          {Array.isArray(parents) && parents.map((parent) => (
+            <option key={parent._id} value={parent._id}>
+              {parent.firstName} {parent.lastName} ({parent.email || parent.phone})
+            </option>
+          ))}
+        </select>
+        {loadingParents && <p className="mt-1 text-xs text-text-muted">Loading parents...</p>}
       </div>
 
       <div className="flex items-center gap-3 pt-4">

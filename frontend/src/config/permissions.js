@@ -262,6 +262,24 @@ export const DEFAULT_ROLE_PERMISSIONS = {
 
     // Payments
     PERMISSIONS.PAYMENTS_VIEW
+  ],
+
+  [ROLES.PARENT]: [
+    // Dashboard
+    PERMISSIONS.DASHBOARD_VIEW,
+
+    // Students (view children)
+    PERMISSIONS.STUDENTS_VIEW_PROFILE,
+
+    // Results (view children's results)
+    PERMISSIONS.RESULTS_VIEW,
+
+    // Attendance (view children's attendance)
+    PERMISSIONS.ATTENDANCE_VIEW,
+
+    // Fees (view and pay children's fees)
+    PERMISSIONS.FEES_VIEW,
+    PERMISSIONS.PAYMENTS_VIEW
   ]
 };
 

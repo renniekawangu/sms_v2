@@ -5,6 +5,7 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const { requireAuth, requireRole } = require('../middleware/rbac');
 const { ROLES } = require('../config/rbac');
 const { User } = require('../models/user');
+const { Parent } = require('../models/parent');
 
 const router = express.Router();
 
@@ -56,6 +57,27 @@ router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req,
     ...rest 
   });
   await user.save();
+
+  // If role is parent, create a corresponding Parent record
+  if (role === ROLES.PARENT) {
+    try {
+      const [firstName, ...rest] = String(name || '').trim().split(' ');
+      const lastName = rest.join(' ') || 'Parent';
+      
+      const parent = new Parent({
+        firstName: firstName || 'Parent',
+        lastName,
+        email: email.toLowerCase().trim(),
+        phone: phone || '',
+        relationship: 'Guardian'
+      });
+      await parent.save();
+      console.log(`[PARENT] Created Parent record for ${email}`);
+    } catch (error) {
+      console.error(`[PARENT] Error creating Parent record for ${email}:`, error.message);
+    }
+  }
+
   res.status(201).json(sanitizeUser(user.toObject()));
 }));
 

@@ -22,7 +22,6 @@ uploads/
 dist/
 build/
 logs/
-scripts
 
 # Editor directories and files
 .vscode/*

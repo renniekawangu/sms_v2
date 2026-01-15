@@ -15,6 +15,7 @@ const { Fee } = require('../models/fees');
 const { Payment } = require('../models/payment');
 const { Expense } = require('../models/expense');
 const { AuditLog } = require('../models/audit-log');
+const { Parent } = require('../models/parent');
 const { logAction } = require('../utils/auditLogger');
 const { getSchoolSettings, getCurrentAcademicYear } = require('../models/school-settings');
 
@@ -191,6 +192,26 @@ router.post('/users', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async 
     date_of_join: date_of_join ? new Date(date_of_join) : undefined
   });
   await user.save();
+
+  // If role is parent, create a corresponding Parent record
+  if (role === ROLES.PARENT) {
+    try {
+      const [firstName, ...rest] = String(name || '').trim().split(' ');
+      const lastName = rest.join(' ') || 'Parent';
+      
+      const parent = new Parent({
+        firstName: firstName || 'Parent',
+        lastName,
+        email: email.toLowerCase(),
+        phone: phone || '',
+        relationship: 'Guardian'
+      });
+      await parent.save();
+      console.log(`[PARENT] Created Parent record for ${email}`);
+    } catch (error) {
+      console.error(`[PARENT] Error creating Parent record for ${email}:`, error.message);
+    }
+  }
 
   await logAction({
     action: 'create_user',

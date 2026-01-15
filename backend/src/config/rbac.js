@@ -133,7 +133,7 @@ const ENDPOINT_ACCESS = {
   // Authentication endpoints
   '/api/auth/login': ['*'], // Public
   '/api/auth/logout': ['*'], // Authenticated users
-  '/api/auth/profile': [ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER, ROLES.STUDENT, ROLES.ACCOUNTS],
+  '/api/auth/profile': [ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER, ROLES.STUDENT, ROLES.ACCOUNTS, ROLES.PARENT],
 
   // Student endpoints
   '/api/student/dashboard': [ROLES.STUDENT, ROLES.ADMIN],

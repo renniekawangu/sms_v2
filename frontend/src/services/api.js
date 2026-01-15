@@ -843,6 +843,10 @@ export const headTeacherApi = {
 
 // Parents API
 export const parentsApi = {
+  list: async () => {
+    return apiCall('/parents');
+  },
+
   getDashboard: async () => {
     return apiCall('/parents/dashboard', {
       method: 'GET',

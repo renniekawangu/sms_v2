@@ -20,6 +20,7 @@ const { Expense } = require('../models/expense');
 const { Exam } = require('../models/exam');
 const { Timetable } = require('../models/timetable');
 const { Issue } = require('../models/issue');
+const { Parent } = require('../models/parent');
 const { getNextSequence } = require('../models/counter');
 const mongoose = require('mongoose');
 
@@ -125,7 +126,7 @@ router.get('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
 }));
 
 router.post('/students', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  const { name = '', email = '', phone = '', dob, address = '', date_of_join, gender, classLevel } = req.body;
+  const { name = '', email = '', phone = '', dob, address = '', date_of_join, gender, classLevel, parentId } = req.body;
   
   // Validate required fields
   if (!name.trim()) return res.status(400).json({ error: 'Name is required' });
@@ -156,6 +157,7 @@ router.post('/students', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHE
     enrollmentDate: date_of_join ? new Date(date_of_join) : new Date(),
     gender: gender || undefined,
     classLevel: classLevel || 'Grade 1',
+    parents: parentId ? [parentId] : [],
     createdBy: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined
   });
 
@@ -167,7 +169,7 @@ router.put('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
   const student = await findStudentByIdOrStudentId(req.params.id);
   if (!student) return res.status(404).json({ error: 'Student not found' });
 
-  const { name, email, phone, dob, address, date_of_join, gender, classLevel } = req.body;
+  const { name, email, phone, dob, address, date_of_join, gender, classLevel, parentId } = req.body;
   
   // Check if email is being changed and if new email already exists
   if (email && email !== student.email) {
@@ -189,6 +191,11 @@ router.put('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
   if (date_of_join) student.enrollmentDate = new Date(date_of_join);
   if (gender) student.gender = gender;
   if (classLevel) student.classLevel = classLevel;
+  
+  // Handle parent linking
+  if (parentId !== undefined) {
+    student.parents = parentId ? [parentId] : [];
+  }
 
   await student.save();
   res.json(toStudentDto(student));
@@ -932,6 +939,12 @@ router.delete('/issues/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler
   const issue = await Issue.findByIdAndDelete(req.params.id);
   if (!issue) return res.status(404).json({ error: 'Issue not found' });
   res.json({ message: 'Issue deleted' });
+}));
+
+// ============= Parents API =============
+router.get('/parents', requireAuth, asyncHandler(async (_req, res) => {
+  const parents = await Parent.find({}).lean();
+  res.json(parents);
 }));
 
 module.exports = router;
