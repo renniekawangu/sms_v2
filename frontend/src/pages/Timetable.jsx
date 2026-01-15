@@ -152,86 +152,86 @@ function Timetable() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-text-dark">Timetable</h1>
-          <p className="text-text-muted mt-1">Manage class timetable</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {classrooms.length > 0 && (
-            <select
-              value={selectedClassroom || ''}
-              onChange={(e) => setSelectedClassroom(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
-            >
-              {classrooms.map((classroom) => (
-                <option key={classroom._id || classroom.classroom_id} value={classroom._id || classroom.classroom_id}>
-                  Grade {classroom.grade} - Section {classroom.section}
-                </option>
-              ))}
-            </select>
-          )}
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors"
-          >
-            <Plus size={20} />
-            Add Entry
-          </button>
-        </div>
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Timetable</h1>
+        <p className="text-sm sm:text-base text-text-muted mt-1">Manage class timetable</p>
       </div>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-6">
+      {/* Controls - Responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {classrooms.length > 0 && (
+          <select
+            value={selectedClassroom || ''}
+            onChange={(e) => setSelectedClassroom(e.target.value)}
+            className="w-full px-3 sm:px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+          >
+            {classrooms.map((classroom) => (
+              <option key={classroom._id || classroom.classroom_id} value={classroom._id || classroom.classroom_id}>
+                Grade {classroom.grade} - Section {classroom.section}
+              </option>
+            ))}
+          </select>
+        )}
+        <button
+          onClick={handleCreate}
+          className="w-full flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
+        >
+          <Plus size={18} />
+          <span>Add Entry</span>
+        </button>
+      </div>
+
+      <div className="bg-card-white rounded-custom shadow-custom p-4 md:p-6">
         {timetable.length > 0 && (
           <div className="mb-6">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
               <input
                 type="text"
-                placeholder="Search timetable by day, time, or subject..."
+                placeholder="Search timetable..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
               />
             </div>
           </div>
         )}
 
         {filteredTimetable.length === 0 ? (
-          <div className="text-center py-8 text-text-muted">
+          <div className="text-center py-8 text-sm text-text-muted">
             {timetable.length === 0 ? 'No timetable data available' : 'No entries match your search'}
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-4 md:mx-0 md:overflow-visible">
+              <table className="w-full min-w-max md:min-w-0">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Time</th>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap">Time</th>
                     {days.map((day) => (
-                      <th key={day} className="text-left py-3 px-4 text-sm font-semibold text-text-dark">
-                        {day}
+                      <th key={day} className="text-left py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap">
+                        {day.substring(0, 3)}
                       </th>
                     ))}
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Actions</th>
+                    <th className="text-left py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {timeSlots.map((time, timeIndex) => (
                     <tr key={`${time}-${timeIndex}`} className="border-b border-gray-100">
-                      <td className="py-3 px-4 text-sm font-medium text-text-dark">{time}</td>
+                      <td className="py-3 px-4 text-xs md:text-sm font-medium text-text-dark whitespace-nowrap">{time}</td>
                       {days.map((day) => {
                         const slot = filteredTimetable.find(t => (t.dayOfWeek || t.day) === day && (t.startTime || t.time) === time)
                         return (
-                          <td key={`${day}-${time}`} className="py-3 px-4 text-sm text-text-muted">
+                          <td key={`${day}-${time}`} className="py-3 px-2 md:px-4 text-xs md:text-sm text-text-muted whitespace-nowrap">
                             {slot?.subject?.name || slot?.subject || '-'}
                           </td>
                         )
                       })}
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-2 md:px-4">
                         {filteredTimetable.filter(t => (t.startTime || t.time) === time).length > 0 && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             {filteredTimetable
                               .filter(t => (t.startTime || t.time) === time)
                               .map((entry) => (

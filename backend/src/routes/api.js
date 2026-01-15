@@ -510,31 +510,92 @@ router.delete('/subjects/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_
 
 // ============= Attendance API =============
 router.get('/attendance', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const attendance = await Attendance.find().populate('student_id');
+  const attendance = await Attendance.find()
+    .populate('studentId', 'firstName lastName studentId')
+    .populate('markedBy', 'email');
   res.json(attendance);
 }));
 
-router.get('/attendance/:user_id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const student = await findStudentByIdOrStudentId(req.params.user_id);
+// Get attendance for a specific user/student
+router.get('/attendance/:user_id', requireAuth, asyncHandler(async (req, res) => {
+  const param = req.params.user_id;
+
+  // Resolve to a student document:
+  // - If numeric, treat as Student.studentId
+  // - If 24-char hex, first try Student by _id, then User by _id -> Student by userId
+  let student = null;
+  const numId = parseInt(param);
+  if (!isNaN(numId) && String(numId) === String(param).trim()) {
+    student = await Student.findOne({ studentId: numId });
+  } else if (isValidObjectId(param)) {
+    student = await Student.findById(param);
+    if (!student) {
+      const user = await User.findById(param);
+      if (user) {
+        student = await Student.findOne({ userId: user._id });
+      }
+    }
+  }
+
   if (!student) return res.status(404).json({ error: 'Student not found' });
-  const attendance = await Attendance.find({ student_id: student._id });
+
+  // If requester is a student, only allow access to their own records
+  const requesterRole = String(req.user?.role || '').toLowerCase();
+  if (requesterRole === 'student') {
+    const requesterStudent = await Student.findOne({ userId: req.user.id });
+    if (!requesterStudent || String(requesterStudent._id) !== String(student._id)) {
+      return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
+    }
+  } else if (!['admin', 'head-teacher', 'head_teacher', 'teacher'].includes(requesterRole)) {
+    return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
+  }
+
+  const attendance = await Attendance.find({ studentId: student._id })
+    .lean()
+    .sort({ date: -1 });
   res.json(attendance);
 }));
 
 router.post('/attendance', requireAuth, requireRole(ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  const { studentId, ...rest } = req.body;
-  const student = studentId ? await findStudentByIdOrStudentId(studentId) : null;
-  const attendance = new Attendance({ ...rest, studentId: student?._id || studentId });
+  const { studentId, subject, date, status, markedBy, ...rest } = req.body;
+
+  if (!studentId) return res.status(400).json({ error: 'studentId is required' });
+  if (!subject) return res.status(400).json({ error: 'subject is required' });
+  if (!date) return res.status(400).json({ error: 'date is required' });
+  if (!status) return res.status(400).json({ error: 'status is required' });
+
+  const student = await findStudentByIdOrStudentId(studentId);
+  if (!student) return res.status(404).json({ error: 'Student not found' });
+
+  const payload = {
+    ...rest,
+    studentId: student._id,
+    subject,
+    status,
+    date,
+    markedBy: isValidObjectId(markedBy) ? markedBy : undefined
+  };
+
+  const attendance = new Attendance(payload);
   await attendance.save();
   res.status(201).json(attendance);
 }));
 
 router.put('/attendance/record/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
   const update = { ...req.body };
-  if (req.body.student_id) {
-    const student = await findStudentByIdOrStudentId(req.body.student_id);
+
+  // Normalize student reference field
+  const incomingStudent = req.body.studentId || req.body.student_id;
+  if (incomingStudent) {
+    const student = await findStudentByIdOrStudentId(incomingStudent);
     if (!student) return res.status(404).json({ error: 'Student not found' });
-    update.student_id = student._id;
+    update.studentId = student._id;
+    delete update.student_id;
+  }
+
+  // Validate markedBy if provided
+  if (update.markedBy && !isValidObjectId(update.markedBy)) {
+    return res.status(400).json({ error: 'Invalid markedBy id' });
   }
 
   const attendance = await Attendance.findByIdAndUpdate(req.params.id, update, { new: true });

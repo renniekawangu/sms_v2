@@ -226,8 +226,8 @@ function Attendance() {
     })
   }, [students, searchQuery])
 
-  const presentCount = attendance.filter(a => a.status).length
-  const absentCount = attendance.filter(a => !a.status).length
+  const presentCount = attendance.filter(a => a.status === 'present').length
+  const absentCount = attendance.filter(a => a.status === 'absent').length
   const totalCount = attendance.length
 
   if (loading) {
@@ -260,17 +260,24 @@ function Attendance() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-text-dark">Attendance</h1>
+        <p className="text-text-muted mt-1">Manage attendance records</p>
+      </div>
+
+      {/* Top Controls - Responsive Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <button
           onClick={handleExportCSV}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium mr-4"
+          className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
         >
-          Export to CSV
+          Export CSV
         </button>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="px-2 py-1 border rounded-lg mr-2"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
         >
           <option value="">All Statuses</option>
           <option value="present">Present</option>
@@ -281,179 +288,135 @@ function Attendance() {
         <select
           value={subjectFilter}
           onChange={e => setSubjectFilter(e.target.value)}
-          className="px-2 py-1 border rounded-lg"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
         >
           <option value="">All Subjects</option>
           {[...new Set(attendance.map(a => a.subject).filter(Boolean))].map(subject => (
             <option key={subject} value={subject.toLowerCase()}>{subject}</option>
           ))}
         </select>
-        <button
-          onClick={handleExportCSV}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium mr-4"
-        >
-          Export to CSV
-        </button>
-        <div>
-          <h1 className="text-2xl font-semibold text-text-dark">Attendance</h1>
-          <p className="text-text-muted mt-1">Manage attendance records</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {user?.role !== 'student' && students.length > 0 && (
-            <select
-              value={selectedStudent || ''}
-              onChange={(e) => setSelectedStudent(Number(e.target.value))}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
-            >
-              {students.map((student) => (
-                <option key={student.student_id} value={student.student_id}>
-                  {student.name}
-                </option>
-              ))}
-            </select>
-          )}
-          {user?.role !== 'student' && (
-            <button
-              onClick={handleCreate}
-              className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors"
-            >
-              <Plus size={20} />
-              Mark Attendance
-            </button>
-          )}
-        </div>
+        {user?.role !== 'student' && (
+          <button
+            onClick={handleCreate}
+            className="w-full flex items-center justify-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm font-medium"
+          >
+            <Plus size={18} />
+            <span>Mark</span>
+          </button>
+        )}
       </div>
 
+      {/* Student Selector - Responsive */}
+      {user?.role !== 'student' && students.length > 0 && (
+        <select
+          value={selectedStudent || ''}
+          onChange={(e) => setSelectedStudent(Number(e.target.value))}
+          className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+        >
+          {students.map((student) => (
+            <option key={student.student_id} value={student.student_id}>
+              {student.name}
+            </option>
+          ))}
+        </select>
+      )}
+
       {totalCount > 0 && (
-                <div className="mt-6">
-                  <h2 className="text-lg font-semibold mb-2">Per Student Summary</h2>
-                  <table className="w-full mb-4">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Student</th>
-                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Present</th>
-                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Absent</th>
-                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Late/Excused</th>
-                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.entries(filteredAttendance.reduce((acc, a) => {
-                        const key = a.studentId?.name || a.studentId || 'Unknown';
-                        if (!acc[key]) acc[key] = { present: 0, absent: 0, late: 0, excused: 0, total: 0 };
-                        if (a.status === 'present') acc[key].present++;
-                        if (a.status === 'absent') acc[key].absent++;
-                        if (a.status === 'late') acc[key].late++;
-                        if (a.status === 'excused') acc[key].excused++;
-                        acc[key].total++;
-                        return acc;
-                      }, {})).map(([student, stats]) => (
-                        <tr key={student} className="border-b border-gray-100">
-                          <td className="py-2 px-4 text-sm">{student}</td>
-                          <td className="py-2 px-4 text-sm text-green-700">{stats.present}</td>
-                          <td className="py-2 px-4 text-sm text-red-700">{stats.absent}</td>
-                          <td className="py-2 px-4 text-sm text-yellow-700">{stats.late + stats.excused}</td>
-                          <td className="py-2 px-4 text-sm">{stats.total}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                  )}
-                  <div className="grid grid-cols-4 gap-4">
-          <div className="bg-card-white rounded-custom shadow-custom p-4">
-            <p className="text-sm text-text-muted mb-1">Total Records</p>
-            <p className="text-2xl font-semibold text-text-dark">{attendance.length}</p>
-          </div>
-          <div className="bg-card-white rounded-custom shadow-custom p-4">
-            <p className="text-sm text-text-muted mb-1">Present</p>
-            <p className="text-2xl font-semibold text-green-600">{attendance.filter(a => a.status === 'present').length}</p>
-          </div>
-          <div className="bg-card-white rounded-custom shadow-custom p-4">
-            <p className="text-sm text-text-muted mb-1">Absent</p>
-            <p className="text-2xl font-semibold text-red-600">{attendance.filter(a => a.status === 'absent').length}</p>
-          </div>
-          <div className="bg-card-white rounded-custom shadow-custom p-4">
-            <p className="text-sm text-text-muted mb-1">Late/Excused</p>
-            <p className="text-2xl font-semibold text-yellow-600">{attendance.filter(a => a.status === 'late' || a.status === 'excused').length}</p>
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold mb-4">Summary</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-card-white rounded-custom shadow-custom p-4">
+              <p className="text-xs md:text-sm text-text-muted mb-1">Total Records</p>
+              <p className="text-xl md:text-2xl font-semibold text-text-dark">{attendance.length}</p>
+            </div>
+            <div className="bg-card-white rounded-custom shadow-custom p-4">
+              <p className="text-xs md:text-sm text-text-muted mb-1">Present</p>
+              <p className="text-xl md:text-2xl font-semibold text-green-600">{attendance.filter(a => a.status === 'present').length}</p>
+            </div>
+            <div className="bg-card-white rounded-custom shadow-custom p-4">
+              <p className="text-xs md:text-sm text-text-muted mb-1">Absent</p>
+              <p className="text-xl md:text-2xl font-semibold text-red-600">{attendance.filter(a => a.status === 'absent').length}</p>
+            </div>
+            <div className="bg-card-white rounded-custom shadow-custom p-4">
+              <p className="text-xs md:text-sm text-text-muted mb-1">Late/Excused</p>
+              <p className="text-xl md:text-2xl font-semibold text-yellow-600">{attendance.filter(a => a.status === 'late' || a.status === 'excused').length}</p>
+            </div>
           </div>
         </div>
+      )}
       
 
-      <div className="bg-card-white rounded-custom shadow-custom p-6">
+      <div className="bg-card-white rounded-custom shadow-custom p-4 md:p-6">
         {attendance.length > 0 && (
           <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
               <input
                 type="text"
-                placeholder="Search attendance by date or status..."
+                placeholder="Search by date or status..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
               />
             </div>
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto -mx-4 md:mx-0 md:overflow-visible">
+          <table className="w-full min-w-max md:min-w-0">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Date</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Status</th>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap md:whitespace-normal">Date</th>
+                <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap md:whitespace-normal">Status</th>
                 {user?.role !== 'student' && (
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Actions</th>
+                  <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap md:whitespace-normal">Actions</th>
                 )}
               </tr>
             </thead>
             <tbody>
               {filteredAttendance.length === 0 ? (
                 <tr>
-                  <td colSpan={user?.role !== 'student' ? 3 : 2} className="py-8 text-center text-text-muted">
+                  <td colSpan={user?.role !== 'student' ? 3 : 2} className="py-8 px-4 text-center text-text-muted text-sm">
                     {attendance.length === 0 ? 'No attendance records found' : 'No records match your search'}
                   </td>
                 </tr>
               ) : (
                 filteredAttendance.map((record) => (
                   <tr key={record._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 text-sm text-text-dark">
+                    <td className="py-3 px-4 text-xs md:text-sm text-text-dark">
                       {record.date ? (record.date.includes('T') ? record.date.split('T')[0] : record.date) : '-'}
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-                          record.status
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                          record.status === 'present' ? 'bg-green-100 text-green-700' :
+                          record.status === 'absent' ? 'bg-red-100 text-red-700' :
+                          record.status === 'late' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-blue-100 text-blue-700'
                         }`}
                       >
-                        {record.status ? (
-                          <>
-                            <CheckCircle size={14} />
-                            Present
-                          </>
-                        ) : (
-                          'Absent'
-                        )}
+                        {record.status === 'present' && (<><CheckCircle size={14} /> Present</>)}
+                        {record.status === 'absent' && ('Absent')}
+                        {record.status === 'late' && ('Late')}
+                        {record.status === 'excused' && ('Excused')}
                       </span>
                     </td>
                     {user?.role !== 'student' && (
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <button
                             onClick={() => handleEdit(record)}
-                            className="text-primary-blue hover:text-primary-blue/80 text-sm font-medium flex items-center gap-1"
+                            className="text-primary-blue hover:text-primary-blue/80 text-xs md:text-sm font-medium flex items-center gap-1 whitespace-nowrap"
                           >
                             <Edit size={16} />
-                            Edit
+                            <span className="hidden sm:inline">Edit</span>
                           </button>
                           <button
                             onClick={() => handleDelete(record._id)}
-                            className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
+                            className="text-red-500 hover:text-red-600 text-xs md:text-sm font-medium flex items-center gap-1 whitespace-nowrap"
                           >
                             <Trash2 size={16} />
-                            Delete
+                            <span className="hidden sm:inline">Delete</span>
                           </button>
                         </div>
                       </td>
@@ -467,7 +430,7 @@ function Attendance() {
 
         {attendance.length > 0 && (
           <div className="mt-6">
-            <p className="text-sm text-text-muted">
+            <p className="text-xs md:text-sm text-text-muted">
               Showing {filteredAttendance.length} of {attendance.length} records
             </p>
           </div>
