@@ -579,10 +579,11 @@ router.delete('/exams/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
 // ============= Grades/Results API =============
 router.get('/results', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
   const grades = await Grade.find().populate('studentId').lean();
-  // Format grades to include marks field for frontend compatibility
+  // Format grades to include marks and student_id for frontend compatibility
   const formattedGrades = grades.map(g => ({
     ...g,
-    marks: g.marks || g.grade || g.finalGrade || 0
+    marks: g.marks || g.grade || g.finalGrade || 0,
+    student_id: g.studentId?.studentId || g.studentId
   }));
   res.json(formattedGrades);
 }));
@@ -591,10 +592,11 @@ router.get('/results/student/:student_id', requireAuth, requireRole(ROLES.ADMIN,
   const student = await findStudentByIdOrStudentId(req.params.student_id);
   if (!student) return res.status(404).json({ error: 'Student not found' });
   const grades = await Grade.find({ studentId: student._id }).lean();
-  // Format grades to include marks field for frontend compatibility
+  // Format grades to include marks and student_id for frontend compatibility
   const formattedGrades = grades.map(g => ({
     ...g,
-    marks: g.marks || g.grade || g.finalGrade || 0
+    marks: g.marks || g.grade || g.finalGrade || 0,
+    student_id: student.studentId
   }));
   res.json(formattedGrades);
 }));

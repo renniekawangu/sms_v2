@@ -8,6 +8,9 @@ const gradeSchema = new mongoose.Schema({
   term: { type: String }, // e.g., "Term 1", "Term 2", "Term 3"
   academicYear: { type: String }, // e.g., "2024", "2024-2025"
   
+  // Exam reference
+  exam_id: { type: Number }, // Reference to exam by exam_id
+  
   // Exam grades
   midTermGrade: { type: Number, min: 0, max: 100 }, // Mid-term exam grade
   endTermGrade: { type: Number, min: 0, max: 100 }, // End-of-term exam grade

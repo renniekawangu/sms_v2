@@ -11,11 +11,31 @@ function ResultForm({ result, students, exams, subjects, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (result) {
+      // Handle backend format where studentId is ObjectId and subject is a name string
+      let student_id = '';
+      let subject_id = '';
+      
+      // Extract student_id from either student_id or studentId
+      if (result.student_id) {
+        student_id = result.student_id;
+      } else if (result.studentId) {
+        // If studentId is an object with studentId property, use that
+        student_id = result.studentId.studentId || '';
+      }
+      
+      // Find subject_id from subject name
+      if (result.subject && typeof result.subject === 'string') {
+        const subjectMatch = subjects.find(s => s.name === result.subject);
+        subject_id = subjectMatch?.subject_id || '';
+      } else if (result.subject_id) {
+        subject_id = result.subject_id;
+      }
+      
       setFormData({
-        student_id: result.student_id || '',
+        student_id: student_id,
         exam_id: result.exam_id || '',
-        subject_id: result.subject_id || '',
-        marks: result.marks || '',
+        subject_id: subject_id,
+        marks: result.marks || result.grade || result.finalGrade || '',
       })
     } else {
       setFormData({
@@ -25,7 +45,7 @@ function ResultForm({ result, students, exams, subjects, onSubmit, onCancel }) {
         marks: '',
       })
     }
-  }, [result])
+  }, [result, subjects])
 
   const validate = () => {
     const newErrors = {}
