@@ -1,11 +1,13 @@
 import { Search, Mic, LogOut, User, Menu } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useSettings } from '../contexts/SettingsContext'
 import { useNavigate } from 'react-router-dom'
 
 function Header({ onMenuClick }) {
   const { user, logout } = useAuth()
   const { success } = useToast()
+  const { schoolSettings, currentAcademicYear } = useSettings()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -22,8 +24,20 @@ function Header({ onMenuClick }) {
   return (
     <header className="bg-card-white shadow-sm border-b border-gray-100 px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       <div className="flex items-center justify-between gap-2 sm:gap-4">
-        <div className="flex items-center gap-1 sm:gap-2 md:hidden flex-shrink-0">
-          <img src="/logo.png" alt="Esync Logo" className="w-24 sm:w-30 h-16 sm:h-20 object-contain" />
+        <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {schoolSettings.schoolLogo ? (
+              <img src={schoolSettings.schoolLogo} alt={schoolSettings.schoolName} className="w-12 h-12 object-contain rounded" />
+            ) : (
+              <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+            )}
+            <div className="hidden sm:block">
+              <h2 className="text-sm font-semibold text-text-dark">{schoolSettings.schoolName}</h2>
+              {currentAcademicYear && (
+                <p className="text-xs text-text-muted">Year: {currentAcademicYear.year}</p>
+              )}
+            </div>
+          </div>
         </div>
         
         <div className="flex-1 max-w-md hidden md:block">

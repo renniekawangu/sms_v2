@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { DollarSign, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
 import { feesApi, studentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
+import { useSettings } from '../contexts/SettingsContext'
 import Modal from '../components/Modal'
 import FeeForm from '../components/FeeForm'
 import { useCurrency, formatCurrency } from '../hooks/useCurrency'
@@ -15,6 +16,7 @@ function Fees() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingFee, setEditingFee] = useState(null)
   const { success, error: showError } = useToast()
+  const { schoolSettings, currentAcademicYear } = useSettings()
   const currency = useCurrency()
 
   useEffect(() => {

@@ -3,6 +3,7 @@ import { CheckCircle, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-rea
 import { attendanceApi, studentsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useSettings } from '../contexts/SettingsContext'
 import Modal from '../components/Modal'
 import AttendanceForm from '../components/AttendanceForm'
 

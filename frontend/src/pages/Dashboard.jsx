@@ -1,4 +1,5 @@
 import { useAuth } from '../contexts/AuthContext'
+import { useSettings } from '../contexts/SettingsContext'
 import { Link } from 'react-router-dom'
 import { GraduationCap, User, Users, School, FileText, Award, DollarSign, Calendar, AlertCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -6,6 +7,7 @@ import { studentsApi, teachersApi, classroomsApi, examsApi, feesApi, expensesApi
 
 // Admin Dashboard
 function AdminDashboard() {
+  const { schoolSettings, currentAcademicYear } = useSettings()
   const [stats, setStats] = useState({
     students: 0,
     teachers: 0,

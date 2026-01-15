@@ -3,11 +3,13 @@ import { Award, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
 import { resultsApi, examsApi, subjectsApi, studentsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useSettings } from '../contexts/SettingsContext'
 import Modal from '../components/Modal'
 import ResultForm from '../components/ResultForm'
 
 function Results() {
   const { user } = useAuth()
+  const { currentAcademicYear } = useSettings()
   const [results, setResults] = useState([])
   const [exams, setExams] = useState([])
   const [subjects, setSubjects] = useState([])
