@@ -36,15 +36,27 @@ function Header({ onMenuClick }) {
             />
           </div>
         </div>
+
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Logout button - visible on mobile */}
+          <button
+            onClick={handleLogout}
+            className="md:hidden p-2 rounded-lg hover:bg-red-50 text-text-muted hover:text-red-600 transition-colors flex-shrink-0"
+            aria-label="Logout"
+            title="Logout"
+          >
+            <LogOut size={20} />
+          </button>
         
-        {/* Hamburger menu button for mobile */}
-        <button
-          onClick={onMenuClick}
-          className="md:hidden p-2 -mr-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
-          aria-label="Open menu"
-        >
-          <Menu size={20} className="text-text-dark" />
-        </button>
+          {/* Hamburger menu button for mobile */}
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-2 -mr-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+            aria-label="Open menu"
+          >
+            <Menu size={20} className="text-text-dark" />
+          </button>
+        </div>
       </div>
     </header>
   )

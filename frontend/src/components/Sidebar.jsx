@@ -125,7 +125,7 @@ function Sidebar({ isOpen, onClose }) {
         w-64 bg-card-white shadow-custom flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        h-screen md:h-auto
+        h-screen md:h-auto overflow-y-auto
       `}>
         <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
