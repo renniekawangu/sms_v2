@@ -2,24 +2,27 @@ import { useState, useEffect } from 'react'
 
 function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
-    user_id: '',
+    studentId: '',
     date: new Date().toISOString().split('T')[0],
-    status: true,
+    status: 'present',
+    subject: '',
   })
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
     if (attendance) {
       setFormData({
-        user_id: attendance.user_id || '',
+        studentId: attendance.studentId || '',
         date: attendance.date ? (attendance.date.includes('T') ? attendance.date.split('T')[0] : attendance.date) : new Date().toISOString().split('T')[0],
-        status: attendance.status !== undefined ? attendance.status : true,
+        status: attendance.status || 'present',
+        subject: attendance.subject || '',
       })
     } else {
       setFormData({
-        user_id: '',
+        studentId: '',
         date: new Date().toISOString().split('T')[0],
-        status: true,
+        status: 'present',
+        subject: '',
       })
     }
   }, [attendance])
@@ -27,8 +30,11 @@ function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
   const validate = () => {
     const newErrors = {}
 
-    if (!formData.user_id) {
-      newErrors.user_id = 'Student is required'
+    if (!formData.studentId) {
+      newErrors.studentId = 'Student is required'
+    }
+    if (!formData.subject) {
+      newErrors.subject = 'Subject is required'
     }
 
     if (!formData.date) {
@@ -44,9 +50,7 @@ function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
     if (validate()) {
       onSubmit({
         ...formData,
-        user_id: parseInt(formData.user_id),
         date: formData.date ? new Date(formData.date).toISOString() : formData.date,
-        status: formData.status === 'true' || formData.status === true,
       })
     }
   }
@@ -65,16 +69,16 @@ function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="user_id" className="block text-sm font-medium text-text-dark mb-2">
+        <label htmlFor="studentId" className="block text-sm font-medium text-text-dark mb-2">
           Student <span className="text-red-500">*</span>
         </label>
         <select
-          id="user_id"
-          name="user_id"
-          value={formData.user_id}
+          id="studentId"
+          name="studentId"
+          value={formData.studentId}
           onChange={handleChange}
           className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-            errors.user_id
+            errors.studentId
               ? 'border-red-300 focus:ring-red-500'
               : 'border-gray-200 focus:ring-primary-blue'
           }`}
@@ -86,7 +90,7 @@ function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
-        {errors.user_id && <p className="mt-1 text-sm text-red-500">{errors.user_id}</p>}
+        {errors.studentId && <p className="mt-1 text-sm text-red-500">{errors.studentId}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -116,14 +120,34 @@ function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
           <select
             id="status"
             name="status"
-            value={formData.status ? 'true' : 'false'}
+            value={formData.status}
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
           >
-            <option value="true">Present</option>
-            <option value="false">Absent</option>
+            <option value="present">Present</option>
+            <option value="absent">Absent</option>
+            <option value="late">Late</option>
+            <option value="excused">Excused</option>
           </select>
         </div>
+            <div>
+              <label htmlFor="subject" className="block text-sm font-medium text-text-dark mb-2">
+                Subject <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="subject"
+                name="subject"
+                value={formData.subject}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                  errors.subject
+                    ? 'border-red-300 focus:ring-red-500'
+                    : 'border-gray-200 focus:ring-primary-blue'
+                }`}
+              />
+              {errors.subject && <p className="mt-1 text-sm text-red-500">{errors.subject}</p>}
+            </div>
       </div>
 
       <div className="flex items-center gap-3 pt-4">

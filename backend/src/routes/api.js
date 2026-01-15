@@ -491,9 +491,9 @@ router.get('/attendance/:user_id', requireAuth, requireRole(ROLES.ADMIN, ROLES.H
 }));
 
 router.post('/attendance', requireAuth, requireRole(ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  const { student_id, ...rest } = req.body;
-  const student = student_id ? await findStudentByIdOrStudentId(student_id) : null;
-  const attendance = new Attendance({ ...rest, student_id: student?._id || student_id });
+  const { studentId, ...rest } = req.body;
+  const student = studentId ? await findStudentByIdOrStudentId(studentId) : null;
+  const attendance = new Attendance({ ...rest, studentId: student?._id || studentId });
   await attendance.save();
   res.status(201).json(attendance);
 }));

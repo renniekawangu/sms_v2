@@ -75,11 +75,12 @@ function Attendance() {
 
   const handleSubmit = async (formData) => {
     try {
+      const attendanceData = { ...formData, markedBy: user?.user_id };
       if (editingAttendance) {
-        await attendanceApi.update(editingAttendance._id, formData)
+        await attendanceApi.update(editingAttendance._id, attendanceData)
         success('Attendance updated successfully')
       } else {
-        await attendanceApi.mark(formData)
+        await attendanceApi.mark(attendanceData)
         success('Attendance marked successfully')
       }
       setIsModalOpen(false)
