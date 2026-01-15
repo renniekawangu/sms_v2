@@ -32,9 +32,25 @@ async function findStudentByIdOrStudentId(id) {
  */
 router.get('/dashboard', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
-  const parent = await Parent.findById(user.parentId)
-    .populate('students', 'firstName lastName studentId')
-    .lean();
+  
+  // Try to get parent by parentId first, then fallback to email lookup
+  let parent = null;
+  
+  if (user.parentId) {
+    parent = await Parent.findById(user.parentId)
+      .populate('students', 'firstName lastName studentId')
+      .lean();
+  } else {
+    // Fallback: find parent by email and update user
+    parent = await Parent.findOne({ email: user.email })
+      .populate('students', 'firstName lastName studentId')
+      .lean();
+    
+    if (parent) {
+      // Update user to have parentId for next time
+      await User.findByIdAndUpdate(req.user.id, { parentId: parent._id });
+    }
+  }
 
   if (!parent) {
     return res.json({
