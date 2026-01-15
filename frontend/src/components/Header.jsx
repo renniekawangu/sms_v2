@@ -22,6 +22,21 @@ function Header({ onMenuClick }) {
   return (
     <header className="bg-card-white shadow-sm border-b border-gray-100 px-4 lg:px-6 py-4">
       <div className="flex items-center justify-between">
+        <div className="flex items-left gap-2 lg:hidden ml-2">
+          <img src="/logo.png" alt="Esync Logo" className="w-30 h-20 object-contain ml-4" />
+        </div>
+        
+        <div className="flex-1 max-w-md hidden md:block">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
+            <input
+              type="text"
+              placeholder="Search"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue focus:border-2"
+            />
+          </div>
+        </div>
+        
         {/* Hamburger menu button for mobile */}
         <button
           onClick={onMenuClick}
@@ -30,20 +45,6 @@ function Header({ onMenuClick }) {
         >
           <Menu size={24} className="text-text-dark" />
         </button>
-        
-        <div className="flex-1 max-w-md hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2 lg:gap-4 ml-auto">
-          <img src="/logo.png" alt="Esync Logo" className="w-30 h-20 object-contain ml-4" />
-        </div>
       </div>
     </header>
   )

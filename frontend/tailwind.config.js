@@ -8,10 +8,10 @@ export default {
     extend: {
       colors: {
         primary: {
-          blue: '#0D6EFD',
+          blue: '#00BFFF',
         },
         secondary: {
-          blue: '#1E90FF',
+          blue: '#00BFFF',
         },
         accent: {
           yellow: '#FFC107',
@@ -25,6 +25,10 @@ export default {
         text: {
           dark: '#1F2937',
           muted: '#6B7280',
+          capri: '#00BFFF',
+        },
+        border: {
+          capri: '#00BFFF',
         },
       },
       fontFamily: {

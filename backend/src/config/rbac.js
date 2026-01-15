@@ -8,7 +8,8 @@ const ROLES = {
   HEAD_TEACHER: 'head-teacher',
   TEACHER: 'teacher',
   STUDENT: 'student',
-  ACCOUNTS: 'accounts'
+  ACCOUNTS: 'accounts',
+  PARENT: 'parent'
 };
 
 // Permission levels

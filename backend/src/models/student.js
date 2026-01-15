@@ -16,9 +16,10 @@ const CLASS_LEVELS = [
 
 const studentSchema = new mongoose.Schema({
   studentId: { type: Number, unique: true }, // Custom sequential ID starting from 25000000
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Link to User account
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Link to User account (optional)
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
+  email: { type: String, required: true, unique: true, sparse: true }, // Unique email for students
   dateOfBirth: { type: Date, required: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },

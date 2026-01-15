@@ -7,6 +7,80 @@ import Modal from '../components/Modal'
 import AttendanceForm from '../components/AttendanceForm'
 
 function Attendance() {
+          const [startDate, setStartDate] = useState('')
+          const [endDate, setEndDate] = useState('')
+        const [statusFilter, setStatusFilter] = useState('')
+        const [subjectFilter, setSubjectFilter] = useState('')
+      // Export attendance to CSV
+      const handleExportCSV = () => {
+        if (!attendance.length) return;
+        const headers = ['Date','Status','Subject','Student','Marked By'];
+        const rows = attendance.map(a => [
+          a.date ? (a.date.includes('T') ? a.date.split('T')[0] : a.date) : '',
+          typeof a.status === 'string' ? a.status : (a.status ? 'present' : 'absent'),
+          a.subject || '',
+          a.studentId?.name || a.studentId || '',
+          a.markedBy?.email || a.markedBy || ''
+        ]);
+        const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'attendance_report.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+    const [bulkImporting, setBulkImporting] = useState(false)
+    const [bulkProgress, setBulkProgress] = useState({ total: 0, success: 0, error: 0 })
+    const [bulkErrors, setBulkErrors] = useState([])
+
+    // Bulk import handler
+    const handleBulkImport = async (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      setBulkImporting(true)
+      setBulkProgress({ total: 0, success: 0, error: 0 })
+      setBulkErrors([])
+      try {
+        const text = await file.text()
+        const lines = text.split(/\r?\n/).filter(Boolean)
+        const headers = lines[0].split(',').map(h => h.trim())
+        const required = ['studentId','status','date','subject']
+        if (!required.every(h => headers.includes(h))) {
+          showError('CSV must have headers: studentId,status,date,subject')
+          setBulkImporting(false)
+          return
+        }
+        const records = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.trim())
+          const obj = {}
+          headers.forEach((h,i) => { obj[h]=values[i] })
+          return obj
+        })
+        setBulkProgress({ total: records.length, success: 0, error: 0 })
+        let success = 0, error = 0, errors = []
+        for (const rec of records) {
+          try {
+            await attendanceApi.mark({ ...rec, markedBy: user.user_id })
+            success++
+          } catch (err) {
+            error++
+            errors.push({ rec, err: err.message })
+          }
+          setBulkProgress({ total: records.length, success, error })
+        }
+        setBulkErrors(errors)
+        if (success) success(`${success} attendance records imported.`)
+        if (error) showError(`${error} records failed.`)
+        await loadAttendance(selectedStudent || user.user_id)
+      } catch (err) {
+        showError('Bulk import failed: ' + err.message)
+      }
+      setBulkImporting(false)
+    }
   const { user } = useAuth()
   const [attendance, setAttendance] = useState([])
   const [students, setStudents] = useState([])
@@ -110,16 +184,47 @@ function Attendance() {
   }
 
   const filteredAttendance = useMemo(() => {
-    if (!searchQuery.trim()) return attendance
+        let filtered = attendance;
+        if (startDate) {
+          filtered = filtered.filter(a => {
+            const d = new Date(a.date)
+            return d >= new Date(startDate)
+          })
+        }
+        if (endDate) {
+          filtered = filtered.filter(a => {
+            const d = new Date(a.date)
+            return d <= new Date(endDate)
+          })
+        }
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((record) => {
+        const dateStr = record.date ? (record.date.includes('T') ? record.date.split('T')[0] : record.date) : '';
+        return dateStr.includes(query) || (typeof record.status === 'string' ? record.status : '').toLowerCase().includes(query);
+      });
+    }
+    if (statusFilter) {
+      filtered = filtered.filter(a => (typeof a.status === 'string' ? a.status : '').toLowerCase() === statusFilter);
+    }
+    if (subjectFilter) {
+      filtered = filtered.filter(a => (a.subject || '').toLowerCase() === subjectFilter);
+    }
+    return filtered;
+  }, [attendance, searchQuery, statusFilter, subjectFilter]);
+
+  const filteredStudents = useMemo(() => {
+    if (!searchQuery.trim()) return students
     const query = searchQuery.toLowerCase()
-    return attendance.filter((record) => {
-      const dateStr = record.date ? (record.date.includes('T') ? record.date.split('T')[0] : record.date) : ''
+    return students.filter((student) => {
+      const fullName = [student.firstName, student.lastName].filter(Boolean).join(' ').toLowerCase()
       return (
-        dateStr.includes(query) ||
-        (record.status ? 'present' : 'absent').includes(query)
+        fullName.includes(query) ||
+        student.email?.toLowerCase().includes(query) ||
+        student.student_id?.toString().includes(query)
       )
     })
-  }, [attendance, searchQuery])
+  }, [students, searchQuery])
 
   const presentCount = attendance.filter(a => a.status).length
   const absentCount = attendance.filter(a => !a.status).length
@@ -134,19 +239,18 @@ function Attendance() {
         </div>
       </div>
     )
-  }
-
+  };
   if (error && attendance.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-text-dark font-medium mb-2">Error loading attendance</p>
-          <p className="text-text-muted mb-4">{error}</p>
-          <button
-            onClick={() => loadAttendance(user?.role === 'student' ? user.user_id : selectedStudent)}
-            className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-blue/90 transition-colors"
-          >
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <p className="text-text-dark font-medium mb-2">Error loading attendance</p>
+            <p className="text-text-muted mb-4">{error}</p>
+            <button
+              onClick={() => loadAttendance(user?.role === 'student' ? user.user_id : selectedStudent)}
+              className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-blue/90 transition-colors"
+            >
             Retry
           </button>
         </div>
@@ -157,6 +261,39 @@ function Attendance() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
+        <button
+          onClick={handleExportCSV}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium mr-4"
+        >
+          Export to CSV
+        </button>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="px-2 py-1 border rounded-lg mr-2"
+        >
+          <option value="">All Statuses</option>
+          <option value="present">Present</option>
+          <option value="absent">Absent</option>
+          <option value="late">Late</option>
+          <option value="excused">Excused</option>
+        </select>
+        <select
+          value={subjectFilter}
+          onChange={e => setSubjectFilter(e.target.value)}
+          className="px-2 py-1 border rounded-lg"
+        >
+          <option value="">All Subjects</option>
+          {[...new Set(attendance.map(a => a.subject).filter(Boolean))].map(subject => (
+            <option key={subject} value={subject.toLowerCase()}>{subject}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleExportCSV}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium mr-4"
+        >
+          Export to CSV
+        </button>
         <div>
           <h1 className="text-2xl font-semibold text-text-dark">Attendance</h1>
           <p className="text-text-muted mt-1">Manage attendance records</p>
@@ -188,21 +325,60 @@ function Attendance() {
       </div>
 
       {totalCount > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+                <div className="mt-6">
+                  <h2 className="text-lg font-semibold mb-2">Per Student Summary</h2>
+                  <table className="w-full mb-4">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Student</th>
+                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Present</th>
+                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Absent</th>
+                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Late/Excused</th>
+                        <th className="text-left py-2 px-4 text-sm font-semibold text-text-dark">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(filteredAttendance.reduce((acc, a) => {
+                        const key = a.studentId?.name || a.studentId || 'Unknown';
+                        if (!acc[key]) acc[key] = { present: 0, absent: 0, late: 0, excused: 0, total: 0 };
+                        if (a.status === 'present') acc[key].present++;
+                        if (a.status === 'absent') acc[key].absent++;
+                        if (a.status === 'late') acc[key].late++;
+                        if (a.status === 'excused') acc[key].excused++;
+                        acc[key].total++;
+                        return acc;
+                      }, {})).map(([student, stats]) => (
+                        <tr key={student} className="border-b border-gray-100">
+                          <td className="py-2 px-4 text-sm">{student}</td>
+                          <td className="py-2 px-4 text-sm text-green-700">{stats.present}</td>
+                          <td className="py-2 px-4 text-sm text-red-700">{stats.absent}</td>
+                          <td className="py-2 px-4 text-sm text-yellow-700">{stats.late + stats.excused}</td>
+                          <td className="py-2 px-4 text-sm">{stats.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                  )}
+                  <div className="grid grid-cols-4 gap-4">
           <div className="bg-card-white rounded-custom shadow-custom p-4">
-            <p className="text-sm text-text-muted mb-1">Total Days</p>
-            <p className="text-2xl font-semibold text-text-dark">{totalCount}</p>
+            <p className="text-sm text-text-muted mb-1">Total Records</p>
+            <p className="text-2xl font-semibold text-text-dark">{attendance.length}</p>
           </div>
           <div className="bg-card-white rounded-custom shadow-custom p-4">
             <p className="text-sm text-text-muted mb-1">Present</p>
-            <p className="text-2xl font-semibold text-green-600">{presentCount}</p>
+            <p className="text-2xl font-semibold text-green-600">{attendance.filter(a => a.status === 'present').length}</p>
           </div>
           <div className="bg-card-white rounded-custom shadow-custom p-4">
             <p className="text-sm text-text-muted mb-1">Absent</p>
-            <p className="text-2xl font-semibold text-red-600">{absentCount}</p>
+            <p className="text-2xl font-semibold text-red-600">{attendance.filter(a => a.status === 'absent').length}</p>
+          </div>
+          <div className="bg-card-white rounded-custom shadow-custom p-4">
+            <p className="text-sm text-text-muted mb-1">Late/Excused</p>
+            <p className="text-2xl font-semibold text-yellow-600">{attendance.filter(a => a.status === 'late' || a.status === 'excused').length}</p>
           </div>
         </div>
-      )}
+      
 
       <div className="bg-card-white rounded-custom shadow-custom p-6">
         {attendance.length > 0 && (

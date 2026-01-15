@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { subjectsApi } from '../services/api'
 
 function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
+    const [subjects, setSubjects] = useState([])
   const [formData, setFormData] = useState({
     studentId: '',
     date: new Date().toISOString().split('T')[0],
@@ -8,6 +10,18 @@ function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
     subject: '',
   })
   const [errors, setErrors] = useState({})
+
+  useEffect(() => {
+    async function fetchSubjects() {
+      try {
+        const data = await subjectsApi.list()
+        setSubjects(data)
+      } catch {
+        setSubjects([])
+      }
+    }
+    fetchSubjects()
+  }, [])
 
   useEffect(() => {
     if (attendance) {
@@ -134,8 +148,7 @@ function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
               <label htmlFor="subject" className="block text-sm font-medium text-text-dark mb-2">
                 Subject <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 id="subject"
                 name="subject"
                 value={formData.subject}
@@ -145,7 +158,14 @@ function AttendanceForm({ attendance, students, onSubmit, onCancel }) {
                     ? 'border-red-300 focus:ring-red-500'
                     : 'border-gray-200 focus:ring-primary-blue'
                 }`}
-              />
+              >
+                <option value="">Select a subject</option>
+                {subjects.map((subject) => (
+                  <option key={subject._id || subject.subject_id} value={subject.name || subject.subject}>
+                    {subject.name || subject.subject}
+                  </option>
+                ))}
+              </select>
               {errors.subject && <p className="mt-1 text-sm text-red-500">{errors.subject}</p>}
             </div>
       </div>

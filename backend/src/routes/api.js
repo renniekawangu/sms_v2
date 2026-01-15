@@ -65,11 +65,15 @@ const toStudentDto = (student) => ({
   _id: student._id,
   student_id: student.studentId,
   name: `${student.firstName || ''} ${student.lastName || ''}`.trim(),
+  firstName: student.firstName,
+  lastName: student.lastName,
   email: student.email,
   phone: student.phone,
   dob: student.dateOfBirth ? student.dateOfBirth.toISOString() : null,
   date_of_join: student.enrollmentDate ? student.enrollmentDate.toISOString() : null,
-  address: student.address || ''
+  address: student.address || '',
+  gender: student.gender,
+  classLevel: student.classLevel
 });
 
 const toTeacherDto = (teacher, teacherId) => ({
@@ -121,32 +125,37 @@ router.get('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
 }));
 
 router.post('/students', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  const { name = '', email = '', phone = '', dob, address = '', date_of_join } = req.body;
+  const { name = '', email = '', phone = '', dob, address = '', date_of_join, gender, classLevel } = req.body;
+  
+  // Validate required fields
+  if (!name.trim()) return res.status(400).json({ error: 'Name is required' });
+  if (!email.trim()) return res.status(400).json({ error: 'Email is required' });
+  if (!phone.trim()) return res.status(400).json({ error: 'Phone is required' });
+  if (!address.trim()) return res.status(400).json({ error: 'Address is required' });
+  if (!dob) return res.status(400).json({ error: 'Date of birth is required' });
+
+  // Check if student with this email already exists
+  const existingStudent = await Student.findOne({ email: email.trim() });
+  if (existingStudent) {
+    return res.status(400).json({ error: 'Student with this email already exists' });
+  }
+
   const [firstName, ...rest] = String(name).trim().split(' ');
   const lastName = rest.join(' ') || 'Student';
-
-  const user = new User({
-    email,
-    password: 'temp123',
-    role: 'student',
-    name,
-    phone,
-    date_of_join: date_of_join ? new Date(date_of_join) : new Date()
-  });
-  await user.save();
 
   const studentId = await getNextSequence('studentId', 25000);
 
   const student = new Student({
     studentId,
-    userId: user._id,
     firstName,
     lastName,
-    email,
+    email: email.trim(),
     phone,
     address,
-    dateOfBirth: dob ? new Date(dob) : undefined,
+    dateOfBirth: new Date(dob),
     enrollmentDate: date_of_join ? new Date(date_of_join) : new Date(),
+    gender: gender || undefined,
+    classLevel: classLevel || 'Grade 1',
     createdBy: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined
   });
 
@@ -158,17 +167,28 @@ router.put('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
   const student = await findStudentByIdOrStudentId(req.params.id);
   if (!student) return res.status(404).json({ error: 'Student not found' });
 
-  const { name, email, phone, dob, address, date_of_join } = req.body;
+  const { name, email, phone, dob, address, date_of_join, gender, classLevel } = req.body;
+  
+  // Check if email is being changed and if new email already exists
+  if (email && email !== student.email) {
+    const existingStudent = await Student.findOne({ email: email.trim(), _id: { $ne: student._id } });
+    if (existingStudent) {
+      return res.status(400).json({ error: 'Email is already in use by another student' });
+    }
+  }
+  
   if (name) {
     const [firstName, ...rest] = String(name).trim().split(' ');
     student.firstName = firstName;
     student.lastName = rest.join(' ') || student.lastName;
   }
-  if (email) student.email = email;
+  if (email) student.email = email.trim();
   if (phone) student.phone = phone;
   if (address) student.address = address;
   if (dob) student.dateOfBirth = new Date(dob);
   if (date_of_join) student.enrollmentDate = new Date(date_of_join);
+  if (gender) student.gender = gender;
+  if (classLevel) student.classLevel = classLevel;
 
   await student.save();
   res.json(toStudentDto(student));

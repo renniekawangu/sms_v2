@@ -203,6 +203,7 @@ function UserForm({ user, onSubmit, onCancel }) {
               <option value={ROLES.HEAD_TEACHER}>Head Teacher</option>
               <option value={ROLES.TEACHER}>Teacher</option>
               <option value={ROLES.ACCOUNTS}>Accounts</option>
+              <option value={ROLES.PARENT}>Parent</option>
               <option value={ROLES.STUDENT}>Student</option>
             </select>
             {errors.role && (

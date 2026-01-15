@@ -149,10 +149,10 @@ function Sidebar({ isOpen, onClose }) {
                   <Link
                     to={item.path}
                     onClick={handleLinkClick}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors border-l-4 ${
                       isActive
-                        ? 'bg-primary-blue text-white'
-                        : 'text-text-muted hover:bg-gray-50 hover:text-text-dark'
+                        ? 'bg-primary-blue text-white border-l-white'
+                        : 'text-text-muted hover:bg-gray-50 hover:text-text-dark border-l-transparent hover:border-l-primary-blue'
                     }`}
                   >
                   <Icon size={20} />

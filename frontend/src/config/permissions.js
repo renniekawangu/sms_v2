@@ -8,7 +8,8 @@ export const ROLES = {
   STUDENT: 'student',
   TEACHER: 'teacher',
   HEAD_TEACHER: 'head-teacher',
-  ACCOUNTS: 'accounts'
+  ACCOUNTS: 'accounts',
+  PARENT: 'parent'
 };
 
 export const PERMISSION_CATEGORIES = {

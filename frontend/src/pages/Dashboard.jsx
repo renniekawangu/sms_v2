@@ -68,7 +68,7 @@ function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link to="/roles" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/roles" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Users & Roles</p>
@@ -78,7 +78,7 @@ function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="/students" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/students" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Students</p>
@@ -88,7 +88,7 @@ function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="/teachers" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/teachers" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Teachers</p>
@@ -98,7 +98,7 @@ function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Classrooms</p>
@@ -108,7 +108,7 @@ function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="/exams" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/exams" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Exams</p>
@@ -118,21 +118,21 @@ function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Total Fees</p>
-              <p className="text-3xl font-semibold text-text-dark">${stats.totalFees}</p>
+              <p className="text-3xl font-semibold text-text-dark">K{stats.totalFees}</p>
             </div>
             <DollarSign className="text-primary-blue" size={40} />
           </div>
         </Link>
 
-        <Link to="/expenses" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/expenses" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Total Expenses</p>
-              <p className="text-3xl font-semibold text-text-dark">${stats.totalExpenses}</p>
+              <p className="text-3xl font-semibold text-text-dark">K{stats.totalExpenses}</p>
             </div>
             <DollarSign className="text-primary-blue" size={40} />
           </div>
@@ -140,7 +140,7 @@ function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <Award className="text-primary-blue" size={32} />
             <div>
@@ -186,17 +186,7 @@ function TeacherDashboard() {
           </div>
         </Link>
 
-        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-4">
-            <Calendar className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Timetable</h3>
-              <p className="text-sm text-text-muted">View schedule</p>
-            </div>
-          </div>
-        </Link>
-
-        <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <Calendar className="text-primary-blue" size={32} />
             <div>
@@ -232,7 +222,7 @@ function StudentDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Link to="/subjects" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/subjects" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <FileText className="text-primary-blue" size={32} />
             <div>
@@ -242,7 +232,8 @@ function StudentDashboard() {
           </div>
         </Link>
 
-        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+
+        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <Calendar className="text-primary-blue" size={32} />
             <div>
@@ -252,7 +243,7 @@ function StudentDashboard() {
           </div>
         </Link>
 
-        <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <Calendar className="text-primary-blue" size={32} />
             <div>
@@ -262,7 +253,7 @@ function StudentDashboard() {
           </div>
         </Link>
 
-        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <Award className="text-primary-blue" size={32} />
             <div>
@@ -272,7 +263,7 @@ function StudentDashboard() {
           </div>
         </Link>
 
-        <Link to="/issues" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/issues" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <AlertCircle className="text-primary-blue" size={32} />
             <div>
@@ -421,17 +412,17 @@ function HeadTeacherDashboard (){
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/subjects" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
-            <School className="text-primary-blue" size={32} />
+            <FileText className="text-primary-blue" size={32} />
             <div>
-              <h3 className="font-semibold text-text-dark">Classrooms</h3>
-              <p className="text-sm text-text-muted">View classes</p>
+              <h3 className="font-semibold text-text-dark">Subjects</h3>
+              <p className="text-sm text-text-muted">View subjects</p>
             </div>
           </div>
         </Link>
 
-        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
           <div className="flex items-center gap-4">
             <Calendar className="text-primary-blue" size={32} />
             <div>
