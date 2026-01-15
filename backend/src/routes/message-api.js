@@ -133,13 +133,13 @@ router.post('/send', requireAuth, asyncHandler(async (req, res) => {
   const msg = new Message({
     sender: {
       id: senderId,
-      type: senderType,
+      userType: senderType,
       name: senderName,
       email: senderUser?.email
     },
     recipient: {
       id: recipientId,
-      type: recipientType,
+      userType: recipientType,
       name: recipientName,
       email: recipientUser?.email
     },

@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Mail, Send, Trash2, Check, Search } from 'lucide-react'
 import { messagesApi } from '../services/messagesApi'
 import { useToast } from '../contexts/ToastContext'
-import Modal from '../components/Modal'
 
 const Messages = () => {
-  const { toast } = useToast()
+  const { success, error } = useToast()
   const [activeTab, setActiveTab] = useState('inbox')
   const [messages, setMessages] = useState([])
   const [contacts, setContacts] = useState([])
@@ -42,8 +41,8 @@ const Messages = () => {
         ? await messagesApi.getInbox()
         : await messagesApi.getSent()
       setMessages(result.messages || [])
-    } catch (error) {
-      toast('Error loading messages', 'error')
+    } catch (err) {
+      error('Error loading messages')
     } finally {
       setLoading(false)
     }
@@ -80,8 +79,8 @@ const Messages = () => {
         loadMessages()
         loadUnreadCount()
       }
-    } catch (error) {
-      toast('Error loading conversation', 'error')
+    } catch (err) {
+      error('Error loading conversation')
     }
   }
 
@@ -91,7 +90,7 @@ const Messages = () => {
     console.log('Compose data:', composeData)
     
     if (!composeData.recipientId || !composeData.subject || !composeData.message) {
-      toast('Please fill in all required fields', 'error')
+      error('Please fill in all required fields')
       return
     }
 
@@ -100,7 +99,7 @@ const Messages = () => {
       console.log('Sending message...')
       const result = await messagesApi.sendMessage(composeData)
       console.log('Message result:', result)
-      toast('Message sent successfully', 'success')
+      success('Message sent successfully')
       setShowCompose(false)
       setComposeData({
         recipientId: '',
@@ -113,7 +112,7 @@ const Messages = () => {
       loadMessages()
     } catch (error) {
       console.error('Error sending message:', error)
-      toast(error.message || 'Error sending message', 'error')
+      error(error.message || 'Error sending message')
     } finally {
       setLoading(false)
     }
@@ -122,7 +121,7 @@ const Messages = () => {
   const handleReply = async (e) => {
     e.preventDefault()
     if (!replyText.trim()) {
-      toast('Please enter a message', 'error')
+      error('Please enter a message')
       return
     }
 
@@ -137,11 +136,11 @@ const Messages = () => {
         priority: 'normal',
         category: selectedMessage.category
       })
-      toast('Reply sent successfully', 'success')
+      success('Reply sent successfully')
       setReplyText('')
       loadConversation(selectedMessage)
     } catch (error) {
-      toast('Error sending reply', 'error')
+      error('Error sending reply')
     } finally {
       setLoading(false)
     }
@@ -151,10 +150,10 @@ const Messages = () => {
     if (window.confirm('Are you sure you want to delete this message?')) {
       try {
         await messagesApi.deleteMessage(messageId)
-        toast('Message deleted successfully', 'success')
+        success('Message deleted successfully')
         loadMessages()
       } catch (error) {
-        toast('Error deleting message', 'error')
+        error('Error deleting message')
       }
     }
   }
@@ -171,7 +170,7 @@ const Messages = () => {
       const result = await messagesApi.searchMessages(searchQuery)
       setMessages(result.messages || [])
     } catch (error) {
-      toast('Error searching messages', 'error')
+      error('Error searching messages')
     } finally {
       setLoading(false)
     }
@@ -436,8 +435,19 @@ const Messages = () => {
 
       {/* Compose Modal */}
       {showCompose && (
-        <Modal title="Compose Message" onClose={() => setShowCompose(false)}>
-          <form onSubmit={handleSendMessage} className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3 sm:p-4 overflow-y-auto" onClick={() => setShowCompose(false)}>
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Compose Message</h2>
+              <button
+                onClick={() => setShowCompose(false)}
+                className="text-gray-500 hover:text-gray-900 transition-colors p-1 hover:bg-gray-100 rounded"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 sm:p-6">
+              <form onSubmit={handleSendMessage} className="space-y-4">
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                 Recipient *
@@ -530,8 +540,10 @@ const Messages = () => {
                 <Send size={16} /> Send
               </button>
             </div>
-          </form>
-        </Modal>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

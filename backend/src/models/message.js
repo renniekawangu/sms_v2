@@ -3,16 +3,40 @@ const mongoose = require('mongoose')
 const messageSchema = new mongoose.Schema(
   {
     sender: {
-      id: mongoose.Schema.Types.ObjectId,
-      type: String, // 'teacher', 'parent', 'admin', etc.
-      name: String,
-      email: String
+      id: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+      },
+      userType: {
+        type: String, // 'teacher', 'parent', 'admin', etc.
+        required: true
+      },
+      name: {
+        type: String,
+        required: true
+      },
+      email: {
+        type: String,
+        required: true
+      }
     },
     recipient: {
-      id: mongoose.Schema.Types.ObjectId,
-      type: String,
-      name: String,
-      email: String
+      id: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+      },
+      userType: {
+        type: String,
+        required: true
+      },
+      name: {
+        type: String,
+        required: true
+      },
+      email: {
+        type: String,
+        required: true
+      }
     },
     subject: {
       type: String,
