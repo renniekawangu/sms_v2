@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import Footer from './Footer'
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-background-light overflow-hidden">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background-light">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col overflow-hidden w-full">
+      <div className="flex-1 flex flex-col w-full">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   )
