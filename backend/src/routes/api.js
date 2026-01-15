@@ -74,7 +74,8 @@ const toStudentDto = (student) => ({
   date_of_join: student.enrollmentDate ? student.enrollmentDate.toISOString() : null,
   address: student.address || '',
   gender: student.gender,
-  classLevel: student.classLevel
+  classLevel: student.classLevel,
+  parents: student.parents || []
 });
 
 const toTeacherDto = (teacher, teacherId) => ({
