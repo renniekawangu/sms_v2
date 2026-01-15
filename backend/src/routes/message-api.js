@@ -122,20 +122,6 @@ router.post('/send', requireAuth, asyncHandler(async (req, res) => {
 }))
 
 // Mark as read
-router.patch('/:messageId/read', requireAuth, asyncHandler(async (req, res) => {
-  const msg = await Message.findByIdAndUpdate(
-    req.params.messageId,
-    { isRead: true },
-    { new: true }
-  )
-
-  res.json({
-    success: true,
-    message: 'Message marked as read',
-    msg
-  })
-}))
-
 // Get unread count
 router.get('/unread/count', requireAuth, asyncHandler(async (req, res) => {
   const count = await Message.countDocuments({
@@ -176,16 +162,6 @@ router.get('/contacts/list', requireAuth, asyncHandler(async (req, res) => {
   })
 }))
 
-// Delete message
-router.delete('/:messageId', requireAuth, asyncHandler(async (req, res) => {
-  await Message.findByIdAndDelete(req.params.messageId)
-
-  res.json({
-    success: true,
-    message: 'Message deleted'
-  })
-}))
-
 // Search messages
 router.get('/search/:query', requireAuth, asyncHandler(async (req, res) => {
   const query = req.params.query
@@ -212,6 +188,31 @@ router.get('/search/:query', requireAuth, asyncHandler(async (req, res) => {
   res.json({
     success: true,
     messages
+  })
+}))
+
+// Mark as read
+router.patch('/:messageId/read', requireAuth, asyncHandler(async (req, res) => {
+  const msg = await Message.findByIdAndUpdate(
+    req.params.messageId,
+    { isRead: true },
+    { new: true }
+  )
+
+  res.json({
+    success: true,
+    message: 'Message marked as read',
+    msg
+  })
+}))
+
+// Delete message
+router.delete('/:messageId', requireAuth, asyncHandler(async (req, res) => {
+  await Message.findByIdAndDelete(req.params.messageId)
+
+  res.json({
+    success: true,
+    message: 'Message deleted'
   })
 }))
 

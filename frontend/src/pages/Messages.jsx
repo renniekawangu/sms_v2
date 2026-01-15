@@ -87,6 +87,9 @@ const Messages = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault()
+    
+    console.log('Compose data:', composeData)
+    
     if (!composeData.recipientId || !composeData.subject || !composeData.message) {
       toast('Please fill in all required fields', 'error')
       return
@@ -94,7 +97,9 @@ const Messages = () => {
 
     try {
       setLoading(true)
-      await messagesApi.sendMessage(composeData)
+      console.log('Sending message...')
+      const result = await messagesApi.sendMessage(composeData)
+      console.log('Message result:', result)
       toast('Message sent successfully', 'success')
       setShowCompose(false)
       setComposeData({
@@ -104,9 +109,11 @@ const Messages = () => {
         priority: 'normal',
         category: 'general'
       })
+      setActiveTab('sent')
       loadMessages()
     } catch (error) {
-      toast('Error sending message', 'error')
+      console.error('Error sending message:', error)
+      toast(error.message || 'Error sending message', 'error')
     } finally {
       setLoading(false)
     }
@@ -315,7 +322,12 @@ const Messages = () => {
             )}
           </div>
           <button
-            onClick={() => setShowCompose(true)}
+            onClick={() => {
+              setShowCompose(true)
+              if (contacts.length === 0) {
+                loadContacts()
+              }
+            }}
             className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <Send size={18} /> Compose
