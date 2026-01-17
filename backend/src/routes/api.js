@@ -912,6 +912,15 @@ router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
   let classroomId = classroom || classroom_id;
   const dayOfWeekValue = dayOfWeek || day;
   
+  // Validate dayOfWeek value
+  const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  if (!validDays.includes(dayOfWeekValue)) {
+    return res.status(400).json({ 
+      error: 'Invalid day. Must be one of: ' + validDays.join(', '),
+      received: dayOfWeekValue
+    });
+  }
+  
   // Validate and convert classroom ID to ObjectId
   if (!mongoose.Types.ObjectId.isValid(classroomId)) {
     return res.status(400).json({ 
@@ -962,10 +971,13 @@ router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
   }
   
   // Check for conflicts
+  console.log(`[TIMETABLE] Checking conflict for day="${dayOfWeekValue}" time="${start}-${end}" classroom="${classroomId}" teacher="${teacherId}"`);
   const conflict = await Timetable.checkConflict(classroomId, teacherId, dayOfWeekValue, start, end);
   if (conflict.hasConflict) {
+    console.log(`[TIMETABLE] Conflict found:`, conflict.conflictWith);
     return res.status(409).json({ 
       error: 'Schedule conflict detected',
+      details: `Cannot schedule on ${dayOfWeekValue} ${start}-${end}: conflicts with existing entry on ${conflict.conflictWith.dayOfWeek}`,
       conflictWith: conflict.conflictWith 
     });
   }

@@ -1,11 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Calendar, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
 import { timetableApi, classroomsApi, subjectsApi, teachersApi } from '../services/api'
+import { exportToCSV, exportToJSON } from '../utils/exportData'
+import { filterData, sortData, searchData, paginateData, getUniqueValues } from '../utils/filterSort'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import TimetableForm from '../components/TimetableForm'
 import ConfirmDialog from '../components/ConfirmDialog'
 import useKeyboardShortcuts from '../utils/keyboardShortcuts.jsx'
+import AdvancedSearch from '../components/AdvancedSearch'
+import Pagination from '../components/Pagination'
 
 function Timetable() {
   const [classrooms, setClassrooms] = useState([])
@@ -20,6 +24,11 @@ function Timetable() {
   const [editingEntry, setEditingEntry] = useState(null)
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false })
   const { success, error: showError } = useToast()
+  const [filters, setFilters] = useState({})
+  const [sortBy, setSortBy] = useState('startTime')
+  const [sortOrder, setSortOrder] = useState('asc')
+  const [pageSize, setPageSize] = useState(8)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     loadData()
@@ -122,23 +131,34 @@ function Timetable() {
   // Keyboard shortcuts
   useKeyboardShortcuts({
     new: handleCreate,
-    search: () => document.querySelector('input[placeholder="Search timetable..."]')?.focus()
+    search: () => document.querySelector('input[placeholder="Search..."]')?.focus()
   })
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-  const timeSlots = [...new Set(timetable.map(t => t.startTime || t.time))].filter(Boolean).sort()
 
-  const filteredTimetable = useMemo(() => {
-    if (!searchQuery.trim()) return timetable
-    const query = searchQuery.toLowerCase()
-    return timetable.filter((entry) => {
-      return (
-        (entry.dayOfWeek || entry.day)?.toLowerCase().includes(query) ||
-        (entry.startTime || entry.time)?.includes(query) ||
-        (entry.subject?.name || entry.subject)?.toLowerCase().includes(query)
-      )
-    })
-  }, [timetable, searchQuery])
+  // Normalize entries and process with filters/search/sort
+  const normalized = useMemo(() => (
+    timetable.map(e => ({
+      ...e,
+      dayOfWeek: e.dayOfWeek || e.day,
+      startTime: e.startTime || e.time,
+      subjectName: e.subject?.name || e.subject,
+      teacherName: e.teacher ? `${e.teacher.firstName || e.teacher.name || ''} ${e.teacher.lastName || ''}`.trim() : ''
+    }))
+  ), [timetable])
+
+  const processedEntries = useMemo(() => {
+    let result = filterData(normalized, filters)
+    result = searchData(result, searchQuery, ['dayOfWeek', 'startTime', 'subjectName', 'teacherName'])
+    result = sortData(result, sortBy, sortOrder)
+    return result
+  }, [normalized, filters, searchQuery, sortBy, sortOrder])
+
+  const timeSlots = useMemo(() => (
+    [...new Set(processedEntries.map(t => t.startTime))].filter(Boolean).sort()
+  ), [processedEntries])
+
+  const filteredTimetable = processedEntries
 
   if (loading) {
     return (
@@ -201,20 +221,44 @@ function Timetable() {
       </div>
 
       <div className="bg-card-white rounded-custom shadow-custom p-4 md:p-6">
-        {timetable.length > 0 && (
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-              <input
-                type="text"
-                placeholder="Search timetable..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
-              />
-            </div>
+        <AdvancedSearch
+          searchFields={['dayOfWeek','startTime','subjectName','teacherName']}
+          filterOptions={{
+            dayOfWeek: days,
+            teacherName: getUniqueValues(normalized, 'teacherName').filter(Boolean),
+            subjectName: getUniqueValues(normalized, 'subjectName').filter(Boolean)
+          }}
+          onSearch={(q) => { setSearchQuery(q); setCurrentPage(1) }}
+          onFilter={(f) => { setFilters(f); setCurrentPage(1) }}
+          onClear={() => { setFilters({}); setSearchQuery(''); setCurrentPage(1) }}
+        />
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportToCSV(processedEntries, 'timetable.csv', ['dayOfWeek','startTime','endTime','subjectName','teacherName'])}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              Export CSV
+            </button>
+            <button
+              onClick={() => exportToJSON(processedEntries, 'timetable.json')}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              Export JSON
+            </button>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-text-muted">Rows per page</label>
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(parseInt(e.target.value)); setCurrentPage(1) }}
+              className="px-2 py-1 text-sm border border-gray-200 rounded"
+            >
+              {[5,8,10,15,20].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+        </div>
 
         {filteredTimetable.length === 0 ? (
           <div className="text-center py-8 text-sm text-text-muted">
@@ -236,22 +280,22 @@ function Timetable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {timeSlots.map((time, timeIndex) => (
+                  {paginateData(timeSlots, currentPage, pageSize).data.map((time, timeIndex) => (
                     <tr key={`${time}-${timeIndex}`} className="border-b border-gray-100">
                       <td className="py-3 px-4 text-xs md:text-sm font-medium text-text-dark whitespace-nowrap">{time}</td>
                       {days.map((day) => {
-                        const slot = filteredTimetable.find(t => (t.dayOfWeek || t.day) === day && (t.startTime || t.time) === time)
+                        const slot = filteredTimetable.find(t => t.dayOfWeek === day && t.startTime === time)
                         return (
                           <td key={`${day}-${time}`} className="py-3 px-2 md:px-4 text-xs md:text-sm text-text-muted whitespace-nowrap">
-                            {slot?.subject?.name || slot?.subject || '-'}
+                            {slot?.subjectName || slot?.subject?.name || slot?.subject || '-'}
                           </td>
                         )
                       })}
                       <td className="py-3 px-2 md:px-4">
-                        {filteredTimetable.filter(t => (t.startTime || t.time) === time).length > 0 && (
+                        {filteredTimetable.filter(t => t.startTime === time).length > 0 && (
                           <div className="flex items-center gap-1">
                             {filteredTimetable
-                              .filter(t => (t.startTime || t.time) === time)
+                              .filter(t => t.startTime === time)
                               .map((entry) => (
                                 <div key={entry._id} className="flex items-center gap-1">
                                   <button
@@ -278,10 +322,17 @@ function Timetable() {
                 </tbody>
               </table>
             </div>
-            <div className="mt-6">
+            <div className="mt-6 flex items-center justify-between">
               <p className="text-sm text-text-muted">
                 Showing {filteredTimetable.length} of {timetable.length} entries
               </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={paginateData(timeSlots, currentPage, pageSize).pageCount}
+                totalItems={timeSlots.length}
+                pageSize={pageSize}
+                onPageChange={(p) => setCurrentPage(p)}
+              />
             </div>
           </>
         )}
