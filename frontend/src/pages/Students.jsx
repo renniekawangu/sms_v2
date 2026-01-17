@@ -1,17 +1,32 @@
 import { useState, useEffect, useMemo } from 'react'
-import { GraduationCap, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
+import { GraduationCap, Search, Plus, Edit, Trash2, AlertCircle, Download, CheckSquare, Square } from 'lucide-react'
 import { studentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import StudentForm from '../components/StudentForm'
+import AdvancedSearch from '../components/AdvancedSearch'
+import Pagination from '../components/Pagination'
+import SkeletonLoader from '../components/SkeletonLoader'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { exportToCSV, exportToJSON } from '../utils/exportData'
+import { filterData, sortData, searchData, paginateData } from '../utils/filterSort'
+import { validateFormData } from '../utils/validation'
+import useKeyboardShortcuts from '../utils/keyboardShortcuts.jsx'
 
 function Students() {
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filters, setFilters] = useState({})
+  const [sortBy, setSortBy] = useState('name')
+  const [sortOrder, setSortOrder] = useState('asc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false })
   const { success, error: showError } = useToast()
 
   useEffect(() => {
@@ -62,36 +77,125 @@ function Students() {
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      try {
-        await studentsApi.delete(id)
-        success('Student deleted successfully')
-        await loadStudents()
-      } catch (err) {
-        const errorMessage = err.message || 'Failed to delete student'
-        showError(errorMessage)
-      }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Student',
+      message: 'Are you sure you want to delete this student? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await studentsApi.delete(id)
+          success('Student deleted successfully')
+          await loadStudents()
+          setConfirmDialog({ isOpen: false })
+        } catch (err) {
+          showError(err.message || 'Failed to delete student')
+        }
+      },
+      onCancel: () => setConfirmDialog({ isOpen: false })
+    })
+  }
+
+  const handleDeleteSelected = async () => {
+    const ids = Array.from(selectedIds)
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Multiple Students',
+      message: `Are you sure you want to delete ${ids.length} student(s)? This action cannot be undone.`,
+      type: 'danger',
+      confirmText: 'Delete All',
+      onConfirm: async () => {
+        try {
+          for (const id of ids) {
+            await studentsApi.delete(id)
+          }
+          success(`${ids.length} student(s) deleted successfully`)
+          setSelectedIds(new Set())
+          await loadStudents()
+          setConfirmDialog({ isOpen: false })
+        } catch (err) {
+          showError(err.message || 'Failed to delete students')
+        }
+      },
+      onCancel: () => setConfirmDialog({ isOpen: false })
+    })
+  }
+
+  const handleExportAll = () => {
+    exportToCSV(processedStudents, 'students.csv', [
+      'student_id',
+      'name',
+      'email',
+      'phone',
+      'dob',
+      'date_of_join'
+    ])
+  }
+
+  const handleExportSelected = () => {
+    const selectedData = students.filter(s => selectedIds.has(s._id || s.student_id))
+    if (selectedData.length === 0) {
+      showError('No students selected for export')
+      return
+    }
+    exportToCSV(selectedData, 'students_selected.csv', [
+      'student_id',
+      'name',
+      'email',
+      'phone',
+      'dob',
+      'date_of_join'
+    ])
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === processedStudents.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(processedStudents.map(s => s._id || s.student_id)))
     }
   }
 
-  const filteredStudents = useMemo(() => {
-    if (!searchQuery.trim()) return students
-    const query = searchQuery.toLowerCase()
-    return students.filter((student) => {
-      return (
-        student.name?.toLowerCase().includes(query) ||
-        student.email?.toLowerCase().includes(query) ||
-        student.student_id?.toString().includes(query)
-      )
-    })
-  }, [students, searchQuery])
+  const toggleSelect = (id) => {
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    new: handleCreate,
+    export: handleExportAll,
+    search: () => document.querySelector('input[type="text"]')?.focus()
+  })
+
+  // Filter, sort, search, and paginate
+  let processedStudents = useMemo(() => {
+    let result = filterData(students, filters)
+    result = searchData(result, searchQuery, ['name', 'email', 'student_id'])
+    result = sortData(result, sortBy, sortOrder)
+    return result
+  }, [students, filters, searchQuery, sortBy, sortOrder])
+
+  const paginatedData = useMemo(() => {
+    return paginateData(processedStudents, currentPage, pageSize)
+  }, [processedStudents, currentPage, pageSize])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-text-muted">Loading students...</p>
+      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+        <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3"></div>
+        <div className="bg-card-white rounded-custom shadow-custom p-4 overflow-x-auto">
+          <table className="min-w-full">
+            <tbody>
+              <SkeletonLoader count={5} variant="row" />
+            </tbody>
+          </table>
         </div>
       </div>
     )
@@ -120,39 +224,102 @@ function Students() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Students</h1>
-          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all student records</p>
+          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all student records ({students.length})</p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
-        >
-          <Plus size={18} className="sm:size-5" />
-          <span>Add Student</span>
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={handleCreate}
+            className="flex items-center justify-center gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm font-medium"
+            title="Ctrl+N"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">Add Student</span>
+          </button>
+          <button
+            onClick={handleExportAll}
+            className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            title="Ctrl+E"
+          >
+            <Download size={18} />
+            <span className="hidden sm:inline">Export All</span>
+          </button>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleExportSelected}
+              className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              <Download size={18} />
+              <span className="hidden sm:inline">Export ({selectedIds.size})</span>
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              className="flex items-center justify-center gap-2 bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              <Trash2 size={18} />
+              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
-        <div className="mb-4 sm:mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-            <input
-              type="text"
-              placeholder="Search students by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
-              aria-label="Search students"
-            />
-          </div>
-        </div>
+      {/* Advanced Search */}
+      <AdvancedSearch
+        searchFields={['name', 'email', 'student_id']}
+        filterOptions={{
+          grade: ['A', 'B', 'C', 'D', 'E'],
+          status: ['Active', 'Inactive', 'Graduated']
+        }}
+        onSearch={setSearchQuery}
+        onFilter={setFilters}
+        onClear={() => {
+          setSearchQuery('')
+          setFilters({})
+        }}
+        loading={loading}
+      />
 
+      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
         <div className="overflow-x-auto">
           <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="hidden sm:table-cell text-left py-3 px-2 sm:px-4 font-semibold text-text-dark">ID</th>
-                <th className="text-left py-3 px-2 sm:px-4 font-semibold text-text-dark">Name</th>
-                <th className="hidden md:table-cell text-left py-3 px-4 font-semibold text-text-dark">Email</th>
+                <th className="text-left py-3 px-2 sm:px-4 w-8">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="text-primary-blue hover:text-primary-blue/80"
+                    title="Select all"
+                  >
+                    {selectedIds.size === paginatedData.data.length ? (
+                      <CheckSquare size={18} />
+                    ) : (
+                      <Square size={18} />
+                    )}
+                  </button>
+                </th>
+                <th 
+                  className="hidden sm:table-cell text-left py-3 px-2 sm:px-4 font-semibold text-text-dark cursor-pointer hover:bg-gray-50"
+                  onClick={() => setSortBy('student_id')}
+                >
+                  ID {sortBy === 'student_id' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
+                <th 
+                  className="text-left py-3 px-2 sm:px-4 font-semibold text-text-dark cursor-pointer hover:bg-gray-50"
+                  onClick={() => {
+                    setSortBy('name')
+                    setSortOrder(sortBy === 'name' && sortOrder === 'asc' ? 'desc' : 'asc')
+                  }}
+                >
+                  Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="hidden md:table-cell text-left py-3 px-4 font-semibold text-text-dark cursor-pointer hover:bg-gray-50"
+                  onClick={() => {
+                    setSortBy('email')
+                    setSortOrder(sortBy === 'email' && sortOrder === 'asc' ? 'desc' : 'asc')
+                  }}>
+                  Email {sortBy === 'email' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
                 <th className="hidden lg:table-cell text-left py-3 px-4 font-semibold text-text-dark">Phone</th>
                 <th className="hidden lg:table-cell text-left py-3 px-4 font-semibold text-text-dark">DOB</th>
                 <th className="hidden xl:table-cell text-left py-3 px-4 font-semibold text-text-dark">Date of Join</th>
@@ -160,15 +327,27 @@ function Students() {
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.length === 0 ? (
+              {paginatedData.data.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-xs sm:text-sm text-text-muted">
+                  <td colSpan="8" className="py-8 text-center text-xs sm:text-sm text-text-muted">
                     No students found
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map((student) => (
+                paginatedData.data.map((student) => (
                   <tr key={student._id || student.student_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-2 sm:px-4">
+                      <button
+                        onClick={() => toggleSelect(student._id || student.student_id)}
+                        className="text-primary-blue hover:text-primary-blue/80"
+                      >
+                        {selectedIds.has(student._id || student.student_id) ? (
+                          <CheckSquare size={18} />
+                        ) : (
+                          <Square size={18} />
+                        )}
+                      </button>
+                    </td>
                     <td className="hidden sm:table-cell py-3 px-2 sm:px-4 text-text-dark">{student.student_id}</td>
                     <td className="py-3 px-2 sm:px-4 text-text-dark font-medium">{student.name}</td>
                     <td className="hidden md:table-cell py-3 px-4 text-sm text-text-muted">{student.email}</td>
@@ -206,11 +385,23 @@ function Students() {
           </table>
         </div>
 
-        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="text-xs sm:text-sm text-text-muted">
-            Showing {filteredStudents.length} of {students.length} students
-          </p>
-        </div>
+        {/* Pagination */}
+        {paginatedData.pageCount > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={paginatedData.pageCount}
+            totalItems={paginatedData.total}
+            pageSize={pageSize}
+            onPageChange={(page, newPageSize) => {
+              if (newPageSize) {
+                setPageSize(newPageSize)
+                setCurrentPage(1)
+              } else {
+                setCurrentPage(page)
+              }
+            }}
+          />
+        )}
       </div>
 
       <Modal
@@ -230,6 +421,8 @@ function Students() {
           }}
         />
       </Modal>
+
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }

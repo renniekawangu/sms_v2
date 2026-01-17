@@ -1,17 +1,31 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Users, Search, Plus, Filter, Edit2, Trash2, AlertCircle } from 'lucide-react'
+import { Users, Search, Plus, Filter, Edit2, Trash2, AlertCircle, Download, CheckSquare, Square } from 'lucide-react'
 import { teachersApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
+import AdvancedSearch from '../components/AdvancedSearch'
+import Pagination from '../components/Pagination'
+import SkeletonLoader from '../components/SkeletonLoader'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { exportToCSV } from '../utils/exportData'
+import { filterData, sortData, searchData, paginateData } from '../utils/filterSort'
+import useKeyboardShortcuts from '../utils/keyboardShortcuts.jsx'
 
 function Staffs() {
   const [staffs, setStaffs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filters, setFilters] = useState({})
+  const [sortBy, setSortBy] = useState('name')
+  const [sortOrder, setSortOrder] = useState('asc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [filterRole, setFilterRole] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingStaff, setEditingStaff] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false })
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -56,6 +70,127 @@ function Staffs() {
     }
   }
 
+  const handleCreate = () => {
+    setEditingStaff(null)
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      role: 'teacher',
+      department: 'Administration'
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleDelete = async (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Staff',
+      message: 'Are you sure you want to delete this staff member? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await teachersApi.delete(id)
+          success('Staff member deleted successfully')
+          await loadStaffs()
+          setConfirmDialog({ isOpen: false })
+        } catch (err) {
+          showError(err.message || 'Failed to delete staff member')
+        }
+      },
+      onCancel: () => setConfirmDialog({ isOpen: false })
+    })
+  }
+
+  const handleDeleteSelected = async () => {
+    const ids = Array.from(selectedIds)
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Multiple Staff',
+      message: `Are you sure you want to delete ${ids.length} staff member(s)? This action cannot be undone.`,
+      type: 'danger',
+      confirmText: 'Delete All',
+      onConfirm: async () => {
+        try {
+          for (const id of ids) {
+            await teachersApi.delete(id)
+          }
+          success(`${ids.length} staff member(s) deleted successfully`)
+          setSelectedIds(new Set())
+          await loadStaffs()
+          setConfirmDialog({ isOpen: false })
+        } catch (err) {
+          showError(err.message || 'Failed to delete staff members')
+        }
+      },
+      onCancel: () => setConfirmDialog({ isOpen: false })
+    })
+  }
+
+  const handleExportAll = () => {
+    exportToCSV(processedStaffs, 'staffs.csv', [
+      'name',
+      'email',
+      'phone',
+      'role',
+      'department'
+    ])
+  }
+
+  const handleExportSelected = () => {
+    const selectedData = staffs.filter(s => selectedIds.has(s.id || s._id))
+    if (selectedData.length === 0) {
+      showError('No staff members selected for export')
+      return
+    }
+    exportToCSV(selectedData, 'staffs_selected.csv', [
+      'name',
+      'email',
+      'phone',
+      'role',
+      'department'
+    ])
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === processedStaffs.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(processedStaffs.map(s => s.id || s._id)))
+    }
+  }
+
+  const toggleSelect = (id) => {
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    new: handleCreate,
+    export: handleExportAll,
+    search: () => document.querySelector('input[type="text"]')?.focus()
+  })
+
+  // Filter, sort, search, and paginate
+  let processedStaffs = useMemo(() => {
+    let result = filterData(staffs, filters)
+    result = searchData(result, searchQuery, ['name', 'email', 'department'])
+    result = sortData(result, sortBy, sortOrder)
+    return result
+  }, [staffs, filters, searchQuery, sortBy, sortOrder])
+
+  const paginatedData = useMemo(() => {
+    return paginateData(processedStaffs, currentPage, pageSize)
+  }, [processedStaffs, currentPage, pageSize])
+
   // Filtered and searched staffs
   const filteredStaffs = useMemo(() => {
     return staffs.filter(staff => {
@@ -68,16 +203,7 @@ function Staffs() {
   }, [staffs, searchQuery, filterRole])
 
   const handleAddClick = () => {
-    setEditingStaff(null)
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      role: 'teacher',
-      department: 'Administration'
-    })
-    setIsModalOpen(true)
+    handleCreate()
   }
 
   const handleEditClick = (staff) => {
@@ -171,10 +297,14 @@ function Staffs() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-blue mx-auto mb-4"></div>
-          <p className="text-text-muted">Loading staff records...</p>
+      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+        <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3"></div>
+        <div className="bg-card-white rounded-custom shadow-custom p-4 overflow-x-auto">
+          <table className="min-w-full">
+            <tbody>
+              <SkeletonLoader count={5} variant="row" />
+            </tbody>
+          </table>
         </div>
       </div>
     )
@@ -185,15 +315,44 @@ function Staffs() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Staffs</h1>
-          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all staff records</p>
+          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all staff records ({staffs.length})</p>
         </div>
-        <button 
-          onClick={handleAddClick}
-          className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors font-medium text-sm sm:text-base"
-        >
-          <Plus size={18} className="sm:size-5" />
-          <span>Add Staff</span>
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button 
+            onClick={handleAddClick}
+            className="flex items-center justify-center gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors font-medium text-sm"
+            title="Ctrl+N"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">Add Staff</span>
+          </button>
+          <button
+            onClick={handleExportAll}
+            className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            title="Ctrl+E"
+          >
+            <Download size={18} />
+            <span className="hidden sm:inline">Export All</span>
+          </button>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleExportSelected}
+              className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              <Download size={18} />
+              <span className="hidden sm:inline">Export ({selectedIds.size})</span>
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              className="flex items-center justify-center gap-2 bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              <Trash2 size={18} />
+              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -203,82 +362,139 @@ function Staffs() {
         </div>
       )}
 
-      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
-            />
-          </div>
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue min-w-[120px] sm:min-w-[140px]"
-          >
-            <option value="all">All Roles</option>
-            {roles.map(role => (
-              <option key={role.value} value={role.value}>{role.label}</option>
-            ))}
-          </select>
-        </div>
+      {/* Advanced Search */}
+      <AdvancedSearch
+        searchFields={['name', 'email', 'department']}
+        filterOptions={{
+          role: ['teacher', 'administrator', 'secretary', 'librarian', 'security', 'maintenance'],
+          department: ['Administration', 'Academic', 'Support', 'Security']
+        }}
+        onSearch={setSearchQuery}
+        onFilter={setFilters}
+        onClear={() => {
+          setSearchQuery('')
+          setFilters({})
+        }}
+        loading={loading}
+      />
 
-        {filteredStaffs.length === 0 ? (
-          <div className="text-center py-8 sm:py-12">
-            <Users className="mx-auto mb-4 text-text-muted" size={40} />
-            <p className="text-sm sm:text-base text-text-muted">No staff members found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm sm:text-base">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-2 sm:px-4 font-semibold text-text-dark">Name</th>
-                  <th className="hidden sm:table-cell text-left py-3 px-4 font-semibold text-text-dark">Role</th>
-                  <th className="hidden md:table-cell text-left py-3 px-4 font-semibold text-text-dark">Department</th>
-                  <th className="hidden lg:table-cell text-left py-3 px-4 font-semibold text-text-dark">Email</th>
-                  <th className="hidden md:table-cell text-left py-3 px-4 font-semibold text-text-dark">Phone</th>
-                  <th className="text-left py-3 px-2 sm:px-4 font-semibold text-text-dark">Actions</th>
+      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs sm:text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-2 sm:px-4 w-8">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="text-primary-blue hover:text-primary-blue/80"
+                    title="Select all"
+                  >
+                    {selectedIds.size === paginatedData.data.length ? (
+                      <CheckSquare size={18} />
+                    ) : (
+                      <Square size={18} />
+                    )}
+                  </button>
+                </th>
+                <th 
+                  className="text-left py-3 px-2 sm:px-4 font-semibold text-text-dark cursor-pointer hover:bg-gray-50"
+                  onClick={() => {
+                    setSortBy('name')
+                    setSortOrder(sortBy === 'name' && sortOrder === 'asc' ? 'desc' : 'asc')
+                  }}
+                >
+                  Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="hidden md:table-cell text-left py-3 px-4 font-semibold text-text-dark cursor-pointer hover:bg-gray-50"
+                  onClick={() => {
+                    setSortBy('email')
+                    setSortOrder(sortBy === 'email' && sortOrder === 'asc' ? 'desc' : 'asc')
+                  }}>
+                  Email {sortBy === 'email' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="hidden lg:table-cell text-left py-3 px-4 font-semibold text-text-dark">Phone</th>
+                <th className="hidden xl:table-cell text-left py-3 px-4 font-semibold text-text-dark cursor-pointer hover:bg-gray-50"
+                  onClick={() => {
+                    setSortBy('role')
+                    setSortOrder(sortBy === 'role' && sortOrder === 'asc' ? 'desc' : 'asc')
+                  }}>
+                  Role {sortBy === 'role' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="hidden xl:table-cell text-left py-3 px-4 font-semibold text-text-dark">Department</th>
+                <th className="text-left py-3 px-2 sm:px-4 font-semibold text-text-dark">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.data.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-8 text-center text-xs sm:text-sm text-text-muted">
+                    No staff found
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredStaffs.map((staff) => (
-                  <tr key={staff.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-2 sm:px-4 text-xs sm:text-sm text-text-dark font-medium">{staff.name}</td>
-                    <td className="hidden sm:table-cell py-3 px-4 text-sm text-text-muted capitalize">{staff.role}</td>
-                    <td className="hidden md:table-cell py-3 px-4 text-sm text-text-muted">{staff.department}</td>
-                    <td className="hidden lg:table-cell py-3 px-4 text-sm text-text-muted">{staff.email}</td>
-                    <td className="hidden md:table-cell py-3 px-4 text-sm text-text-muted">{staff.phone}</td>
-                    <td className="py-3 px-2 sm:px-4 flex items-center gap-1 sm:gap-2">
+              ) : (
+                paginatedData.data.map((staff) => (
+                  <tr key={staff.id || staff._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-2 sm:px-4">
                       <button
-                        onClick={() => handleEditClick(staff)}
-                        className="text-primary-blue hover:text-primary-blue/80 transition-colors p-1 rounded hover:bg-blue-50"
-                        title="Edit"
+                        onClick={() => toggleSelect(staff.id || staff._id)}
+                        className="text-primary-blue hover:text-primary-blue/80"
                       >
-                        <Edit2 size={16} className="sm:size-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(staff)}
-                        className="text-red-600 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} className="sm:size-4" />
+                        {selectedIds.has(staff.id || staff._id) ? (
+                          <CheckSquare size={18} />
+                        ) : (
+                          <Square size={18} />
+                        )}
                       </button>
                     </td>
+                    <td className="py-3 px-2 sm:px-4 text-text-dark font-medium">{staff.name}</td>
+                    <td className="hidden md:table-cell py-3 px-4 text-sm text-text-muted">{staff.email}</td>
+                    <td className="hidden lg:table-cell py-3 px-4 text-sm text-text-muted">{staff.phone}</td>
+                    <td className="hidden xl:table-cell py-3 px-4 text-sm text-text-muted capitalize">{staff.role}</td>
+                    <td className="hidden xl:table-cell py-3 px-4 text-sm text-text-muted">{staff.department}</td>
+                    <td className="py-3 px-2 sm:px-4">
+                      <div className="flex items-center gap-1 sm:gap-3">
+                        <button
+                          onClick={() => handleEditClick(staff)}
+                          className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-blue-50"
+                          title="Edit"
+                        >
+                          <Edit2 size={14} className="sm:size-4" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(staff.id || staff._id)}
+                          className="text-red-500 hover:text-red-600 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-red-50"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} className="sm:size-4" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-text-muted">
-          Showing {filteredStaffs.length} of {staffs.length} staff members
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
+
+        {/* Pagination */}
+        {paginatedData.pageCount > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={paginatedData.pageCount}
+            totalItems={paginatedData.total}
+            pageSize={pageSize}
+            onPageChange={(page, newPageSize) => {
+              if (newPageSize) {
+                setPageSize(newPageSize)
+                setCurrentPage(1)
+              } else {
+                setCurrentPage(page)
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* Staff Form Modal */}
@@ -387,6 +603,8 @@ function Staffs() {
           </div>
         </Modal>
       )}
+
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }
