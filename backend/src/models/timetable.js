@@ -123,11 +123,11 @@ timetableEntrySchema.set('toObject', { virtuals: true });
 // Method to check for conflicts
 timetableEntrySchema.statics.checkConflict = async function(classroom, teacher, dayOfWeek, startTime, endTime, excludeId = null) {
   const query = {
-    dayOfWeek,
+    dayOfWeek,  // IMPORTANT: Only checks conflicts on the SAME day
     isActive: true,
     $or: [
-      { classroom },
-      { teacher }
+      { classroom },  // Same classroom can't have 2 lessons at once
+      { teacher }     // Same teacher can't teach 2 classes at once
     ]
   };
   
@@ -135,7 +135,10 @@ timetableEntrySchema.statics.checkConflict = async function(classroom, teacher, 
     query._id = { $ne: excludeId };
   }
   
+  console.log(`[TIMETABLE MODEL] Checking conflicts:`, { classroom, teacher, dayOfWeek, time: `${startTime}-${endTime}`, excludeId });
+  
   const existingEntries = await this.find(query);
+  console.log(`[TIMETABLE MODEL] Found ${existingEntries.length} entries on ${dayOfWeek} to check`);
   
   // Check for time overlap
   for (const entry of existingEntries) {
@@ -149,6 +152,13 @@ timetableEntrySchema.statics.checkConflict = async function(classroom, teacher, 
       (startTime <= existingStart && endTime >= existingEnd);
     
     if (hasOverlap) {
+      console.log(`[TIMETABLE MODEL] CONFLICT FOUND with entry:`, {
+        id: entry._id,
+        day: entry.dayOfWeek,
+        time: `${entry.startTime}-${entry.endTime}`,
+        classroom: entry.classroom,
+        teacher: entry.teacher
+      });
       return {
         hasConflict: true,
         conflictWith: entry
@@ -156,6 +166,7 @@ timetableEntrySchema.statics.checkConflict = async function(classroom, teacher, 
     }
   }
   
+  console.log(`[TIMETABLE MODEL] No conflicts found`);
   return { hasConflict: false };
 };
 
