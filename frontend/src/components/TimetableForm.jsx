@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-function TimetableForm({ timetable, classrooms, subjects, teachers, onSubmit, onCancel }) {
+function TimetableForm({ timetable, classrooms, subjects, teachers, selectedClassroom, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     classroom_id: '',
     teacher_id: '',
@@ -12,6 +12,7 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, onSubmit, on
 
   useEffect(() => {
     if (timetable) {
+      // Editing existing entry
       setFormData({
         classroom_id: timetable.classroom_id || timetable.classroom?._id || '',
         teacher_id: timetable.teacher_id || timetable.teacher?._id || '',
@@ -20,15 +21,17 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, onSubmit, on
         subject: timetable.subject || timetable.subject?.name || '',
       })
     } else {
+      // Creating new entry - auto-populate from selected classroom
+      const classroom = classrooms.find(c => (c._id || c.classroom_id) === selectedClassroom)
       setFormData({
-        classroom_id: '',
-        teacher_id: '',
+        classroom_id: selectedClassroom || '',
+        teacher_id: classroom?.teacher_id || '',
         day: 'Monday',
         time: '',
         subject: '',
       })
     }
-  }, [timetable])
+  }, [timetable, selectedClassroom, classrooms])
 
   const validate = () => {
     const newErrors = {}

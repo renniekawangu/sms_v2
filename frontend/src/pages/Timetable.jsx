@@ -351,6 +351,7 @@ function Timetable() {
           classrooms={classrooms}
           subjects={subjects}
           teachers={teachers}
+          selectedClassroom={selectedClassroom}
           onSubmit={handleSubmit}
           onCancel={() => {
             setIsModalOpen(false)
