@@ -4,6 +4,8 @@ import { timetableApi, classroomsApi, subjectsApi, teachersApi } from '../servic
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import TimetableForm from '../components/TimetableForm'
+import ConfirmDialog from '../components/ConfirmDialog'
+import useKeyboardShortcuts from '../utils/keyboardShortcuts.jsx'
 
 function Timetable() {
   const [classrooms, setClassrooms] = useState([])
@@ -16,6 +18,7 @@ function Timetable() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false })
   const { success, error: showError } = useToast()
 
   useEffect(() => {
@@ -93,19 +96,34 @@ function Timetable() {
   }
 
   const handleDelete = async (entry_id) => {
-    if (window.confirm('Are you sure you want to delete this timetable entry?')) {
-      try {
-        await timetableApi.delete(entry_id)
-        success('Timetable entry deleted successfully')
-        if (selectedClassroom) {
-          await loadTimetable(selectedClassroom)
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Timetable Entry',
+      message: 'Are you sure you want to delete this entry? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await timetableApi.delete(entry_id)
+          success('Timetable entry deleted successfully')
+          if (selectedClassroom) {
+            await loadTimetable(selectedClassroom)
+          }
+          setConfirmDialog({ isOpen: false })
+        } catch (err) {
+          const errorMessage = err.message || 'Failed to delete entry'
+          showError(errorMessage)
         }
-      } catch (err) {
-        const errorMessage = err.message || 'Failed to delete entry'
-        showError(errorMessage)
-      }
-    }
+      },
+      onCancel: () => setConfirmDialog({ isOpen: false })
+    })
   }
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    new: handleCreate,
+    search: () => document.querySelector('input[placeholder="Search timetable..."]')?.focus()
+  })
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   const timeSlots = [...new Set(timetable.map(t => t.startTime || t.time))].filter(Boolean).sort()
@@ -289,6 +307,8 @@ function Timetable() {
           }}
         />
       </Modal>
+
+      <ConfirmDialog {...confirmDialog} />
     </div>
   )
 }
