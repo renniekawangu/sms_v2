@@ -18,7 +18,8 @@ const { Classroom } = require('../models/classroom');
 const { Payment } = require('../models/payment');
 const { Expense } = require('../models/expense');
 const { Exam } = require('../models/exam');
-const { Timetable } = require('../models/timetable');
+const { TimetableEntry } = require('../models/timetable');
+const Timetable = require('../models/Timetable');
 const { Issue } = require('../models/issue');
 const { Parent } = require('../models/parent');
 const { getNextSequence } = require('../models/counter');
@@ -866,22 +867,43 @@ router.delete('/expenses/:id', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.AD
 
 // ============= Timetable API =============
 router.get('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const timetable = await Timetable.find()
+  const entries = await TimetableEntry.find()
+    .populate('timetable')
     .populate('classroom', 'grade section')
     .populate('subject', 'name code')
     .populate('teacher', 'firstName lastName')
     .sort({ dayOfWeek: 1, startTime: 1 })
     .lean();
-  res.json(timetable);
+  res.json(entries);
 }));
 
 router.get('/timetable/classroom/:classroom_id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const timetable = await Timetable.find({ classroom: req.params.classroom_id })
+  const { classroom_id } = req.params;
+  const { academicYear, term } = req.query;
+  
+  // Get or create timetable container for this classroom
+  let timetable = await Timetable.findOne({
+    classroom: classroom_id,
+    academicYear: academicYear || new Date().getFullYear().toString(),
+    term: term || 'Term 1',
+    isActive: true,
+  });
+  
+  // Get all entries for this classroom
+  const entries = await TimetableEntry.find({ 
+    classroom: classroom_id,
+    isActive: true 
+  })
+    .populate('timetable')
     .populate('subject', 'name code')
     .populate('teacher', 'firstName lastName')
     .sort({ dayOfWeek: 1, startTime: 1 })
     .lean();
-  res.json(timetable);
+  
+  res.json({
+    timetable,
+    entries
+  });
 }));
 
 router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
@@ -972,7 +994,7 @@ router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
   
   // Check for conflicts
   console.log(`[TIMETABLE] Checking conflict for day="${dayOfWeekValue}" time="${start}-${end}" classroom="${classroomId}" teacher="${teacherId}"`);
-  const conflict = await Timetable.checkConflict(classroomId, teacherId, dayOfWeekValue, start, end);
+  const conflict = await TimetableEntry.checkConflict(classroomId, teacherId, dayOfWeekValue, start, end);
   if (conflict.hasConflict) {
     console.log(`[TIMETABLE] Conflict found:`, conflict.conflictWith);
     return res.status(409).json({ 
@@ -982,7 +1004,20 @@ router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
     });
   }
   
-  const timetable = new Timetable({
+  // Get academicYear and term from request, or use defaults
+  const academicYear = req.body.academicYear || new Date().getFullYear().toString();
+  const termValue = req.body.term || 'Term 1';
+  
+  // Find or create timetable container for this classroom/term
+  const timetableContainer = await Timetable.findOrCreate(
+    classroomId,
+    academicYear,
+    termValue,
+    req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined
+  );
+  
+  const timetableEntry = new TimetableEntry({
+    timetable: timetableContainer._id,
     classroom: classroomId,
     subject: subjectId,
     teacher: teacherId,
@@ -994,8 +1029,9 @@ router.post('/timetable', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
     createdBy: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined
   });
   
-  await timetable.save();
-  const populated = await Timetable.findById(timetable._id)
+  await timetableEntry.save();
+  const populated = await TimetableEntry.findById(timetableEntry._id)
+    .populate('timetable')
     .populate('classroom', 'grade section')
     .populate('subject', 'name code')
     .populate('teacher', 'firstName lastName')
@@ -1012,7 +1048,7 @@ router.put('/timetable/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TE
   }
   
   // Get existing entry first
-  const existing = await Timetable.findById(req.params.id);
+  const existing = await TimetableEntry.findById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Timetable entry not found' });
   
   // Validate classroom ID before conversion
@@ -1059,7 +1095,7 @@ router.put('/timetable/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TE
   
   // Check for conflicts if time/classroom/teacher changed
   if (dayOfWeek || startTime || endTime || classroom || teacher) {
-    const conflict = await Timetable.checkConflict(
+    const conflict = await TimetableEntry.checkConflict(
       classroomId,
       teacherId,
       dayOfWeek || existing.dayOfWeek,
@@ -1092,23 +1128,24 @@ router.put('/timetable/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TE
     updateData.updatedBy = new mongoose.Types.ObjectId(req.user.id);
   }
   
-  const timetable = await Timetable.findByIdAndUpdate(
+  const timetableEntry = await TimetableEntry.findByIdAndUpdate(
     req.params.id, 
     updateData,
     { new: true }
   )
+    .populate('timetable')
     .populate('classroom', 'grade section')
     .populate('subject', 'name code')
     .populate('teacher', 'firstName lastName')
     .lean();
     
-  if (!timetable) return res.status(404).json({ error: 'Timetable entry not found' });
-  res.json(timetable);
+  if (!timetableEntry) return res.status(404).json({ error: 'Timetable entry not found' });
+  res.json(timetableEntry);
 }));
 
 router.delete('/timetable/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  const timetable = await Timetable.findByIdAndDelete(req.params.id);
-  if (!timetable) return res.status(404).json({ error: 'Timetable entry not found' });
+  const timetableEntry = await TimetableEntry.findByIdAndDelete(req.params.id);
+  if (!timetableEntry) return res.status(404).json({ error: 'Timetable entry not found' });
   res.json({ message: 'Timetable entry deleted' });
 }));
 

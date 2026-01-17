@@ -67,7 +67,13 @@ function Timetable() {
   const loadTimetable = async (classroom_id) => {
     try {
       const data = await timetableApi.getByClassroom(classroom_id)
-      setTimetable(data)
+      // Backend now returns { timetable, entries } structure
+      if (data.entries) {
+        setTimetable(data.entries)
+      } else {
+        // Fallback for old structure (array of entries)
+        setTimetable(Array.isArray(data) ? data : [])
+      }
     } catch (err) {
       const errorMessage = err.message || 'Failed to load timetable'
       showError(errorMessage)

@@ -1,10 +1,16 @@
 /**
- * Timetable Model
- * Manages class scheduling and timetable entries
+ * Timetable Entry Model
+ * Individual lesson/class entry within a timetable container
  */
 const mongoose = require('mongoose');
 
 const timetableEntrySchema = new mongoose.Schema({
+  // Reference to the parent timetable container
+  timetable: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Timetable',
+    required: true,
+  },
   classroom: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Classroom', 
@@ -84,7 +90,14 @@ const timetableEntrySchema = new mongoose.Schema({
   timestamps: true 
 });
 
-// Compound index to prevent double-booking
+// Index for timetable container queries
+timetableEntrySchema.index({ 
+  timetable: 1, 
+  dayOfWeek: 1, 
+  startTime: 1 
+});
+
+// Compound index to prevent double-booking within a classroom
 timetableEntrySchema.index({ 
   classroom: 1, 
   dayOfWeek: 1, 
@@ -170,6 +183,6 @@ timetableEntrySchema.statics.checkConflict = async function(classroom, teacher, 
   return { hasConflict: false };
 };
 
-const Timetable = mongoose.model('Timetable', timetableEntrySchema);
+const TimetableEntry = mongoose.model('TimetableEntry', timetableEntrySchema);
 
-module.exports = { Timetable };
+module.exports = { TimetableEntry };
