@@ -5,19 +5,19 @@
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Schema.Types;
 
-// Each document represents a single student's attendance for a given date/subject
+// Each document represents a single student's attendance for a given date (with optional subject)
 const attendanceSchema = new mongoose.Schema({
   studentId: { type: ObjectId, ref: 'Student', required: true },
   status: { type: String, required: true, enum: ['present', 'absent', 'late', 'excused'] },
   date: { type: Date, required: true },
-  subject: { type: String, required: true },
+  subject: { type: String, default: null },
   classLevel: { type: String },
   notes: { type: String },
   markedBy: { type: ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
-// Prevent duplicate attendance per student/date/subject
-attendanceSchema.index({ studentId: 1, date: 1, subject: 1 }, { unique: true });
+// Prevent duplicate attendance per student/date (subject is optional, can be null)
+attendanceSchema.index({ studentId: 1, date: 1 }, { unique: true, sparse: false });
 attendanceSchema.index({ classLevel: 1, date: -1 });
 
 const Attendance = mongoose.model('Attendance', attendanceSchema);
@@ -127,16 +127,12 @@ async function markBulkAttendance(attendanceRecords) {
     try {
       const payload = { ...record, date: toDateOnly(record.date) };
 
-      if (!payload.subject) {
-        throw new Error('subject is required for attendance');
-      }
-
       if (!payload.classLevel) {
         payload.classLevel = studentClassMap[String(payload.studentId)] || null;
       }
 
       const attendance = await Attendance.findOneAndUpdate(
-        { studentId: payload.studentId, date: payload.date, subject: payload.subject },
+        { studentId: payload.studentId, date: payload.date },
         { $set: payload },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
