@@ -1175,38 +1175,6 @@ export const classroomApi = {
   }
 }
 
-// Subjects API
-export const subjectsApi = {
-  list: async (params = {}) => {
-    const query = new URLSearchParams(params).toString()
-    return apiCall(`/subjects${query ? '?' + query : ''}`)
-  },
-
-  getById: async (id) => {
-    return apiCall(`/subjects/${id}`)
-  },
-
-  create: async (data) => {
-    return apiCall('/subjects', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  },
-
-  update: async (id, data) => {
-    return apiCall(`/subjects/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  },
-
-  delete: async (id) => {
-    return apiCall(`/subjects/${id}`, {
-      method: 'DELETE',
-    })
-  }
-}
-
 // Exams API
 export const examApi = {
   list: async (params = {}) => {
