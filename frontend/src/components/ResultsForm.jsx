@@ -23,7 +23,17 @@ function ResultsForm({ result, exams, onClose }) {
   useEffect(() => {
     loadData()
     if (result) {
-      setFormData(result)
+      setFormData(prev => ({
+        ...prev,
+        exam: result.exam || '',
+        student: result.student || '',
+        classroom: result.classroom || '',
+        academicYear: result.academicYear || new Date().getFullYear().toString(),
+        term: result.term || 'term1',
+        subjectResults: result.subjectResults || [{ subject: '', score: 0, maxMarks: 100, remarks: '' }],
+        totalScore: result.totalScore || 0,
+        totalMaxMarks: result.totalMaxMarks || 100
+      }))
     }
   }, [result])
 
@@ -220,7 +230,7 @@ function ResultsForm({ result, exams, onClose }) {
                       <label className="block text-sm font-medium text-text-dark mb-1">Subject *</label>
                       <input
                         type="text"
-                        value={subject.subject}
+                        value={subject.subject || ''}
                         onChange={(e) => handleSubjectChange(index, 'subject', e.target.value)}
                         placeholder="Subject name"
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
@@ -232,7 +242,7 @@ function ResultsForm({ result, exams, onClose }) {
                       <label className="block text-sm font-medium text-text-dark mb-1">Score *</label>
                       <input
                         type="number"
-                        value={subject.score}
+                        value={subject.score || ''}
                         onChange={(e) => handleSubjectChange(index, 'score', e.target.value)}
                         placeholder="Score"
                         min="0"
@@ -245,7 +255,7 @@ function ResultsForm({ result, exams, onClose }) {
                       <label className="block text-sm font-medium text-text-dark mb-1">Max Marks</label>
                       <input
                         type="number"
-                        value={subject.maxMarks}
+                        value={subject.maxMarks || 100}
                         onChange={(e) => handleSubjectChange(index, 'maxMarks', e.target.value)}
                         placeholder="Max marks"
                         min="1"
@@ -256,7 +266,7 @@ function ResultsForm({ result, exams, onClose }) {
                     <div className="flex items-end gap-2">
                       <input
                         type="text"
-                        value={subject.remarks}
+                        value={subject.remarks || ''}
                         onChange={(e) => handleSubjectChange(index, 'remarks', e.target.value)}
                         placeholder="Remarks"
                         className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
