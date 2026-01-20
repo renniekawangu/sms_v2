@@ -58,13 +58,22 @@ router.get(
 
       const results = await ExamResult.find(filter)
         .populate('exam', 'name date totalMarks')
-        .populate('student', 'name email')
+        .populate('student', 'firstName lastName email')
         .populate('classroom', 'grade section')
         .populate('subjectResults.subject', 'name code')
         .sort({ createdAt: -1 })
         .limit(100)
 
       console.log(`Found ${results.length} results with filter:`, filter)
+      if (results.length > 0) {
+        console.log('First result after populate:', JSON.stringify({
+          _id: results[0]._id,
+          exam: results[0].exam,
+          student: results[0].student,
+          classroom: results[0].classroom,
+          totalScore: results[0].totalScore
+        }, null, 2))
+      }
 
       res.json({
         success: true,
@@ -83,11 +92,11 @@ router.get('/results/:id', requireAuth, async (req, res) => {
   try {
     const result = await ExamResult.findById(req.params.id)
       .populate('exam')
-      .populate('student')
+      .populate('student', 'firstName lastName email')
       .populate('classroom')
       .populate('subjectResults.subject')
-      .populate('submittedBy', 'name email')
-      .populate('approvedBy', 'name email')
+      .populate('submittedBy', 'firstName lastName email')
+      .populate('approvedBy', 'firstName lastName email')
 
     if (!result) {
       return res.status(404).json({ error: 'Result not found' })
@@ -210,10 +219,17 @@ router.post(
 
         await existingResult.save()
 
+        // Populate before returning
+        const populatedResult = await ExamResult.findById(existingResult._id)
+          .populate('exam', 'name')
+          .populate('student', 'firstName lastName')
+          .populate('classroom', 'grade section')
+          .populate('subjectResults.subject', 'name')
+
         return res.json({
           success: true,
           message: 'Result updated successfully',
-          result: existingResult
+          result: populatedResult
         })
       }
 
@@ -234,7 +250,8 @@ router.post(
 
       const populatedResult = await ExamResult.findById(newResult._id)
         .populate('exam', 'name')
-        .populate('student', 'name')
+        .populate('student', 'firstName lastName')
+        .populate('classroom', 'grade section')
         .populate('subjectResults.subject', 'name')
 
       res.status(201).json({
@@ -324,12 +341,28 @@ router.post(
 
       const totalProcessed = createdResults.length + updatedResults.length
       console.log(`Batch complete: ${createdResults.length} created, ${updatedResults.length} updated, ${errors.length} errors`)
+      
+      // Populate all results before returning
+      const allResultIds = [...createdResults, ...updatedResults].map(r => r._id)
+      console.log('Populating results:', allResultIds)
+      
+      const populatedResults = await ExamResult.find({
+        _id: { $in: allResultIds }
+      })
+        .populate('exam', 'name date totalMarks')
+        .populate('student', 'firstName lastName email')
+        .populate('classroom', 'grade section')
+        .populate('subjectResults.subject', 'name code')
+      
+      console.log(`Populated ${populatedResults.length} results`)
+      
       res.json({
         success: true,
         message: `${totalProcessed} results processed (${createdResults.length} created, ${updatedResults.length} updated)`,
         createdCount: createdResults.length,
         updatedCount: updatedResults.length,
         errorCount: errors.length,
+        results: populatedResults,
         errors: errors.length > 0 ? errors : undefined
       })
     } catch (err) {
