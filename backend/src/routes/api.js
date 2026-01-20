@@ -581,14 +581,18 @@ router.post('/attendance', requireAuth, requireRole(ROLES.ADMIN, ROLES.TEACHER, 
   const payload = {
     ...rest,
     studentId: student._id,
-    subject,
     status,
     date,
     markedBy: isValidObjectId(markedBy) ? markedBy : undefined
   };
 
-  const attendance = new Attendance(payload);
-  await attendance.save();
+  // Use upsert to update if exists, create if not
+  const attendance = await Attendance.findOneAndUpdate(
+    { studentId: student._id, date },
+    { $set: payload },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+  
   res.status(201).json(attendance);
 }));
 
