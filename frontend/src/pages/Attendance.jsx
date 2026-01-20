@@ -135,19 +135,6 @@ function Attendance() {
     }
   }
 
-  const handleDelete = async (attendance_id) => {
-    if (window.confirm('Are you sure you want to delete this attendance record?')) {
-      try {
-        await attendanceApi.delete(attendance_id)
-        success('Attendance record deleted successfully')
-        await loadAttendance()
-      } catch (err) {
-        const errorMessage = err.message || 'Failed to delete attendance record'
-        showError(errorMessage)
-      }
-    }
-  }
-
   // Create a combined view of all classroom students with their attendance
   const studentAttendanceList = useMemo(() => {
     if (!classroomStudents.length) return []
@@ -299,21 +286,17 @@ function Attendance() {
                 <th className="text-center py-3 px-2 text-xs md:text-sm font-semibold text-text-dark">Absent</th>
                 <th className="text-center py-3 px-2 text-xs md:text-sm font-semibold text-text-dark">Late</th>
                 <th className="text-center py-3 px-2 text-xs md:text-sm font-semibold text-text-dark">Excused</th>
-                {user?.role !== 'student' && (
-                  <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark">Status</th>
-                )}
               </tr>
             </thead>
             <tbody>
               {studentAttendanceList.length === 0 ? (
                 <tr>
-                  <td colSpan={user?.role !== 'student' ? 6 : 5} className="py-8 px-4 text-center text-text-muted text-sm">
+                  <td colSpan={5} className="py-8 px-4 text-center text-text-muted text-sm">
                     {classroomStudents.length === 0 ? 'No students in this classroom' : 'No students match your search'}
                   </td>
                 </tr>
               ) : (
                 studentAttendanceList.map((student) => {
-                  const record = student.attendanceRecord
                   const studentName = student.name || [student.firstName, student.lastName].filter(Boolean).join(' ') || 'Unknown'
                   const selectedStatus = studentStatuses[student._id]
                   
@@ -325,9 +308,8 @@ function Attendance() {
                       <td className="py-3 px-2 text-center">
                         <input
                           type="checkbox"
-                          checked={selectedStatus === 'present' || record?.status === 'present'}
+                          checked={selectedStatus === 'present'}
                           onChange={() => handleStatusChange(student._id, 'present')}
-                          disabled={!!record?.status && record.status !== 'present'}
                           className="w-4 h-4 cursor-pointer accent-green-600"
                           title="Mark as Present"
                         />
@@ -335,9 +317,8 @@ function Attendance() {
                       <td className="py-3 px-2 text-center">
                         <input
                           type="checkbox"
-                          checked={selectedStatus === 'absent' || record?.status === 'absent'}
+                          checked={selectedStatus === 'absent'}
                           onChange={() => handleStatusChange(student._id, 'absent')}
-                          disabled={!!record?.status && record.status !== 'absent'}
                           className="w-4 h-4 cursor-pointer accent-red-600"
                           title="Mark as Absent"
                         />
@@ -345,9 +326,8 @@ function Attendance() {
                       <td className="py-3 px-2 text-center">
                         <input
                           type="checkbox"
-                          checked={selectedStatus === 'late' || record?.status === 'late'}
+                          checked={selectedStatus === 'late'}
                           onChange={() => handleStatusChange(student._id, 'late')}
-                          disabled={!!record?.status && record.status !== 'late'}
                           className="w-4 h-4 cursor-pointer accent-yellow-600"
                           title="Mark as Late"
                         />
@@ -355,45 +335,12 @@ function Attendance() {
                       <td className="py-3 px-2 text-center">
                         <input
                           type="checkbox"
-                          checked={selectedStatus === 'excused' || record?.status === 'excused'}
+                          checked={selectedStatus === 'excused'}
                           onChange={() => handleStatusChange(student._id, 'excused')}
-                          disabled={!!record?.status && record.status !== 'excused'}
                           className="w-4 h-4 cursor-pointer accent-blue-600"
                           title="Mark as Excused"
                         />
                       </td>
-                      {user?.role !== 'student' && (
-                        <td className="py-3 px-4">
-                          {record ? (
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
-                                  record.status === 'present' ? 'bg-green-100 text-green-700' :
-                                  record.status === 'absent' ? 'bg-red-100 text-red-700' :
-                                  record.status === 'late' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-blue-100 text-blue-700'
-                                }`}
-                              >
-                                {record.status === 'present' && (<><CheckCircle size={14} /> Present</>)}
-                                {record.status === 'absent' && ('Absent')}
-                                {record.status === 'late' && ('Late')}
-                                {record.status === 'excused' && ('Excused')}
-                              </span>
-                              <button
-                                onClick={() => handleDelete(record._id)}
-                                className="text-red-500 hover:text-red-600 text-xs font-medium"
-                                title="Delete"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 bg-gray-100">
-                              Not Marked
-                            </span>
-                          )}
-                        </td>
-                      )}
                     </tr>
                   )
                 })
