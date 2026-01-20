@@ -5,7 +5,7 @@ function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-gradient-to-br from-blue-50 to-cyan-50 border-t border-blue-100 mt-8 sm:mt-12 lg:mt-16">
+    <footer className="bg-gradient-to-br from-blue-100 to-cyan-100 border-t border-blue-200 mt-8 sm:mt-12 lg:mt-16">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
@@ -87,7 +87,7 @@ function Footer() {
       </div>
 
       {/* Footer Divider */}
-      <div className="border-t border-blue-200"></div>
+      <div className="border-t border-blue-300"></div>
 
       {/* Bottom Footer */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
