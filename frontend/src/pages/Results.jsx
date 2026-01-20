@@ -22,7 +22,8 @@ function Results() {
     academicYear: new Date().getFullYear().toString(),
     term: 'term1',
     status: 'all',
-    classroom: 'all'
+    classroom: 'all',
+    examType: 'all'
   })
 
   const { success, error: showError } = useToast()
@@ -70,6 +71,9 @@ function Results() {
       if (filters.classroom !== 'all') {
         filterParams.classroomId = filters.classroom
       }
+      if (filters.examType !== 'all') {
+        filterParams.examType = filters.examType
+      }
 
       console.log('Classroom filter value:', filters.classroom)
       console.log('Loading results with params:', filterParams)
@@ -78,15 +82,20 @@ function Results() {
       console.log('API response results count:', data.results?.length)
       console.log('API response:', data)
       
-      // Log individual result details
-      if (data.results && data.results.length > 0) {
-        console.log('First result details:', JSON.stringify(data.results[0], null, 2))
-      }
-      
       // If no results found, try without academicYear to debug
       if ((!data.results || data.results.length === 0) && data.success !== undefined) {
         console.log('No results with academicYear filter, trying without...')
-        data = await examResultsApi.list({ term: filters.term })
+        const fallbackParams = { term: filters.term }
+        if (filters.status !== 'all') {
+          fallbackParams.status = filters.status
+        }
+        if (filters.classroom !== 'all') {
+          fallbackParams.classroomId = filters.classroom
+        }
+        if (filters.examType !== 'all') {
+          fallbackParams.examType = filters.examType
+        }
+        data = await examResultsApi.list(fallbackParams)
         console.log('API response without year:', data)
       }
       
@@ -191,7 +200,7 @@ function Results() {
 
       {/* Filters */}
       <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">Academic Year</label>
             <input
@@ -229,6 +238,22 @@ function Results() {
                   Grade {classroom.grade} - {classroom.section}
                 </option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">Exam Type</label>
+            <select
+              value={filters.examType}
+              onChange={(e) => setFilters({ ...filters, examType: e.target.value })}
+              className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            >
+              <option value="all">All Types</option>
+              <option value="midterm">Midterm</option>
+              <option value="final">Final</option>
+              <option value="quiz">Quiz</option>
+              <option value="test">Test</option>
+              <option value="practical">Practical</option>
+              <option value="assignment">Assignment</option>
             </select>
           </div>
           <div>
