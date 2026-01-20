@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CheckCircle, Search, Plus, Edit, Trash2, AlertCircle, Users, Calendar } from 'lucide-react'
+import { CheckCircle, Search, AlertCircle, Users, Calendar } from 'lucide-react'
 import { attendanceApi, classroomsApi, teacherApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import Modal from '../components/Modal'
-import AttendanceForm from '../components/AttendanceForm'
 
 function Attendance() {
   const { user } = useAuth()
@@ -17,8 +15,6 @@ function Attendance() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingAttendance, setEditingAttendance] = useState(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [studentStatuses, setStudentStatuses] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -442,26 +438,6 @@ function Attendance() {
           </div>
         )}
       </div>
-
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setEditingAttendance(null)
-        }}
-        title={editingAttendance ? 'Edit Attendance' : 'Mark Attendance'}
-      >
-        <AttendanceForm
-          attendance={editingAttendance}
-          classroom={selectedClassroom}
-          students={classroomStudents}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setIsModalOpen(false)
-            setEditingAttendance(null)
-          }}
-        />
-      </Modal>
     </div>
   )
 }
