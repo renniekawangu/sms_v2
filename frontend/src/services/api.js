@@ -1067,3 +1067,174 @@ export const parentsApi = {
     });
   },
 };
+
+// Exam Results API
+export const examResultsApi = {
+  list: async (params = {}) => {
+    const query = new URLSearchParams(params).toString()
+    return apiCall(`/results${query ? '?' + query : ''}`)
+  },
+
+  getById: async (id) => {
+    return apiCall(`/results/${id}`)
+  },
+
+  getStudentResults: async (studentId, academicYear, term) => {
+    const query = new URLSearchParams()
+    if (academicYear) query.append('academicYear', academicYear)
+    if (term) query.append('term', term)
+    return apiCall(`/results/student/${studentId}${query.toString() ? '?' + query.toString() : ''}`)
+  },
+
+  getClassroomExamResults: async (examId, classroomId) => {
+    return apiCall(`/results/exam/${examId}/classroom/${classroomId}`)
+  },
+
+  create: async (resultData) => {
+    return apiCall('/results', {
+      method: 'POST',
+      body: JSON.stringify(resultData),
+    })
+  },
+
+  createBatch: async (examId, classroomId, results, academicYear, term) => {
+    return apiCall('/results/batch', {
+      method: 'POST',
+      body: JSON.stringify({ examId, classroomId, results, academicYear, term }),
+    })
+  },
+
+  update: async (id, updateData) => {
+    return apiCall(`/results/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    })
+  },
+
+  submit: async (id) => {
+    return apiCall(`/results/${id}/submit`, {
+      method: 'POST',
+    })
+  },
+
+  approve: async (id) => {
+    return apiCall(`/results/${id}/approve`, {
+      method: 'POST',
+    })
+  },
+
+  publish: async (id) => {
+    return apiCall(`/results/${id}/publish`, {
+      method: 'POST',
+    })
+  },
+
+  delete: async (id) => {
+    return apiCall(`/results/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  getExamStatistics: async (examId, classroomId, term) => {
+    const query = new URLSearchParams()
+    if (classroomId) query.append('classroomId', classroomId)
+    if (term) query.append('term', term)
+    return apiCall(`/results/stats/exam/${examId}${query.toString() ? '?' + query.toString() : ''}`)
+  }
+}
+
+// Classroom API
+export const classroomApi = {
+  list: async (params = {}) => {
+    const query = new URLSearchParams(params).toString()
+    return apiCall(`/classrooms${query ? '?' + query : ''}`)
+  },
+
+  getById: async (id) => {
+    return apiCall(`/classrooms/${id}`)
+  },
+
+  create: async (data) => {
+    return apiCall('/classrooms', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  update: async (id, data) => {
+    return apiCall(`/classrooms/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id) => {
+    return apiCall(`/classrooms/${id}`, {
+      method: 'DELETE',
+    })
+  }
+}
+
+// Subjects API
+export const subjectsApi = {
+  list: async (params = {}) => {
+    const query = new URLSearchParams(params).toString()
+    return apiCall(`/subjects${query ? '?' + query : ''}`)
+  },
+
+  getById: async (id) => {
+    return apiCall(`/subjects/${id}`)
+  },
+
+  create: async (data) => {
+    return apiCall('/subjects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  update: async (id, data) => {
+    return apiCall(`/subjects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id) => {
+    return apiCall(`/subjects/${id}`, {
+      method: 'DELETE',
+    })
+  }
+}
+
+// Exams API
+export const examApi = {
+  list: async (params = {}) => {
+    const query = new URLSearchParams(params).toString()
+    return apiCall(`/exams${query ? '?' + query : ''}`)
+  },
+
+  getById: async (id) => {
+    return apiCall(`/exams/${id}`)
+  },
+
+  create: async (data) => {
+    return apiCall('/exams', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  update: async (id, data) => {
+    return apiCall(`/exams/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id) => {
+    return apiCall(`/exams/${id}`, {
+      method: 'DELETE',
+    })
+  }
+}

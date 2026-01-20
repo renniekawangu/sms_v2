@@ -25,6 +25,7 @@ const mongoose = require('mongoose');
 const messageRoutes = require('./message-api');
 const reportRoutes = require('./reports-api');
 const timetableRoutes = require('./timetable-api');
+const examResultsRoutes = require('./examResults');
 
 const router = express.Router();
 
@@ -1050,5 +1051,8 @@ router.use('/reports', reportRoutes);
 
 // ============= Timetable Management API =============
 router.use('/timetable', timetableRoutes);
+
+// ============= Exam Results API =============
+router.use('/', examResultsRoutes);
 
 module.exports = router;
