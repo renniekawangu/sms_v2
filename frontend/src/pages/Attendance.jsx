@@ -92,6 +92,8 @@ function Attendance() {
         const recordDate = record.date.includes('T') ? record.date.split('T')[0] : record.date
         return recordDate === selectedDate
       })
+      // eslint-disable-next-line no-console
+      console.log('Loaded attendance records:', { allRecords, filteredRecords, selectedDate })
       setAttendance(filteredRecords)
     } catch (err) {
       const errorMessage = err.message || 'Failed to load attendance'
@@ -134,6 +136,9 @@ function Attendance() {
       
       success(`Marked attendance for ${recordsToSave.length} student(s)`)
       setStudentStatuses({})
+      
+      // Add small delay to ensure backend has processed the records
+      await new Promise(resolve => setTimeout(resolve, 300))
       await loadAttendance()
     } catch (err) {
       showError(err.message || 'Failed to mark attendance')
@@ -146,7 +151,7 @@ function Attendance() {
   const studentAttendanceList = useMemo(() => {
     if (!classroomStudents.length) return []
     
-    return classroomStudents.map(student => {
+    const list = classroomStudents.map(student => {
       // Find attendance record for this student on the selected date
       const attendanceRecord = attendance.find(a => {
         const studentMatch = a.studentId?._id === student._id || a.studentId === student._id
@@ -164,6 +169,15 @@ function Attendance() {
       const name = item.name || [item.firstName, item.lastName].filter(Boolean).join(' ') || ''
       return name.toLowerCase().includes(query)
     })
+    
+    // eslint-disable-next-line no-console
+    console.log('studentAttendanceList recalculated:', { 
+      count: list.length, 
+      attendance: attendance.length,
+      withRecords: list.filter(s => s.attendanceRecord).length 
+    })
+    
+    return list
   }, [classroomStudents, attendance, selectedDate, searchQuery])
 
   const presentCount = studentAttendanceList.filter(s => s.attendanceRecord?.status === 'present').length
