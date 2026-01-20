@@ -578,9 +578,17 @@ router.post('/attendance', requireAuth, requireRole(ROLES.ADMIN, ROLES.TEACHER, 
   const student = await findStudentByIdOrStudentId(studentId);
   if (!student) return res.status(404).json({ error: 'Student not found' });
 
-  // Normalize date to start of day (midnight)
-  const normalizedDate = new Date(date);
-  normalizedDate.setHours(0, 0, 0, 0);
+  // Normalize date: parse YYYY-MM-DD format to UTC midnight
+  let normalizedDate;
+  if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    // If it's a date string like "2026-01-20", parse it as UTC
+    const [year, month, day] = date.split('-').map(Number);
+    normalizedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  } else {
+    // Otherwise, normalize the provided date
+    normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+  }
 
   const payload = {
     ...rest,

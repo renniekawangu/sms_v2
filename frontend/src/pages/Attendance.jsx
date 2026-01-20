@@ -89,7 +89,10 @@ function Attendance() {
       const allRecords = data?.data || data || []
       const filteredRecords = allRecords.filter(record => {
         if (!selectedDate) return true
-        const recordDate = record.date.includes('T') ? record.date.split('T')[0] : record.date
+        // Normalize both dates to YYYY-MM-DD format for comparison
+        const recordDate = record.date instanceof Date 
+          ? record.date.toISOString().split('T')[0]
+          : (record.date.includes('T') ? record.date.split('T')[0] : record.date)
         // eslint-disable-next-line no-console
         console.log('Date comparison:', { recordDate, selectedDate, match: recordDate === selectedDate })
         return recordDate === selectedDate

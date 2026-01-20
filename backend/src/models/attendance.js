@@ -22,8 +22,14 @@ attendanceSchema.index({ classLevel: 1, date: -1 });
 
 const Attendance = mongoose.model('Attendance', attendanceSchema);
 
-// Normalize any date-like input to the start of the day (midnight)
+// Normalize any date-like input to the start of the day (UTC midnight)
 const toDateOnly = (value) => {
+  if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    // If it's a date string like "2026-01-20", parse it as UTC
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  }
+  // Otherwise, normalize the provided date
   const d = new Date(value);
   d.setHours(0, 0, 0, 0);
   return d;
