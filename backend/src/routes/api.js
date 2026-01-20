@@ -578,17 +578,21 @@ router.post('/attendance', requireAuth, requireRole(ROLES.ADMIN, ROLES.TEACHER, 
   const student = await findStudentByIdOrStudentId(studentId);
   if (!student) return res.status(404).json({ error: 'Student not found' });
 
+  // Normalize date to start of day (midnight)
+  const normalizedDate = new Date(date);
+  normalizedDate.setHours(0, 0, 0, 0);
+
   const payload = {
     ...rest,
     studentId: student._id,
     status,
-    date,
+    date: normalizedDate,
     markedBy: isValidObjectId(markedBy) ? markedBy : undefined
   };
 
   // Use upsert to update if exists, create if not
   const attendance = await Attendance.findOneAndUpdate(
-    { studentId: student._id, date },
+    { studentId: student._id, date: normalizedDate },
     { $set: payload },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
