@@ -204,11 +204,26 @@ function Timetable() {
       confirmText: 'Delete',
       onConfirm: async () => {
         try {
-          await timetableApi.delete(entry_id)
-          success('Timetable entry deleted successfully')
-          if (selectedClassroom) {
-            await loadTimetable(selectedClassroom)
+          // entry_id is in the form scheduleId:Day:Period
+          const parts = String(entry_id).split(':')
+          const scheduleId = parts[0]
+          const dayName = parts[1]
+          const periodNum = parseInt(parts[2], 10)
+          if (!scheduleId || !dayName || !periodNum) throw new Error('Invalid entry identifier')
+
+          const schedule = await timetableApi.schedules.get(scheduleId)
+          if (!schedule || !Array.isArray(schedule.timetable)) throw new Error('Schedule not found')
+
+          const updated = [...schedule.timetable]
+          const dIdx = updated.findIndex(d => d.day === dayName)
+          if (dIdx >= 0) {
+            const periods = (updated[dIdx].periods || []).filter(p => p.period !== periodNum)
+            updated[dIdx] = { ...updated[dIdx], periods }
           }
+
+          await timetableApi.schedules.update(scheduleId, { timetable: updated })
+          success('Timetable entry deleted successfully')
+          if (selectedClassroom) await loadTimetable(selectedClassroom)
           setConfirmDialog({ isOpen: false })
         } catch (err) {
           const errorMessage = err.message || 'Failed to delete entry'
