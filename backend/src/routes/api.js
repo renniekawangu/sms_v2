@@ -572,7 +572,6 @@ router.post('/attendance', requireAuth, requireRole(ROLES.ADMIN, ROLES.TEACHER, 
   const { studentId, subject, date, status, markedBy, ...rest } = req.body;
 
   if (!studentId) return res.status(400).json({ error: 'studentId is required' });
-  if (!subject) return res.status(400).json({ error: 'subject is required' });
   if (!date) return res.status(400).json({ error: 'date is required' });
   if (!status) return res.status(400).json({ error: 'status is required' });
 
