@@ -139,8 +139,8 @@ function Expenses() {
         <span>Add Expense</span>
       </button>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-4 md:p-6">
-        <div className="mb-6">
+      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+        <div className="mb-4 sm:mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
             <input
@@ -148,7 +148,7 @@ function Expenses() {
               placeholder="Search expenses by category or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
             />
           </div>
         </div>

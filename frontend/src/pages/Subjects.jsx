@@ -117,31 +117,31 @@ function Subjects() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-text-dark">Subjects</h1>
-          <p className="text-text-muted mt-1">Manage all subjects</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Subjects</h1>
+          <p className="text-xs sm:text-sm text-text-muted mt-1">Manage all subjects</p>
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors font-medium text-xs sm:text-sm"
         >
-          <Plus size={20} />
+          <Plus size={18} />
           Add Subject
         </button>
       </div>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-6">
-        <div className="mb-6">
+      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+        <div className="mb-4 sm:mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
             <input
               type="text"
               placeholder="Search subjects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
             />
           </div>
         </div>

@@ -115,22 +115,22 @@ function TimetableManagement() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-          <Calendar className="inline-block w-8 h-8 mr-2 mb-1" />
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <Calendar className="w-6 sm:w-8 h-6 sm:h-8 flex-shrink-0" />
           Timetable Management
         </h1>
-        <p className="text-gray-600">
+        <p className="text-xs sm:text-sm text-gray-600">
           Manage class schedules, instructors, and course assignments
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+      <div className="mb-4 sm:mb-6">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <nav className="-mb-px flex gap-2 sm:gap-4 lg:gap-8">
             <button
               onClick={() => setActiveTab('schedules')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -169,16 +169,16 @@ function TimetableManagement() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white rounded-lg shadow-custom p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Classroom
             </label>
             <select
               value={filters.classroom}
               onChange={(e) => setFilters({ ...filters, classroom: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Classrooms</option>
               {classrooms.map(classroom => (
@@ -189,14 +189,14 @@ function TimetableManagement() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Academic Year
             </label>
             <input
               type="text"
               value={filters.academicYear}
               onChange={(e) => setFilters({ ...filters, academicYear: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500"
               placeholder="2024"
             />
           </div>

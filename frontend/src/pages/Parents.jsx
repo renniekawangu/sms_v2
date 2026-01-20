@@ -152,22 +152,22 @@ function Parents() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
       {/* Page Header */}
-      <div className="bg-gradient-to-r from-primary-blue to-blue-600 text-white p-6 rounded-lg shadow-md">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-primary-blue to-blue-600 text-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2 flex items-center gap-3">
-              <Users size={32} />
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 flex items-center gap-2 sm:gap-3">
+              <Users size={24} className="sm:size-32" />
               Parents Management
             </h1>
-            <p className="text-blue-100">Manage parents and link them to students</p>
+            <p className="text-xs sm:text-sm text-blue-100">Manage parents and link them to students</p>
           </div>
           <button
             onClick={() => handleOpenModal('create')}
-            className="bg-white text-primary-blue px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center gap-2"
+            className="w-full sm:w-auto bg-white text-primary-blue px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
           >
-            <Plus size={20} />
+            <Plus size={18} />
             New Parent
           </button>
         </div>
@@ -175,7 +175,7 @@ function Parents() {
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
         <input
           type="text"
           placeholder="Search parents by name, email, or phone..."
