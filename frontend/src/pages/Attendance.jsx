@@ -85,7 +85,14 @@ function Attendance() {
       setError(null)
       // Fetch attendance for all students in this classroom
       const data = await attendanceApi.getByClassroom(selectedClassroom._id)
-      setAttendance(data?.data || data || [])
+      // Filter records to only show for the selected date
+      const allRecords = data?.data || data || []
+      const filteredRecords = allRecords.filter(record => {
+        if (!selectedDate) return true
+        const recordDate = record.date.includes('T') ? record.date.split('T')[0] : record.date
+        return recordDate === selectedDate
+      })
+      setAttendance(filteredRecords)
     } catch (err) {
       const errorMessage = err.message || 'Failed to load attendance'
       setError(errorMessage)
