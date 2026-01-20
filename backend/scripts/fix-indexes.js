@@ -58,6 +58,32 @@ async function fixIndexes() {
       console.log('Subjects index fix:', err.message);
     }
 
+    // Fix Instructors collection
+    try {
+      const instructorIndexes = await db.collection('instructors').indexes();
+      console.log('\nInstructors indexes:', instructorIndexes.map(i => `${i.name}${i.unique ? ' (unique)' : ''}`).join(', '));
+
+      const indexesToDrop = instructorIndexes
+        .filter(idx => idx.name !== '_id_' && idx.name !== 'staffId_1')
+        .map(idx => idx.name);
+
+      if (indexesToDrop.length) {
+        for (const name of indexesToDrop) {
+          await db.collection('instructors').dropIndex(name);
+          console.log(`✓ Dropped extra instructor index: ${name}`);
+        }
+      }
+
+      // Ensure single unique staffId index
+      const hasStaffIndex = instructorIndexes.some(idx => idx.name === 'staffId_1' && idx.unique);
+      if (!hasStaffIndex) {
+        await db.collection('instructors').createIndex({ staffId: 1 }, { unique: true });
+        console.log('✓ Created unique instructor staffId index');
+      }
+    } catch (err) {
+      console.log('Instructors index fix:', err.message);
+    }
+
     console.log('\n✓ Database indexes fixed successfully');
     process.exit(0);
   } catch (error) {

@@ -29,7 +29,7 @@ function PaymentForm({ payment, fees, onSubmit, onCancel }) {
   }, [payment])
 
   useEffect(() => {
-    if (formData.fee_id) {
+    if (formData.fee_id && fees) {
       const fee = fees.find(f => f.fee_id === parseInt(formData.fee_id))
       setSelectedFee(fee)
       if (fee) {
@@ -93,7 +93,7 @@ function PaymentForm({ payment, fees, onSubmit, onCancel }) {
   }
 
   // Filter fees to show only unpaid or partially paid
-  const availableFees = fees.filter(f => f.status !== 'PAID')
+  const availableFees = (fees || []).filter(f => f.status !== 'PAID')
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

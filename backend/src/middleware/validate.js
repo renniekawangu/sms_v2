@@ -97,8 +97,24 @@ function validate(schema) {
     const { error, value } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
     if (error) {
       const errors = error.details.map(d => d.message);
-      // Store errors in session flash or render with error
+      // Store errors in session flash for SSR routes (if needed)
       req.validationErrors = errors;
+      
+      // For API routes, return JSON response instead of rendering HTML
+      // Check if this is an API request (has /api prefix or Accept: application/json header)
+      const isApiRequest = req.path.startsWith('/api') || 
+                          req.get('Accept')?.includes('application/json') ||
+                          req.get('Content-Type')?.includes('application/json');
+      
+      if (isApiRequest) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation Error',
+          errors: errors
+        });
+      }
+      
+      // For SSR routes, render error page
       return res.status(400).render('error', { 
         title: 'Validation Error',
         message: 'Please correct the following errors:',

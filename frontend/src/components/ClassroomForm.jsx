@@ -33,15 +33,17 @@ function ClassroomForm({ classroom, teachers, students, onSubmit, onCancel }) {
   }, [classroom])
 
   const filteredTeachers = useMemo(() => {
+    if (!teachers) return []
     if (!teacherQuery.trim()) return teachers
     const q = teacherQuery.toLowerCase()
-    return teachers.filter(t => (t.name || '').toLowerCase().includes(q))
+    return (teachers || []).filter(t => (t.name || '').toLowerCase().includes(q))
   }, [teachers, teacherQuery])
 
   const filteredStudents = useMemo(() => {
+    if (!students) return []
     if (!studentQuery.trim()) return students
     const q = studentQuery.toLowerCase()
-    return students.filter(s => (s.name || '').toLowerCase().includes(q))
+    return (students || []).filter(s => (s.name || '').toLowerCase().includes(q))
   }, [students, studentQuery])
 
   const validate = () => {

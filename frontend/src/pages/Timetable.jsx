@@ -17,6 +17,7 @@ function Timetable() {
   const [teachers, setTeachers] = useState([])
   const [selectedClassroom, setSelectedClassroom] = useState(null)
   const [timetable, setTimetable] = useState([])
+  const [courseSubjects, setCourseSubjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -30,6 +31,23 @@ function Timetable() {
   const [pageSize, setPageSize] = useState(8)
   const [currentPage, setCurrentPage] = useState(1)
 
+  // Base time slots used for computing period numbers and end time
+  const BASE_TIME_SLOTS = [
+    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+    '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+    '14:00', '14:30', '15:00', '15:30', '16:00'
+  ]
+
+  const addMinutes = (hhmm, minutes) => {
+    if (!hhmm) return ''
+    const [hh, mm] = hhmm.split(':').map(Number)
+    const d = new Date(1970, 0, 1, hh, mm)
+    d.setMinutes(d.getMinutes() + minutes)
+    const h = String(d.getHours()).padStart(2, '0')
+    const m = String(d.getMinutes()).padStart(2, '0')
+    return `${h}:${m}`
+  }
+
   useEffect(() => {
     loadData()
   }, [])
@@ -37,6 +55,7 @@ function Timetable() {
   useEffect(() => {
     if (selectedClassroom) {
       loadTimetable(selectedClassroom)
+      loadCourseSubjects(selectedClassroom)
     }
   }, [selectedClassroom])
 
@@ -66,17 +85,40 @@ function Timetable() {
 
   const loadTimetable = async (classroom_id) => {
     try {
-      const data = await timetableApi.getByClassroom(classroom_id)
-      // Backend now returns { timetable, entries } structure
-      if (data.entries) {
-        setTimetable(data.entries)
+      const data = await timetableApi.schedules.getByClassroom(classroom_id)
+      // Transform schedule structure into legacy entry list for this view
+      if (data && data.timetable) {
+        const entries = []
+        ;(data.timetable || []).forEach(day => {
+          ;(day.periods || []).forEach(p => {
+            const start = (p.time || '').split('-')[0] || ''
+            entries.push({
+              _id: `${data._id}:${day.day}:${p.period}`,
+              dayOfWeek: day.day,
+              startTime: start,
+              subjectName: p.subject,
+              subject: { name: p.subject },
+              teacher: p.instructorId ? { firstName: p.instructorId.firstName, lastName: p.instructorId.lastName, _id: p.instructorId._id } : undefined
+            })
+          })
+        })
+        setTimetable(entries)
       } else {
-        // Fallback for old structure (array of entries)
-        setTimetable(Array.isArray(data) ? data : [])
+        setTimetable([])
       }
     } catch (err) {
-      const errorMessage = err.message || 'Failed to load timetable'
-      showError(errorMessage)
+      // If schedule not found, treat as empty timetable
+      setTimetable([])
+    }
+  }
+
+  const loadCourseSubjects = async (classroom_id) => {
+    try {
+      const course = await timetableApi.courses.getByClassroom(classroom_id)
+      setCourseSubjects(course?.subjects || [])
+    } catch (err) {
+      // It's okay if no course exists yet; clear subjects list
+      setCourseSubjects([])
     }
   }
 
@@ -92,20 +134,63 @@ function Timetable() {
 
   const handleSubmit = async (formData) => {
     try {
-      if (editingEntry) {
-        await timetableApi.update(editingEntry._id, formData)
-        success('Timetable entry updated successfully')
-      } else {
-        await timetableApi.create(formData)
-        success('Timetable entry created successfully')
+      const classroomId = formData.classroom || formData.classroom_id || selectedClassroom
+      const instructorId = formData.teacher || formData.teacher_id
+      const day = formData.dayOfWeek || formData.day
+      const start = formData.time
+      if (!classroomId) throw new Error('Classroom is required')
+      if (!day) throw new Error('Day is required')
+      if (!start) throw new Error('Time is required')
+
+      const periodNum = Math.max(1, BASE_TIME_SLOTS.indexOf(start) + 1)
+      const end = addMinutes(start, 60)
+      const periodEntry = {
+        period: periodNum,
+        subject: formData.subject,
+        instructorId: instructorId || undefined,
+        time: `${start}-${end}`
       }
+
+      // Try to fetch existing schedule for classroom
+      let schedule
+      try {
+        schedule = await timetableApi.schedules.getByClassroom(classroomId)
+      } catch (e) {
+        schedule = null
+      }
+
+      if (!schedule) {
+        const newSchedule = {
+          classroomId,
+          timetable: [ { day, periods: [periodEntry] } ]
+        }
+        await timetableApi.schedules.create(newSchedule)
+        success('Timetable schedule created successfully')
+      } else {
+        const tt = Array.isArray(schedule.timetable) ? [...schedule.timetable] : []
+        let dayObj = tt.find(d => d.day === day)
+        if (!dayObj) {
+          dayObj = { day, periods: [] }
+          tt.push(dayObj)
+        }
+        const idx = (dayObj.periods || []).findIndex(p => p.period === periodNum)
+        if (idx >= 0) {
+          dayObj.periods[idx] = periodEntry
+        } else {
+          dayObj.periods = [...(dayObj.periods || []), periodEntry]
+        }
+
+        await timetableApi.schedules.update(schedule._id, { timetable: tt })
+        success('Timetable schedule updated successfully')
+      }
+
       setIsModalOpen(false)
       setEditingEntry(null)
       if (selectedClassroom) {
         await loadTimetable(selectedClassroom)
       }
     } catch (err) {
-      const errorMessage = err.message || (editingEntry ? 'Failed to update entry' : 'Failed to create entry')
+      const errorMessage = err.message || 'Failed to save timetable entry'
       showError(errorMessage)
     }
   }
@@ -144,7 +229,7 @@ function Timetable() {
 
   // Normalize entries and process with filters/search/sort
   const normalized = useMemo(() => (
-    timetable.map(e => ({
+    (timetable || []).map(e => ({
       ...e,
       dayOfWeek: e.dayOfWeek || e.day,
       startTime: e.startTime || e.time,
@@ -165,6 +250,15 @@ function Timetable() {
   ), [processedEntries])
 
   const filteredTimetable = processedEntries
+
+  // Map subject name -> code (from course subjects)
+  const subjectCodeMap = useMemo(() => {
+    const map = new Map()
+    ;(courseSubjects || []).forEach(s => {
+      if (s?.name) map.set(String(s.name).toLowerCase(), s.code || '')
+    })
+    return map
+  }, [courseSubjects])
 
   if (loading) {
     return (
@@ -204,13 +298,13 @@ function Timetable() {
 
       {/* Controls - Responsive */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {classrooms.length > 0 && (
+        {(classrooms || []).length > 0 && (
           <select
             value={selectedClassroom || ''}
             onChange={(e) => setSelectedClassroom(e.target.value)}
             className="w-full px-3 sm:px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
           >
-            {classrooms.map((classroom) => (
+            {(classrooms || []).map((classroom) => (
               <option key={classroom._id || classroom.classroom_id} value={classroom._id || classroom.classroom_id}>
                 Grade {classroom.grade} - Section {classroom.section}
               </option>
@@ -225,6 +319,24 @@ function Timetable() {
           <span>Add Entry</span>
         </button>
       </div>
+
+      {/* Subjects & Codes Legend */}
+      {courseSubjects.length > 0 && (
+        <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4">
+          <p className="text-xs font-semibold text-text-dark uppercase tracking-wide mb-2">Subjects & Codes</p>
+          <div className="flex flex-wrap gap-2">
+            {courseSubjects.map((subj) => (
+              <span
+                key={subj._id || subj.id || subj.code || subj.name}
+                className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 text-xs font-medium rounded-full border border-blue-100"
+              >
+                <span className="font-semibold">{subj.name}</span>
+                {subj.code && <span className="text-blue-600">({subj.code})</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-card-white rounded-custom shadow-custom p-4 md:p-6">
         <AdvancedSearch
@@ -293,7 +405,12 @@ function Timetable() {
                         const slot = filteredTimetable.find(t => t.dayOfWeek === day && t.startTime === time)
                         return (
                           <td key={`${day}-${time}`} className="py-3 px-2 md:px-4 text-xs md:text-sm text-text-muted whitespace-nowrap">
-                            {slot?.subjectName || slot?.subject?.name || slot?.subject || '-'}
+                            {(() => {
+                              const name = slot?.subjectName || slot?.subject?.name || slot?.subject
+                              if (!name) return '-'
+                              const code = subjectCodeMap.get(String(name).toLowerCase())
+                              return code ? `${name} (${code})` : name
+                            })()}
                           </td>
                         )
                       })}

@@ -1,45 +1,59 @@
 import { useState, useEffect, useMemo } from 'react'
 import { CheckCircle, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
-import { attendanceApi, studentsApi } from '../services/api'
+import { attendanceApi, studentsApi, teacherApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useSettings } from '../contexts/SettingsContext'
 import Modal from '../components/Modal'
 import AttendanceForm from '../components/AttendanceForm'
+import BulkAttendanceForm from '../components/BulkAttendanceForm'
 
 function Attendance() {
-          const [startDate, setStartDate] = useState('')
-          const [endDate, setEndDate] = useState('')
-        const [statusFilter, setStatusFilter] = useState('')
-        const [subjectFilter, setSubjectFilter] = useState('')
-      // Export attendance to CSV
-      const handleExportCSV = () => {
-        if (!attendance.length) return;
-        const headers = ['Date','Status','Subject','Student','Marked By'];
-        const rows = attendance.map(a => [
-          a.date ? (a.date.includes('T') ? a.date.split('T')[0] : a.date) : '',
-          typeof a.status === 'string' ? a.status : (a.status ? 'present' : 'absent'),
-          a.subject || '',
-          a.studentId?.name || a.studentId || '',
-          a.markedBy?.email || a.markedBy || ''
-        ]);
-        const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'attendance_report.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      };
-    const [bulkImporting, setBulkImporting] = useState(false)
-    const [bulkProgress, setBulkProgress] = useState({ total: 0, success: 0, error: 0 })
-    const [bulkErrors, setBulkErrors] = useState([])
+  const { user } = useAuth()
+  const { success, error: showError } = useToast()
+  
+  const [attendance, setAttendance] = useState([])
+  const [students, setStudents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedStudent, setSelectedStudent] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingAttendance, setEditingAttendance] = useState(null)
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [subjectFilter, setSubjectFilter] = useState('')
+  const [bulkImporting, setBulkImporting] = useState(false)
+  const [bulkProgress, setBulkProgress] = useState({ total: 0, success: 0, error: 0 })
+  const [bulkErrors, setBulkErrors] = useState([])
 
-    // Bulk import handler
-    const handleBulkImport = async (e) => {
+  // Export attendance to CSV
+  const handleExportCSV = () => {
+    if (!attendance.length) return;
+    const headers = ['Date','Status','Subject','Student','Marked By'];
+    const rows = attendance.map(a => [
+      a.date ? (a.date.includes('T') ? a.date.split('T')[0] : a.date) : '',
+      typeof a.status === 'string' ? a.status : (a.status ? 'present' : 'absent'),
+      a.subject || '',
+      a.studentId?.name || a.studentId || '',
+      a.markedBy?.email || a.markedBy || ''
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'attendance_report.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Bulk import handler
+  const handleBulkImport = async (e) => {
       const file = e.target.files[0]
       if (!file) return
       setBulkImporting(true)
@@ -82,16 +96,6 @@ function Attendance() {
       }
       setBulkImporting(false)
     }
-  const { user } = useAuth()
-  const [attendance, setAttendance] = useState([])
-  const [students, setStudents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedStudent, setSelectedStudent] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingAttendance, setEditingAttendance] = useState(null)
-  const { success, error: showError } = useToast()
 
   useEffect(() => {
     if (user?.role !== 'student') {
@@ -143,6 +147,10 @@ function Attendance() {
     setIsModalOpen(true)
   }
 
+  const handleBulkMark = () => {
+    setIsBulkModalOpen(true)
+  }
+
   const handleEdit = (record) => {
     setEditingAttendance(record)
     setIsModalOpen(true)
@@ -166,6 +174,20 @@ function Attendance() {
     } catch (err) {
       const errorMessage = err.message || (editingAttendance ? 'Failed to update attendance' : 'Failed to mark attendance')
       showError(errorMessage)
+    }
+  }
+
+  const handleBulkSubmit = async (data) => {
+    try {
+      const result = await teacherApi.markAttendance(data)
+      success(`Bulk attendance marked: ${result.updated || 0} records updated`)
+      setIsBulkModalOpen(false)
+      // Optionally refresh attendance view
+      if (selectedStudent || user?.role === 'student') {
+        await loadAttendance(user?.role === 'student' ? user.user_id : selectedStudent)
+      }
+    } catch (err) {
+      showError(err.message || 'Failed to mark bulk attendance')
     }
   }
 
@@ -212,7 +234,7 @@ function Attendance() {
       filtered = filtered.filter(a => (a.subject || '').toLowerCase() === subjectFilter);
     }
     return filtered;
-  }, [attendance, searchQuery, statusFilter, subjectFilter]);
+  }, [attendance, searchQuery, statusFilter, subjectFilter, startDate, endDate])
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students
@@ -268,7 +290,7 @@ function Attendance() {
       </div>
 
       {/* Top Controls - Responsive Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
         <button
           onClick={handleExportCSV}
           className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
@@ -296,6 +318,15 @@ function Attendance() {
             <option key={subject} value={subject.toLowerCase()}>{subject}</option>
           ))}
         </select>
+        {user?.role !== 'student' && (user?.role === 'teacher' || user?.role === 'head-teacher' || user?.role === 'admin') && (
+          <button
+            onClick={handleBulkMark}
+            className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+          >
+            <Plus size={18} />
+            <span>Bulk Mark</span>
+          </button>
+        )}
         {user?.role !== 'student' && (
           <button
             onClick={handleCreate}
@@ -454,6 +485,17 @@ function Attendance() {
             setIsModalOpen(false)
             setEditingAttendance(null)
           }}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        title="Bulk Mark Attendance"
+      >
+        <BulkAttendanceForm
+          onSubmit={handleBulkSubmit}
+          onCancel={() => setIsBulkModalOpen(false)}
         />
       </Modal>
     </div>

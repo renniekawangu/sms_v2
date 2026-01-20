@@ -80,6 +80,7 @@ function Subjects() {
     return subjects.filter((subject) => {
       return (
         subject.name?.toLowerCase().includes(query) ||
+        subject.code?.toLowerCase().includes(query) ||
         subject.grade?.toString().includes(query) ||
         subject.subject_id?.toString().includes(query)
       )
@@ -151,6 +152,7 @@ function Subjects() {
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">ID</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Name</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Code</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Grade</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Description</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Actions</th>
@@ -159,7 +161,7 @@ function Subjects() {
             <tbody>
               {filteredSubjects.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-8 text-center text-text-muted">
+                  <td colSpan="6" className="py-8 text-center text-text-muted">
                     No subjects found
                   </td>
                 </tr>
@@ -168,6 +170,7 @@ function Subjects() {
                   <tr key={subject._id || subject.subject_id || Math.random()} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4 text-sm text-text-dark">{subject.subject_id}</td>
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{subject.name}</td>
+                    <td className="py-3 px-4 text-sm text-text-dark">{subject.code || '-'}</td>
                     <td className="py-3 px-4 text-sm text-text-muted">Grade {subject.grade}</td>
                     <td className="py-3 px-4 text-sm text-text-muted">{subject.description || '-'}</td>
                     <td className="py-3 px-4">

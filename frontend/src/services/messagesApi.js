@@ -50,12 +50,38 @@ async function apiRequest(endpoint, options = {}) {
   console.log('[API] Response status:', response.status)
 
   if (!response.ok) {
-    const errorData = await response.text()
-    console.error('[API] Error response:', errorData)
-    throw new Error(`API error: ${response.status} - ${errorData}`)
+    let errorMessage = `API error: ${response.status} ${response.statusText}`
+    try {
+      const contentType = response.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json()
+        errorMessage = errorData.message || errorData.error || errorMessage
+      } else {
+        const errorText = await response.text()
+        if (errorText) {
+          try {
+            const parsed = JSON.parse(errorText)
+            errorMessage = parsed.message || parsed.error || errorMessage
+          } catch {
+            errorMessage = errorText || errorMessage
+          }
+        }
+      }
+    } catch (parseError) {
+      console.error('[API] Error parsing error response:', parseError)
+    }
+    console.error('[API] Error response:', errorMessage)
+    throw new Error(errorMessage)
   }
 
-  return response.json()
+  // Handle empty responses
+  const contentType = response.headers.get('content-type')
+  if (contentType && contentType.includes('application/json')) {
+    const text = await response.text()
+    return text ? JSON.parse(text) : {}
+  }
+  
+  return {}
 }
 
 export const messagesApi = {

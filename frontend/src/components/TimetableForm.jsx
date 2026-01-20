@@ -22,7 +22,7 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, selectedClas
       })
     } else {
       // Creating new entry - auto-populate from selected classroom
-      const classroom = classrooms.find(c => (c._id || c.classroom_id) === selectedClassroom)
+      const classroom = (classrooms || []).find(c => (c._id || c.classroom_id) === selectedClassroom)
       setFormData({
         classroom_id: selectedClassroom || '',
         teacher_id: classroom?.teacher_id || '',
@@ -50,9 +50,15 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, selectedClas
 
     if (!formData.time) {
       newErrors.time = 'Time is required'
+    } else {
+      // Validate time format (HH:MM)
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+      if (!timeRegex.test(formData.time)) {
+        newErrors.time = 'Invalid time format. Use HH:MM (e.g., 09:00)'
+      }
     }
 
-    if (!formData.subject.trim()) {
+    if (!formData.subject || !formData.subject.trim()) {
       newErrors.subject = 'Subject is required'
     }
 
@@ -106,7 +112,7 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, selectedClas
           }`}
         >
           <option value="">Select a classroom</option>
-          {classrooms.map((classroom) => (
+          {(classrooms || []).map((classroom) => (
             <option key={classroom._id || classroom.classroom_id} value={classroom._id || classroom.classroom_id}>
               Grade {classroom.grade} - Section {classroom.section}
             </option>
@@ -209,11 +215,11 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, selectedClas
           placeholder="Enter subject name"
         />
         {errors.subject && <p className="mt-1 text-sm text-red-500">{errors.subject}</p>}
-        {subjects.length > 0 && (
+        {(subjects || []).length > 0 && (
           <div className="mt-2">
             <p className="text-xs text-text-muted mb-1">Or select from existing subjects:</p>
             <div className="flex flex-wrap gap-2">
-              {subjects.map((subject) => (
+              {(subjects || []).map((subject) => (
                 <button
                   key={subject._id || subject.subject_id}
                   type="button"

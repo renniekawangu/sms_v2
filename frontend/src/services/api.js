@@ -224,31 +224,147 @@ export const subjectsApi = {
 };
 
 // Timetable API - NOTE: Backend endpoints not yet implemented
+// Timetable Schedule API - Comprehensive timetable management
 export const timetableApi = {
+  // Timetable Schedules
+  schedules: {
+    list: async (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiCall(`/timetable/schedules${query ? `?${query}` : ''}`);
+    },
+
+    get: async (id) => {
+      return apiCall(`/timetable/schedules/${id}`);
+    },
+
+    getByClassroom: async (classroom_id, params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiCall(`/timetable/schedules/classroom/${classroom_id}${query ? `?${query}` : ''}`);
+    },
+
+    getByInstructor: async (instructor_id, params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiCall(`/timetable/schedules/instructor/${instructor_id}${query ? `?${query}` : ''}`);
+    },
+
+    create: async (data) => {
+      return apiCall('/timetable/schedules', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id, data) => {
+      return apiCall(`/timetable/schedules/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    delete: async (id) => {
+      return apiCall(`/timetable/schedules/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // Instructors
+  instructors: {
+    list: async () => {
+      return apiCall('/timetable/instructors');
+    },
+
+    get: async (id) => {
+      return apiCall(`/timetable/instructors/${id}`);
+    },
+
+    getByStaff: async (staff_id) => {
+      return apiCall(`/timetable/instructors/staff/${staff_id}`);
+    },
+
+    create: async (data) => {
+      return apiCall('/timetable/instructors', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id, data) => {
+      return apiCall(`/timetable/instructors/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    delete: async (id) => {
+      return apiCall(`/timetable/instructors/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // Courses
+  courses: {
+    list: async (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiCall(`/timetable/courses${query ? `?${query}` : ''}`);
+    },
+
+    get: async (id) => {
+      return apiCall(`/timetable/courses/${id}`);
+    },
+
+    getByClassroom: async (classroom_id, params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiCall(`/timetable/courses/classroom/${classroom_id}${query ? `?${query}` : ''}`);
+    },
+
+    create: async (data) => {
+      return apiCall('/timetable/courses', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id, data) => {
+      return apiCall(`/timetable/courses/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    delete: async (id) => {
+      return apiCall(`/timetable/courses/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // Legacy compatibility methods
   list: async () => {
-    return apiCall('/timetable');
+    return apiCall('/timetable/schedules');
   },
 
   getByClassroom: async (classroom_id) => {
-    return apiCall(`/timetable/classroom/${classroom_id}`);
+    return apiCall(`/timetable/schedules/classroom/${classroom_id}`);
   },
 
   create: async (data) => {
-    return apiCall('/timetable', {
+    return apiCall('/timetable/schedules', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
   update: async (timetable_id, data) => {
-    return apiCall(`/timetable/${timetable_id}`, {
+    return apiCall(`/timetable/schedules/${timetable_id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   },
 
   delete: async (timetable_id) => {
-    return apiCall(`/timetable/${timetable_id}`, {
+    return apiCall(`/timetable/schedules/${timetable_id}`, {
       method: 'DELETE',
     });
   },
@@ -701,6 +817,18 @@ export const teacherApi = {
 
   getMyStudents: async () => {
     return apiCall('/teacher/students', {
+      method: 'GET',
+    });
+  },
+
+  getMyClassrooms: async () => {
+    return apiCall('/teacher/classrooms', {
+      method: 'GET',
+    });
+  },
+
+  getClassroomStudents: async (classroomId) => {
+    return apiCall(`/teacher/classroom/${classroomId}/students`, {
       method: 'GET',
     });
   },

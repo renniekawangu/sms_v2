@@ -6,11 +6,11 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth, requireRole, requirePermission } = require('../middleware/rbac');
 const { ROLES, PERMISSIONS } = require('../config/rbac');
-const Teacher = require('../models/teacher');
-const Classroom = require('../models/classroom');
+const { Teacher } = require('../models/teacher');
+const { Classroom } = require('../models/classroom');
 const Grade = require('../models/grades');
-const Attendance = require('../models/attendance');
-const Student = require('../models/student');
+const { Attendance, markSubjectAttendance } = require('../models/attendance');
+const { Student } = require('../models/student');
 const logger = require('../utils/logger');
 
 // Get teacher dashboard
@@ -41,8 +41,15 @@ router.get('/dashboard', requireAuth, requireRole(ROLES.TEACHER), async (req, re
 });
 
 // Get assigned classrooms
-router.get('/classrooms', requireAuth, requireRole(ROLES.TEACHER), async (req, res, next) => {
+router.get('/classrooms', requireAuth, requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER), async (req, res, next) => {
   try {
+    // Admin and Head Teacher can see all classrooms
+    if (req.user.role === 'admin' || req.user.role === 'head-teacher') {
+      const classrooms = await Classroom.find().lean();
+      return res.json({ success: true, data: classrooms });
+    }
+
+    // Teacher sees only their assigned classrooms
     const teacher = await Teacher.findOne({ userId: req.user.id })
       .populate('classroomIds');
     
@@ -57,8 +64,15 @@ router.get('/classrooms', requireAuth, requireRole(ROLES.TEACHER), async (req, r
 });
 
 // Get students in classroom
-router.get('/classroom/:classroomId/students', requireAuth, requireRole(ROLES.TEACHER), async (req, res, next) => {
+router.get('/classroom/:classroomId/students', requireAuth, requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER), async (req, res, next) => {
   try {
+    // Admin and Head Teacher can access any classroom
+    if (req.user.role === 'admin' || req.user.role === 'head-teacher') {
+      const students = await Student.find({ classroomId: req.params.classroomId }).lean();
+      return res.json({ success: true, data: students });
+    }
+
+    // Teacher needs to verify access
     const teacher = await Teacher.findOne({ userId: req.user.id });
     if (!teacher) {
       return res.status(404).json({ message: 'Teacher not found' });
@@ -148,6 +162,107 @@ router.get('/classroom/:classroomId/attendance', requireAuth, requireRole(ROLES.
     const attendance = await Attendance.find({ studentId: { $in: studentIds } }).lean();
     
     res.json({ success: true, data: attendance });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Bulk mark attendance for a subject and date
+router.post('/attendance/mark', requireAuth, requirePermission(PERMISSIONS.MARK_ATTENDANCE), async (req, res, next) => {
+  try {
+    const { subject, date, records } = req.body;
+
+    if (!subject || !date || !Array.isArray(records)) {
+      return res.status(400).json({ message: 'subject, date and records are required' });
+    }
+
+    // Admin and Head Teacher can mark attendance for any students
+    if (req.user.role === 'admin' || req.user.role === 'head-teacher') {
+      const result = await markSubjectAttendance({
+        subject,
+        date,
+        records,
+        markedBy: req.user.id
+      });
+      return res.json({ success: true, updated: result.success.length, errors: result.errors });
+    }
+
+    // Teacher needs to verify classroom access
+    const teacher = await Teacher.findOne({ userId: req.user.id }).lean();
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher profile not found' });
+    }
+
+    // Verify access: only allow students from teacher's classrooms
+    const classroomIds = (teacher.classroomIds || []).map(id => String(id));
+    const allowedStudents = await Student.find({ classroomId: { $in: classroomIds } }).select('_id').lean();
+    const allowedSet = new Set(allowedStudents.map(s => String(s._id)));
+
+    const filtered = records.filter(r => allowedSet.has(String(r.studentId)));
+    if (filtered.length !== records.length) {
+      logger.warn('Some attendance records were ignored due to classroom access restrictions');
+    }
+
+    const result = await markSubjectAttendance({
+      subject,
+      date,
+      records: filtered,
+      markedBy: req.user.id
+    });
+
+    return res.json({ success: true, updated: result.success.length, errors: result.errors });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Teacher attendance records (filterable by date/subject)
+router.get('/attendance', requireAuth, requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER), async (req, res, next) => {
+  try {
+    const { date, subject } = req.query;
+    let query = {};
+
+    // Admin and Head Teacher can see all attendance
+    if (req.user.role === 'admin' || req.user.role === 'head-teacher') {
+      if (date) {
+        const start = new Date(date);
+        const end = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        query.date = { $gte: start, $lt: end };
+      }
+      if (subject) {
+        query.subject = subject;
+      }
+      const records = await Attendance.find(query).lean().sort({ date: -1 });
+      return res.json({ success: true, data: records });
+    }
+
+    // Teacher sees only their classroom students
+    const teacher = await Teacher.findOne({ userId: req.user.id }).lean();
+    if (!teacher) {
+      return res.status(404).json({ message: 'Teacher profile not found' });
+    }
+
+    const classroomIds = (teacher.classroomIds || []).map(id => String(id));
+    const students = await Student.find({ classroomId: { $in: classroomIds } }).select('_id').lean();
+    const studentIds = students.map(s => s._id);
+
+    query = { studentId: { $in: studentIds } };
+
+    if (date) {
+      const start = new Date(date);
+      const end = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      query.date = { $gte: start, $lt: end };
+    }
+    if (subject) {
+      query.subject = subject;
+    }
+
+    const records = await Attendance.find(query).lean().sort({ date: -1 });
+    return res.json({ success: true, data: records });
   } catch (err) {
     next(err);
   }

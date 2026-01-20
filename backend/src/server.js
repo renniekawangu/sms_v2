@@ -13,10 +13,22 @@ const { authRateLimiter } = require('./middleware/rateLimiter');
 const formatters = require('./utils/formatters');
 const accessLogger = require('./middleware/accessLog');
 
-// Database Connection
-mongoose.connect(process.env.MONGODB_URI)
+// Database Connection with proper timeout and retry options
+const mongoOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 15000, // Increase timeout to 15 seconds
+  socketTimeoutMS: 45000, // 45 seconds for socket timeout
+  connectTimeoutMS: 15000, // 15 seconds for initial connection
+  maxPoolSize: 10,
+  minPoolSize: 1,
+  retryWrites: true,
+  retryReads: true,
+};
+
+mongoose.connect(process.env.MONGODB_URI, mongoOptions)
   .then(async () => {
-    logger.info('Connected to MongoDB');
+    logger.info('✓ Connected to MongoDB');
     // Initialize default roles
     try {
       const { initializeDefaultRoles } = require('./models/role');
@@ -25,7 +37,29 @@ mongoose.connect(process.env.MONGODB_URI)
       logger.error('Error initializing roles:', err.message);
     }
   })
-  .catch(err => logger.error('✗ MongoDB connection error: %s', err.message));
+  .catch(err => {
+    logger.error('✗ MongoDB connection error: %s', err.message);
+    if (err.name === 'MongoServerSelectionError') {
+      logger.error('Could not connect to MongoDB. Please check:');
+      logger.error('1. MongoDB URI is correct in .env file');
+      logger.error('2. Network connectivity');
+      logger.error('3. MongoDB server is running');
+      logger.error('4. Firewall settings allow connection');
+    }
+  });
+
+// Handle connection events
+mongoose.connection.on('disconnected', () => {
+  logger.warn('MongoDB disconnected');
+});
+
+mongoose.connection.on('error', (err) => {
+  logger.error('MongoDB connection error:', err.message);
+});
+
+mongoose.connection.on('reconnected', () => {
+  logger.info('MongoDB reconnected');
+});
 
 // Express Setup
 const app = express();

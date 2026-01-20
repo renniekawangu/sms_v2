@@ -62,7 +62,13 @@ function ResultForm({ result, students, exams, subjects, onSubmit, onCancel }) {
       newErrors.subject_id = 'Subject is required'
     }
 
-    if (!formData.marks || formData.marks < 0 || formData.marks > 100) {
+    // Convert marks to number for validation (handle string inputs)
+    const marksNum = parseFloat(formData.marks)
+    if (formData.marks === '' || formData.marks === null || formData.marks === undefined) {
+      newErrors.marks = 'Marks is required'
+    } else if (isNaN(marksNum)) {
+      newErrors.marks = 'Marks must be a valid number'
+    } else if (marksNum < 0 || marksNum > 100) {
       newErrors.marks = 'Marks must be between 0 and 100'
     }
 
@@ -109,7 +115,7 @@ function ResultForm({ result, students, exams, subjects, onSubmit, onCancel }) {
           }`}
         >
           <option value="">Select a student</option>
-          {students.map((student) => (
+          {(students || []).map((student) => (
             <option key={student.student_id} value={student.student_id}>
               {student.name} (ID: {student.student_id})
             </option>
@@ -135,7 +141,7 @@ function ResultForm({ result, students, exams, subjects, onSubmit, onCancel }) {
             }`}
           >
             <option value="">Select an exam</option>
-            {exams.map((exam) => (
+            {(exams || []).map((exam) => (
               <option key={exam.exam_id} value={exam.exam_id}>
                 {exam.name} (ID: {exam.exam_id})
               </option>
@@ -160,7 +166,7 @@ function ResultForm({ result, students, exams, subjects, onSubmit, onCancel }) {
             }`}
           >
             <option value="">Select a subject</option>
-            {subjects.map((subject) => (
+            {(subjects || []).map((subject) => (
               <option key={subject.subject_id} value={subject.subject_id}>
                 {subject.name} (Grade {subject.grade})
               </option>

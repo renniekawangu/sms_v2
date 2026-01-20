@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { School, Search, Plus, Edit, Trash2, AlertCircle, Eye } from 'lucide-react'
-import { classroomsApi, adminApi } from '../services/api'
+import { classroomsApi, adminApi, timetableApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import ClassroomForm from '../components/ClassroomForm'
@@ -17,6 +17,7 @@ function Classrooms() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingClassroom, setEditingClassroom] = useState(null)
   const { success, error: showError } = useToast()
+  const [courseSubjectsByClassroom, setCourseSubjectsByClassroom] = useState(new Map())
 
   useEffect(() => {
     loadData()
@@ -26,10 +27,11 @@ function Classrooms() {
     try {
       setLoading(true)
       setError(null)
-      const [classroomsData, staffResp, studentsResp] = await Promise.all([
+      const [classroomsData, staffResp, studentsResp, coursesData] = await Promise.all([
         classroomsApi.list(),
         adminApi.listStaff({ role: 'teacher', limit: 1000 }),
-        adminApi.listStudents({ limit: 1000 })
+        adminApi.listStudents({ limit: 1000 }),
+        timetableApi.courses.list()
       ])
       setClassrooms(classroomsData)
       // Normalize teachers to {_id, name}
@@ -44,6 +46,20 @@ function Classrooms() {
         name: s.name || [s.firstName, s.lastName].filter(Boolean).join(' ').trim() || s.email || 'Student'
       }))
       setStudents(studentList)
+
+      // Build a map of classroomId -> subjects[] including codes
+      const map = new Map()
+      ;(coursesData || []).forEach(course => {
+        const cid = course?.classroomId?._id || course?.classroomId
+        if (!cid) return
+        // Prefer the latest by updatedAt if multiple
+        const existing = map.get(cid)
+        if (!existing || new Date(course.updatedAt || 0) > new Date(existing._ts || 0)) {
+          const subjects = Array.isArray(course.subjects) ? course.subjects : []
+          map.set(cid, { subjects, _ts: course.updatedAt || course.createdAt || null })
+        }
+      })
+      setCourseSubjectsByClassroom(map)
     } catch (err) {
       const errorMessage = err.message || 'Failed to load data'
       setError(errorMessage)
@@ -213,6 +229,28 @@ function Classrooms() {
                 <div className="space-y-2 text-sm">
                   <p className="text-text-muted">Teacher: {getTeacherName(classroom.teacher_id)}</p>
                   <p className="text-text-muted">Students: {classroom.students?.length || 0}</p>
+                  {/* Subjects & Codes */}
+                  {(() => {
+                    const cid = classroom._id
+                    const entry = courseSubjectsByClassroom.get(cid)
+                    const subjects = entry?.subjects || []
+                    if (!subjects.length) return null
+                    return (
+                      <div>
+                        <span className="text-text-dark font-medium">Subjects:</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {subjects.map((s) => (
+                            <span
+                              key={s._id || s.id || s.code || s.name}
+                              className="px-2 py-0.5 text-[11px] bg-blue-50 text-blue-800 rounded border border-blue-100"
+                            >
+                              {s.name}{s.code ? ` (${s.code})` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             ))

@@ -45,6 +45,24 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // MongoDB connection/buffering timeout errors
+  if (err.name === 'MongooseError' && err.message && err.message.includes('buffering timed out')) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database connection timeout. Please check your MongoDB connection.',
+      error: 'Database unavailable'
+    });
+  }
+
+  // MongoDB server selection errors
+  if (err.name === 'MongoServerSelectionError' || err.name === 'MongoNetworkTimeoutError') {
+    return res.status(503).json({
+      success: false,
+      message: 'Cannot connect to database. Please check your MongoDB connection settings.',
+      error: 'Database connection failed'
+    });
+  }
+
   // Duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyPattern)[0];
