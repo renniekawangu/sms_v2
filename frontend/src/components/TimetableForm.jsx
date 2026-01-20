@@ -18,7 +18,9 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, selectedClas
         teacher_id: timetable.teacher_id || timetable.teacher?._id || '',
         day: timetable.day || timetable.dayOfWeek || 'Monday',
         time: timetable.time || timetable.startTime || '',
-        subject: timetable.subject || timetable.subject?.name || '',
+        subject: (timetable.subject && typeof timetable.subject === 'object')
+          ? (timetable.subject.name || '')
+          : (timetable.subjectName || timetable.subject || ''),
       })
     } else {
       // Creating new entry - auto-populate from selected classroom
@@ -58,7 +60,10 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, selectedClas
       }
     }
 
-    if (!formData.subject || !formData.subject.trim()) {
+    const subjectStr = typeof formData.subject === 'string'
+      ? formData.subject
+      : (formData.subject?.name || '')
+    if (!subjectStr || !subjectStr.trim()) {
       newErrors.subject = 'Subject is required'
     }
 
@@ -74,7 +79,7 @@ function TimetableForm({ timetable, classrooms, subjects, teachers, selectedClas
         teacher: formData.teacher_id,
         dayOfWeek: formData.day,
         time: formData.time,
-        subject: formData.subject,
+        subject: (typeof formData.subject === 'string') ? formData.subject : (formData.subject?.name || ''),
       })
     }
   }
