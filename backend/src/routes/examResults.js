@@ -7,6 +7,35 @@ const { Subject } = require('../models/subjects')
 const { Classroom } = require('../models/classroom')
 const { requireAuth, requireRole } = require('../middleware/rbac')
 
+// Debug: Get all exam results (no filtering)
+router.get(
+  '/results/debug/all',
+  requireAuth,
+  async (req, res) => {
+    try {
+      const allResults = await ExamResult.find({})
+        .populate('exam', 'name')
+        .populate('student', 'name')
+        .populate('classroom', 'grade section')
+        .lean()
+        .limit(50)
+
+      console.log(`Total results in DB: ${allResults.length}`)
+      allResults.forEach((r, i) => {
+        console.log(`[${i}] Student: ${r.student?.name}, Exam: ${r.exam?.name}, Year: ${r.academicYear}, Term: ${r.term}`)
+      })
+
+      res.json({
+        success: true,
+        total: allResults.length,
+        results: allResults
+      })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  }
+)
+
 // Get all exam results (with filtering)
 router.get(
   '/results',
@@ -24,6 +53,9 @@ router.get(
       if (classroomId) filter.classroom = classroomId
       if (status) filter.status = status
 
+      console.log('GET /results query:', { academicYear, term, examId, studentId, classroomId, status })
+      console.log('Filter object:', filter)
+
       const results = await ExamResult.find(filter)
         .populate('exam', 'name date totalMarks')
         .populate('student', 'name email')
@@ -31,6 +63,8 @@ router.get(
         .populate('subjectResults.subject', 'name code')
         .sort({ createdAt: -1 })
         .limit(100)
+
+      console.log(`Found ${results.length} results with filter:`, filter)
 
       res.json({
         success: true,
@@ -224,6 +258,8 @@ router.post(
     try {
       const { examId, classroomId, academicYear, term, results } = req.body
 
+      console.log('Batch create request:', { examId, classroomId, academicYear, term, resultsCount: results?.length })
+
       if (!examId || !classroomId || !results || !Array.isArray(results)) {
         return res.status(400).json({
           error: 'Missing required fields: examId, classroomId, results (array)'
@@ -231,28 +267,53 @@ router.post(
       }
 
       const createdResults = []
+      const updatedResults = []
       const errors = []
 
       for (let i = 0; i < results.length; i++) {
         try {
           const resultData = results[i]
           
-          const newResult = new ExamResult({
-            exam: examId,
+          // Check if result already exists for this student+exam combination
+          const existingResult = await ExamResult.findOne({
             student: resultData.studentId,
-            classroom: classroomId,
-            academicYear: academicYear || new Date().getFullYear().toString(),
-            term: term || 'term1',
-            subjectResults: resultData.subjectResults,
-            totalScore: resultData.totalScore,
-            totalMaxMarks: resultData.totalMaxMarks || 100,
-            status: 'draft',
-            submittedBy: req.user.id
+            exam: examId,
+            classroom: classroomId
           })
 
-          await newResult.save()
-          createdResults.push(newResult)
+          console.log(`Checking student ${resultData.studentId}: ${existingResult ? 'EXISTS' : 'NEW'}`)
+
+          if (existingResult) {
+            // Update existing result
+            existingResult.subjectResults = resultData.subjectResults
+            existingResult.totalScore = resultData.totalScore
+            existingResult.totalMaxMarks = resultData.totalMaxMarks || 100
+            existingResult.academicYear = academicYear || new Date().getFullYear().toString()
+            existingResult.term = term || 'term1'
+            await existingResult.save()
+            updatedResults.push(existingResult)
+            console.log(`Updated result for student: ${resultData.studentId}`)
+          } else {
+            // Create new result
+            const newResult = new ExamResult({
+              exam: examId,
+              student: resultData.studentId,
+              classroom: classroomId,
+              academicYear: academicYear || new Date().getFullYear().toString(),
+              term: term || 'term1',
+              subjectResults: resultData.subjectResults,
+              totalScore: resultData.totalScore,
+              totalMaxMarks: resultData.totalMaxMarks || 100,
+              status: 'draft',
+              submittedBy: req.user.id
+            })
+
+            await newResult.save()
+            createdResults.push(newResult)
+            console.log(`Created result for student: ${resultData.studentId}`)
+          }
         } catch (itemErr) {
+          console.error(`Error saving result for student ${results[i].studentId}:`, itemErr.message)
           errors.push({
             index: i,
             studentId: results[i].studentId,
@@ -261,16 +322,19 @@ router.post(
         }
       }
 
+      const totalProcessed = createdResults.length + updatedResults.length
+      console.log(`Batch complete: ${createdResults.length} created, ${updatedResults.length} updated, ${errors.length} errors`)
       res.json({
         success: true,
-        message: `${createdResults.length} results created successfully`,
+        message: `${totalProcessed} results processed (${createdResults.length} created, ${updatedResults.length} updated)`,
         createdCount: createdResults.length,
+        updatedCount: updatedResults.length,
         errorCount: errors.length,
         errors: errors.length > 0 ? errors : undefined
       })
     } catch (err) {
       console.error('Error batch creating results:', err)
-      res.status(500).json({ error: 'Failed to batch create results' })
+      res.status(500).json({ error: 'Failed to batch create results', details: err.message })
     }
   }
 )

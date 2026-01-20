@@ -55,13 +55,18 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
         const classroomRes = await classroomApi.getById(classroom)
         const classroomDetails = classroomRes.data || classroomRes
         
+        console.log('Classroom response:', classroomRes)
+        console.log('Classroom details:', classroomDetails)
+        
         // Get students in classroom
         const studentsInClassroom = classroomDetails.students || []
+        console.log('Students in classroom:', studentsInClassroom)
         setStudents(studentsInClassroom)
         setSelectedClassroomData(classroomDetails)
 
         // Load subjects for this classroom (check if classroom has subjects or get all)
         const subjectsRes = await subjectsApi.list({ classLevel: classroomDetails.grade })
+        console.log('Subjects response:', subjectsRes)
         setSubjects(subjectsRes.data || subjectsRes)
         
         // Reset grades when classroom changes
@@ -135,30 +140,45 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
     try {
       setSubmitting(true)
 
-      // Create results for each grade
-      const results = gradesArray.map(grade => ({
-        exam,
-        student: grade.studentId,
-        classroom,
-        academicYear: new Date().getFullYear().toString(),
-        term: 'term1', // You might want to make this dynamic
+      // Create results array - each result can have one subject
+      const resultsArray = gradesArray.map(grade => ({
+        studentId: grade.studentId,
         subjectResults: [{
           subject: grade.subjectId,
           score: grade.score,
           maxMarks: grade.maxMarks,
           remarks: grade.remarks
-        }]
+        }],
+        totalScore: grade.score,
+        totalMaxMarks: grade.maxMarks
       }))
 
-      // Batch create
-      const response = await examResultsApi.createBatch(exam, classroom, results)
+      console.log('Submitting grades:', {
+        exam,
+        classroom,
+        resultsArray,
+        academicYear: new Date().getFullYear().toString(),
+        term: 'term1'
+      })
 
+      // Batch create
+      const response = await examResultsApi.createBatch(
+        exam, 
+        classroom, 
+        resultsArray,
+        new Date().getFullYear().toString(),
+        'term1'
+      )
+
+      console.log('Batch response:', response)
+      console.log('Response type:', typeof response)
+      console.log('Response keys:', Object.keys(response || {}))
       showToast(`Successfully added ${gradesArray.length} grades!`, 'success')
       onSuccess && onSuccess()
       onClose()
     } catch (err) {
+      console.error('Error submitting grades:', err)
       showToast(err.message || 'Failed to save grades', 'error')
-      console.error(err)
     } finally {
       setSubmitting(false)
     }

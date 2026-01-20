@@ -30,9 +30,8 @@ function Results() {
   }, [])
 
   useEffect(() => {
-    if (results.length > 0) {
-      loadResults()
-    }
+    console.log('Filters changed:', filters)
+    loadResults()
   }, [filters])
 
   const loadData = async () => {
@@ -56,6 +55,7 @@ function Results() {
 
   const loadResults = async () => {
     try {
+      // First try with current filters
       const filterParams = {
         academicYear: filters.academicYear,
         term: filters.term
@@ -64,8 +64,19 @@ function Results() {
         filterParams.status = filters.status
       }
 
-      const data = await examResultsApi.list(filterParams)
-      setResults(data.results || [])
+      console.log('Loading results with params:', filterParams)
+      let data = await examResultsApi.list(filterParams)
+      console.log('API response:', data)
+      
+      // If no results found, try without academicYear to debug
+      if ((!data.results || data.results.length === 0) && data.success !== undefined) {
+        console.log('No results with academicYear filter, trying without...')
+        data = await examResultsApi.list({ term: filters.term })
+        console.log('API response without year:', data)
+      }
+      
+      console.log('Loaded results:', data.results || data || [])
+      setResults(data.results || data || [])
     } catch (err) {
       showError(err.message || 'Failed to load results')
     }
@@ -314,10 +325,13 @@ function Results() {
 
       {showClassroomGrading && (
         <ClassroomGradingForm
-          onClose={() => setShowClassroomGrading(false)}
-          onSuccess={() => {
-            loadResults()
+          onClose={() => {
             setShowClassroomGrading(false)
+            // Refresh after modal closes
+            setTimeout(() => loadResults(), 300)
+          }}
+          onSuccess={() => {
+            // Just mark success, refresh happens in onClose
           }}
         />
       )}
