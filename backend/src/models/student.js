@@ -27,6 +27,7 @@ const studentSchema = new mongoose.Schema({
   role: { type: String, default: 'student' },
   classLevel: { type: String, enum: CLASS_LEVELS, default: 'Grade 1' },
   stream: { type: String },
+  classroomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Classroom', default: null }, // Link to Classroom
   parents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Parent' }], // Link to Parent documents
   gender: { type: String, enum: ['Male', 'Female'], required: false },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
