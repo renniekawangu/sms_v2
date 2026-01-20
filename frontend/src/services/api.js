@@ -442,6 +442,10 @@ export const attendanceApi = {
     return apiCall(`/attendance/${user_id}`);
   },
 
+  getByClassroom: async (classroomId) => {
+    return apiCall(`/teacher/classroom/${classroomId}/attendance`);
+  },
+
   mark: async (data) => {
     return apiCall('/attendance', {
       method: 'POST',

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CheckCircle, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
-import { attendanceApi, studentsApi, teacherApi } from '../services/api'
+import { CheckCircle, Search, Plus, Edit, Trash2, AlertCircle, Users, Calendar } from 'lucide-react'
+import { attendanceApi, studentsApi, classroomsApi, teacherApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useSettings } from '../contexts/SettingsContext'
@@ -12,32 +12,29 @@ function Attendance() {
   const { user } = useAuth()
   const { success, error: showError } = useToast()
   
+  const [classrooms, setClassrooms] = useState([])
+  const [selectedClassroom, setSelectedClassroom] = useState(null)
+  const [classroomStudents, setClassroomStudents] = useState([])
   const [attendance, setAttendance] = useState([])
-  const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedStudent, setSelectedStudent] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAttendance, setEditingAttendance] = useState(null)
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [subjectFilter, setSubjectFilter] = useState('')
-  const [bulkImporting, setBulkImporting] = useState(false)
-  const [bulkProgress, setBulkProgress] = useState({ total: 0, success: 0, error: 0 })
-  const [bulkErrors, setBulkErrors] = useState([])
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   // Export attendance to CSV
   const handleExportCSV = () => {
     if (!attendance.length) return;
-    const headers = ['Date','Status','Subject','Student','Marked By'];
+    const headers = ['Date','Student','Status','Marked By'];
     const rows = attendance.map(a => [
       a.date ? (a.date.includes('T') ? a.date.split('T')[0] : a.date) : '',
-      typeof a.status === 'string' ? a.status : (a.status ? 'present' : 'absent'),
-      a.subject || '',
       a.studentId?.name || a.studentId || '',
+      typeof a.status === 'string' ? a.status : (a.status ? 'present' : 'absent'),
       a.markedBy?.email || a.markedBy || ''
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))].join('\n');
@@ -45,81 +42,28 @@ function Attendance() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'attendance_report.csv';
+    a.download = `attendance_${selectedClassroom?.grade}_${selectedClassroom?.section}_${selectedDate}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
-  // Bulk import handler
-  const handleBulkImport = async (e) => {
-      const file = e.target.files[0]
-      if (!file) return
-      setBulkImporting(true)
-      setBulkProgress({ total: 0, success: 0, error: 0 })
-      setBulkErrors([])
-      try {
-        const text = await file.text()
-        const lines = text.split(/\r?\n/).filter(Boolean)
-        const headers = lines[0].split(',').map(h => h.trim())
-        const required = ['studentId','status','date','subject']
-        if (!required.every(h => headers.includes(h))) {
-          showError('CSV must have headers: studentId,status,date,subject')
-          setBulkImporting(false)
-          return
-        }
-        const records = lines.slice(1).map(line => {
-          const values = line.split(',').map(v => v.trim())
-          const obj = {}
-          headers.forEach((h,i) => { obj[h]=values[i] })
-          return obj
-        })
-        setBulkProgress({ total: records.length, success: 0, error: 0 })
-        let success = 0, error = 0, errors = []
-        for (const rec of records) {
-          try {
-            await attendanceApi.mark({ ...rec, markedBy: user.user_id })
-            success++
-          } catch (err) {
-            error++
-            errors.push({ rec, err: err.message })
-          }
-          setBulkProgress({ total: records.length, success, error })
-        }
-        setBulkErrors(errors)
-        if (success) success(`${success} attendance records imported.`)
-        if (error) showError(`${error} records failed.`)
-        await loadAttendance(selectedStudent || user.user_id)
-      } catch (err) {
-        showError('Bulk import failed: ' + err.message)
-      }
-      setBulkImporting(false)
-    }
-
   useEffect(() => {
-    if (user?.role !== 'student') {
-      loadStudents()
-    }
+    loadClassrooms()
   }, [user])
 
-  useEffect(() => {
-    if (selectedStudent || user?.role === 'student') {
-      loadAttendance(user?.role === 'student' ? user.user_id : selectedStudent)
-    }
-  }, [selectedStudent, user])
-
-  const loadStudents = async () => {
+  const loadClassrooms = async () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await studentsApi.list()
-      setStudents(data)
+      const data = await classroomsApi.list()
+      setClassrooms(data)
       if (data.length > 0) {
-        setSelectedStudent(data[0].student_id)
+        setSelectedClassroom(data[0])
       }
     } catch (err) {
-      const errorMessage = err.message || 'Failed to load students'
+      const errorMessage = err.message || 'Failed to load classrooms'
       setError(errorMessage)
       showError(errorMessage)
     } finally {
@@ -127,12 +71,38 @@ function Attendance() {
     }
   }
 
-  const loadAttendance = async (user_id) => {
+  useEffect(() => {
+    if (selectedClassroom) {
+      loadClassroomStudents()
+      loadAttendance()
+    }
+  }, [selectedClassroom, selectedDate])
+
+  const loadClassroomStudents = async () => {
+    if (!selectedClassroom) return
+    try {
+      // Fetch full student details for the classroom
+      if (selectedClassroom._id) {
+        const response = await teacherApi.getClassroomStudents(selectedClassroom._id)
+        const students = response?.data || response || []
+        setClassroomStudents(students)
+      } else if (selectedClassroom.students && selectedClassroom.students.length > 0) {
+        // Fallback: use students from classroom object if available
+        setClassroomStudents(selectedClassroom.students)
+      }
+    } catch (err) {
+      showError(err.message || 'Failed to load classroom students')
+    }
+  }
+
+  const loadAttendance = async () => {
+    if (!selectedClassroom) return
     try {
       setLoading(true)
       setError(null)
-      const data = await attendanceApi.getByUser(user_id)
-      setAttendance(data)
+      // Fetch attendance for all students in this classroom
+      const data = await attendanceApi.getByClassroom(selectedClassroom._id)
+      setAttendance(data?.data || data || [])
     } catch (err) {
       const errorMessage = err.message || 'Failed to load attendance'
       setError(errorMessage)
@@ -145,10 +115,6 @@ function Attendance() {
   const handleCreate = () => {
     setEditingAttendance(null)
     setIsModalOpen(true)
-  }
-
-  const handleBulkMark = () => {
-    setIsBulkModalOpen(true)
   }
 
   const handleEdit = (record) => {
@@ -168,26 +134,10 @@ function Attendance() {
       }
       setIsModalOpen(false)
       setEditingAttendance(null)
-      if (selectedStudent || user?.role === 'student') {
-        await loadAttendance(user?.role === 'student' ? user.user_id : selectedStudent)
-      }
+      await loadAttendance()
     } catch (err) {
       const errorMessage = err.message || (editingAttendance ? 'Failed to update attendance' : 'Failed to mark attendance')
       showError(errorMessage)
-    }
-  }
-
-  const handleBulkSubmit = async (data) => {
-    try {
-      const result = await teacherApi.markAttendance(data)
-      success(`Bulk attendance marked: ${result.updated || 0} records updated`)
-      setIsBulkModalOpen(false)
-      // Optionally refresh attendance view
-      if (selectedStudent || user?.role === 'student') {
-        await loadAttendance(user?.role === 'student' ? user.user_id : selectedStudent)
-      }
-    } catch (err) {
-      showError(err.message || 'Failed to mark bulk attendance')
     }
   }
 
@@ -196,9 +146,7 @@ function Attendance() {
       try {
         await attendanceApi.delete(attendance_id)
         success('Attendance record deleted successfully')
-        if (selectedStudent || user?.role === 'student') {
-          await loadAttendance(user?.role === 'student' ? user.user_id : selectedStudent)
-        }
+        await loadAttendance()
       } catch (err) {
         const errorMessage = err.message || 'Failed to delete attendance record'
         showError(errorMessage)
@@ -207,53 +155,38 @@ function Attendance() {
   }
 
   const filteredAttendance = useMemo(() => {
-        let filtered = attendance;
-        if (startDate) {
-          filtered = filtered.filter(a => {
-            const d = new Date(a.date)
-            return d >= new Date(startDate)
-          })
-        }
-        if (endDate) {
-          filtered = filtered.filter(a => {
-            const d = new Date(a.date)
-            return d <= new Date(endDate)
-          })
-        }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((record) => {
-        const dateStr = record.date ? (record.date.includes('T') ? record.date.split('T')[0] : record.date) : '';
-        return dateStr.includes(query) || (typeof record.status === 'string' ? record.status : '').toLowerCase().includes(query);
-      });
+    let filtered = attendance;
+    
+    // Filter by date
+    if (selectedDate) {
+      filtered = filtered.filter(a => {
+        const aDate = a.date ? (a.date.includes('T') ? a.date.split('T')[0] : a.date) : ''
+        return aDate === selectedDate
+      })
     }
+
+    // Filter by status
     if (statusFilter) {
       filtered = filtered.filter(a => (typeof a.status === 'string' ? a.status : '').toLowerCase() === statusFilter);
     }
-    if (subjectFilter) {
-      filtered = filtered.filter(a => (a.subject || '').toLowerCase() === subjectFilter);
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((record) => {
+        const studentName = record.studentId?.name || record.studentId || ''
+        return studentName.toLowerCase().includes(query)
+      });
     }
+    
     return filtered;
-  }, [attendance, searchQuery, statusFilter, subjectFilter, startDate, endDate])
+  }, [attendance, selectedDate, statusFilter, searchQuery])
 
-  const filteredStudents = useMemo(() => {
-    if (!searchQuery.trim()) return students
-    const query = searchQuery.toLowerCase()
-    return students.filter((student) => {
-      const fullName = [student.firstName, student.lastName].filter(Boolean).join(' ').toLowerCase()
-      return (
-        fullName.includes(query) ||
-        student.email?.toLowerCase().includes(query) ||
-        student.student_id?.toString().includes(query)
-      )
-    })
-  }, [students, searchQuery])
+  const presentCount = filteredAttendance.filter(a => a.status === 'present').length
+  const absentCount = filteredAttendance.filter(a => a.status === 'absent').length
+  const totalCount = filteredAttendance.length
 
-  const presentCount = attendance.filter(a => a.status === 'present').length
-  const absentCount = attendance.filter(a => a.status === 'absent').length
-  const totalCount = attendance.length
-
-  if (loading) {
+  if (loading && classrooms.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -262,18 +195,19 @@ function Attendance() {
         </div>
       </div>
     )
-  };
-  if (error && attendance.length === 0) {
+  }
+
+  if (error && classrooms.length === 0) {
     return (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-text-dark font-medium mb-2">Error loading attendance</p>
-            <p className="text-text-muted mb-4">{error}</p>
-            <button
-              onClick={() => loadAttendance(user?.role === 'student' ? user.user_id : selectedStudent)}
-              className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-blue/90 transition-colors"
-            >
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-text-dark font-medium mb-2">Error loading attendance</p>
+          <p className="text-text-muted mb-4">{error}</p>
+          <button
+            onClick={loadClassrooms}
+            className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-blue/90 transition-colors"
+          >
             Retry
           </button>
         </div>
@@ -282,110 +216,111 @@ function Attendance() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-3 sm:p-4 lg:p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-text-dark">Attendance</h1>
-        <p className="text-text-muted mt-1">Manage attendance records</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-text-dark flex items-center gap-2">
+          <Users size={32} className="text-primary-blue" />
+          Classroom Attendance
+        </h1>
+        <p className="text-text-muted mt-1">Mark and manage attendance by classroom</p>
       </div>
 
-      {/* Top Controls - Responsive Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-        <button
-          onClick={handleExportCSV}
-          className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
-        >
-          Export CSV
-        </button>
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
-        >
-          <option value="">All Statuses</option>
-          <option value="present">Present</option>
-          <option value="absent">Absent</option>
-          <option value="late">Late</option>
-          <option value="excused">Excused</option>
-        </select>
-        <select
-          value={subjectFilter}
-          onChange={e => setSubjectFilter(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
-        >
-          <option value="">All Subjects</option>
-          {[...new Set(attendance.map(a => a.subject).filter(Boolean))].map(subject => (
-            <option key={subject} value={subject.toLowerCase()}>{subject}</option>
-          ))}
-        </select>
-        {user?.role !== 'student' && (user?.role === 'teacher' || user?.role === 'head-teacher' || user?.role === 'admin') && (
-          <button
-            onClick={handleBulkMark}
-            className="w-full flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+      {/* Classroom & Date Selector */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card-white rounded-lg shadow-custom p-6">
+        <div>
+          <label className="block text-sm font-medium text-text-dark mb-2">Select Classroom</label>
+          <select
+            value={selectedClassroom?._id || ''}
+            onChange={(e) => {
+              const classroom = classrooms.find(c => c._id === e.target.value)
+              setSelectedClassroom(classroom)
+            }}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
           >
-            <Plus size={18} />
-            <span>Bulk Mark</span>
-          </button>
-        )}
-        {user?.role !== 'student' && (
+            {classrooms.map((classroom) => (
+              <option key={classroom._id} value={classroom._id}>
+                Grade {classroom.grade} - Section {classroom.section}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-dark mb-2 flex items-center gap-2">
+            <Calendar size={16} />
+            Select Date
+          </label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+          />
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      {user?.role !== 'student' && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             onClick={handleCreate}
-            className="w-full flex items-center justify-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm font-medium"
+            className="flex items-center justify-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors font-medium"
           >
             <Plus size={18} />
-            <span>Mark</span>
+            <span>Mark Attendance</span>
           </button>
-        )}
-      </div>
-
-      {/* Student Selector - Responsive */}
-      {user?.role !== 'student' && students.length > 0 && (
-        <select
-          value={selectedStudent || ''}
-          onChange={(e) => setSelectedStudent(Number(e.target.value))}
-          className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
-        >
-          {students.map((student) => (
-            <option key={student.student_id} value={student.student_id}>
-              {student.name}
-            </option>
-          ))}
-        </select>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            Export CSV
+          </button>
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+          >
+            <option value="">All Statuses</option>
+            <option value="present">Present</option>
+            <option value="absent">Absent</option>
+            <option value="late">Late</option>
+            <option value="excused">Excused</option>
+          </select>
+        </div>
       )}
 
-      {totalCount > 0 && (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-4">Summary</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-card-white rounded-custom shadow-custom p-4">
-              <p className="text-xs md:text-sm text-text-muted mb-1">Total Records</p>
-              <p className="text-xl md:text-2xl font-semibold text-text-dark">{attendance.length}</p>
-            </div>
-            <div className="bg-card-white rounded-custom shadow-custom p-4">
-              <p className="text-xs md:text-sm text-text-muted mb-1">Present</p>
-              <p className="text-xl md:text-2xl font-semibold text-green-600">{attendance.filter(a => a.status === 'present').length}</p>
-            </div>
-            <div className="bg-card-white rounded-custom shadow-custom p-4">
-              <p className="text-xs md:text-sm text-text-muted mb-1">Absent</p>
-              <p className="text-xl md:text-2xl font-semibold text-red-600">{attendance.filter(a => a.status === 'absent').length}</p>
-            </div>
-            <div className="bg-card-white rounded-custom shadow-custom p-4">
-              <p className="text-xs md:text-sm text-text-muted mb-1">Late/Excused</p>
-              <p className="text-xl md:text-2xl font-semibold text-yellow-600">{attendance.filter(a => a.status === 'late' || a.status === 'excused').length}</p>
-            </div>
+      {/* Classroom Info */}
+      {selectedClassroom && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <p className="text-xs text-text-muted mb-1">Classroom</p>
+            <p className="font-semibold text-text-dark">Grade {selectedClassroom.grade}-{selectedClassroom.section}</p>
+          </div>
+          <div className="bg-green-50 rounded-lg p-4">
+            <p className="text-xs text-text-muted mb-1">Total Students</p>
+            <p className="font-semibold text-green-600">{classroomStudents.length}</p>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-4">
+            <p className="text-xs text-text-muted mb-1">Present</p>
+            <p className="font-semibold text-blue-600">{presentCount}</p>
+          </div>
+          <div className="bg-red-50 rounded-lg p-4">
+            <p className="text-xs text-text-muted mb-1">Absent</p>
+            <p className="font-semibold text-red-600">{absentCount}</p>
           </div>
         </div>
       )}
-      
 
-      <div className="bg-card-white rounded-custom shadow-custom p-4 md:p-6">
-        {attendance.length > 0 && (
+      {/* Search */}
+      <div className="bg-card-white rounded-lg shadow-custom p-6">
+        {filteredAttendance.length > 0 || classroomStudents.length > 0 && (
           <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
               <input
                 type="text"
-                placeholder="Search by date or status..."
+                placeholder="Search by student name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
@@ -394,29 +329,31 @@ function Attendance() {
           </div>
         )}
 
-        <div className="overflow-x-auto -mx-4 md:mx-0 md:overflow-visible">
+        {/* Attendance Table */}
+        <div className="overflow-x-auto -mx-6 md:mx-0 md:overflow-visible">
           <table className="w-full min-w-max md:min-w-0">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap md:whitespace-normal">Date</th>
-                <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap md:whitespace-normal">Status</th>
+                <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark">Student</th>
+                <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark">Status</th>
+                <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark">Marked By</th>
                 {user?.role !== 'student' && (
-                  <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark whitespace-nowrap md:whitespace-normal">Actions</th>
+                  <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark">Actions</th>
                 )}
               </tr>
             </thead>
             <tbody>
               {filteredAttendance.length === 0 ? (
                 <tr>
-                  <td colSpan={user?.role !== 'student' ? 3 : 2} className="py-8 px-4 text-center text-text-muted text-sm">
-                    {attendance.length === 0 ? 'No attendance records found' : 'No records match your search'}
+                  <td colSpan={user?.role !== 'student' ? 4 : 3} className="py-8 px-4 text-center text-text-muted text-sm">
+                    {selectedDate ? 'No attendance records for this date' : 'Select a date to view attendance'}
                   </td>
                 </tr>
               ) : (
                 filteredAttendance.map((record) => (
                   <tr key={record._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 text-xs md:text-sm text-text-dark">
-                      {record.date ? (record.date.includes('T') ? record.date.split('T')[0] : record.date) : '-'}
+                    <td className="py-3 px-4 text-xs md:text-sm text-text-dark font-medium">
+                      {record.studentId?.name || record.studentId || '-'}
                     </td>
                     <td className="py-3 px-4">
                       <span
@@ -433,9 +370,12 @@ function Attendance() {
                         {record.status === 'excused' && ('Excused')}
                       </span>
                     </td>
+                    <td className="py-3 px-4 text-xs md:text-sm text-text-muted">
+                      {record.markedBy?.email || '-'}
+                    </td>
                     {user?.role !== 'student' && (
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEdit(record)}
                             className="text-primary-blue hover:text-primary-blue/80 text-xs md:text-sm font-medium flex items-center gap-1 whitespace-nowrap"
@@ -460,11 +400,9 @@ function Attendance() {
           </table>
         </div>
 
-        {attendance.length > 0 && (
-          <div className="mt-6">
-            <p className="text-xs md:text-sm text-text-muted">
-              Showing {filteredAttendance.length} of {attendance.length} records
-            </p>
+        {filteredAttendance.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200 text-sm text-text-muted">
+            Showing {filteredAttendance.length} records
           </div>
         )}
       </div>
@@ -479,23 +417,13 @@ function Attendance() {
       >
         <AttendanceForm
           attendance={editingAttendance}
-          students={students}
+          classroom={selectedClassroom}
+          students={classroomStudents}
           onSubmit={handleSubmit}
           onCancel={() => {
             setIsModalOpen(false)
             setEditingAttendance(null)
           }}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isBulkModalOpen}
-        onClose={() => setIsBulkModalOpen(false)}
-        title="Bulk Mark Attendance"
-      >
-        <BulkAttendanceForm
-          onSubmit={handleBulkSubmit}
-          onCancel={() => setIsBulkModalOpen(false)}
         />
       </Modal>
     </div>

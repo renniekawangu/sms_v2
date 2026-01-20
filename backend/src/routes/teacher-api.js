@@ -146,20 +146,25 @@ router.post('/attendance', requireAuth, requirePermission(PERMISSIONS.MANAGE_ATT
 });
 
 // Get class attendance summary
-router.get('/classroom/:classroomId/attendance', requireAuth, requireRole(ROLES.TEACHER), async (req, res, next) => {
+router.get('/classroom/:classroomId/attendance', requireAuth, requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER), async (req, res, next) => {
   try {
     const { classroomId } = req.params;
-    const teacher = await Teacher.findOne({ userId: req.user.id });
     
-    const hasAccess = teacher.classroomIds.some(id => id.toString() === classroomId);
-    if (!hasAccess) {
-      return res.status(403).json({ message: 'Unauthorized' });
+    // Check authorization for teachers (admins and head teachers have full access)
+    if (req.user.role === ROLES.TEACHER) {
+      const teacher = await Teacher.findOne({ userId: req.user.id });
+      if (!teacher || !teacher.classroomIds || !teacher.classroomIds.some(id => id.toString() === classroomId)) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
     }
 
     const students = await Student.find({ classroomId }).select('_id').lean();
     const studentIds = students.map(s => s._id);
 
-    const attendance = await Attendance.find({ studentId: { $in: studentIds } }).lean();
+    const attendance = await Attendance.find({ studentId: { $in: studentIds } })
+      .populate('studentId', 'firstName lastName name email')
+      .populate('markedBy', 'email')
+      .lean();
     
     res.json({ success: true, data: attendance });
   } catch (err) {
