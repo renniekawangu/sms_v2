@@ -90,10 +90,16 @@ function Attendance() {
       const filteredRecords = allRecords.filter(record => {
         if (!selectedDate) return true
         const recordDate = record.date.includes('T') ? record.date.split('T')[0] : record.date
+        // eslint-disable-next-line no-console
+        console.log('Date comparison:', { recordDate, selectedDate, match: recordDate === selectedDate })
         return recordDate === selectedDate
       })
       // eslint-disable-next-line no-console
-      console.log('Loaded attendance records:', { allRecords, filteredRecords, selectedDate })
+      console.log('Loaded attendance records:', { 
+        allRecords: allRecords.map(r => ({ _id: r._id, date: r.date, status: r.status })), 
+        filteredRecords, 
+        selectedDate 
+      })
       setAttendance(filteredRecords)
     } catch (err) {
       const errorMessage = err.message || 'Failed to load attendance'
