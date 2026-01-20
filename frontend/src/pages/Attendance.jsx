@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CheckCircle, Search, AlertCircle, Users, Calendar } from 'lucide-react'
+import { CheckCircle, Search, AlertCircle, Users, Calendar, Download } from 'lucide-react'
 import { attendanceApi, classroomsApi, teacherApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -193,6 +193,43 @@ function Attendance() {
   const absentCount = studentAttendanceList.filter(s => s.attendanceRecord?.status === 'absent').length
   const notMarkedCount = studentAttendanceList.filter(s => !s.attendanceRecord).length
 
+  const handleExportCSV = () => {
+    if (studentAttendanceList.length === 0) {
+      showError('No attendance records to export')
+      return
+    }
+
+    const headers = ['Student Name', 'Status', 'Date']
+    const rows = studentAttendanceList.map(student => {
+      const studentName = student.name || [student.firstName, student.lastName].filter(Boolean).join(' ') || 'Unknown'
+      const status = student.attendanceRecord?.status || 'Not Marked'
+      return [studentName, status, selectedDate]
+    })
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      `,,`,
+      `Classroom,Grade ${selectedClassroom?.grade}-${selectedClassroom?.section}`,
+      `Date,${selectedDate}`,
+      `,,`,
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `attendance_${selectedClassroom?.grade}_${selectedClassroom?.section}_${selectedDate}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    success('Attendance exported successfully')
+  }
+
   if (loading && classrooms.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -303,6 +340,14 @@ function Attendance() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
               />
             </div>
+            <button
+              onClick={handleExportCSV}
+              className="mt-4 flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+              title="Export attendance as CSV"
+            >
+              <Download size={16} />
+              Export CSV
+            </button>
           </div>
         )}
 
