@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BarChart3, Search, Plus, Filter, Eye, Edit, Trash2 } from 'lucide-react'
-import { examResultsApi, examsApi } from '../services/api'
+import { examResultsApi, examsApi, classroomApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import ResultsForm from '../components/ResultsForm'
 import ResultsViewer from '../components/ResultsViewer'
@@ -9,6 +9,7 @@ import ClassroomGradingForm from '../components/ClassroomGradingForm'
 function Results() {
   const [results, setResults] = useState([])
   const [exams, setExams] = useState([])
+  const [classrooms, setClassrooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -20,7 +21,8 @@ function Results() {
   const [filters, setFilters] = useState({
     academicYear: new Date().getFullYear().toString(),
     term: 'term1',
-    status: 'all'
+    status: 'all',
+    classroom: 'all'
   })
 
   const { success, error: showError } = useToast()
@@ -37,14 +39,16 @@ function Results() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [examsData, resultsData] = await Promise.all([
+      const [examsData, classroomsData, resultsData] = await Promise.all([
         examsApi.list(),
+        classroomApi.list(),
         examResultsApi.list({
           academicYear: filters.academicYear,
           term: filters.term
         })
       ])
       setExams(examsData || [])
+      setClassrooms(classroomsData.data || classroomsData || [])
       setResults(resultsData.results || [])
     } catch (err) {
       showError(err.message || 'Failed to load data')
@@ -63,10 +67,21 @@ function Results() {
       if (filters.status !== 'all') {
         filterParams.status = filters.status
       }
+      if (filters.classroom !== 'all') {
+        filterParams.classroomId = filters.classroom
+      }
 
+      console.log('Classroom filter value:', filters.classroom)
       console.log('Loading results with params:', filterParams)
       let data = await examResultsApi.list(filterParams)
+      console.log('API response count:', data.count)
+      console.log('API response results count:', data.results?.length)
       console.log('API response:', data)
+      
+      // Log individual result details
+      if (data.results && data.results.length > 0) {
+        console.log('First result details:', JSON.stringify(data.results[0], null, 2))
+      }
       
       // If no results found, try without academicYear to debug
       if ((!data.results || data.results.length === 0) && data.success !== undefined) {
@@ -82,10 +97,19 @@ function Results() {
     }
   }
 
+  // Helper to get student full name
+  const getStudentName = (student) => {
+    if (!student) return 'N/A'
+    if (student.name && student.name !== 'undefined undefined') return student.name
+    if (student.firstName && student.lastName) return `${student.firstName} ${student.lastName}`
+    return 'N/A'
+  }
+
   const filteredResults = results.filter(result => {
     const query = searchQuery.toLowerCase()
+    const studentName = getStudentName(result.student)
     return (
-      result.student?.name?.toLowerCase().includes(query) ||
+      studentName.toLowerCase().includes(query) ||
       result.exam?.name?.toLowerCase().includes(query) ||
       result.classroom?.grade?.toString().includes(query)
     )
@@ -112,6 +136,7 @@ function Results() {
       showError(err.message || 'Failed to delete result')
     }
   }
+
 
   const handleFormClose = (shouldRefresh) => {
     setShowForm(false)
@@ -166,7 +191,7 @@ function Results() {
 
       {/* Filters */}
       <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">Academic Year</label>
             <input
@@ -186,6 +211,24 @@ function Results() {
               <option value="term1">Term 1</option>
               <option value="term2">Term 2</option>
               <option value="term3">Term 3</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">Classroom</label>
+            <select
+              value={filters.classroom}
+              onChange={(e) => {
+                console.log('Classroom changed to:', e.target.value)
+                setFilters({ ...filters, classroom: e.target.value })
+              }}
+              className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            >
+              <option value="all">All Classrooms</option>
+              {classrooms.map(classroom => (
+                <option key={classroom._id} value={classroom._id}>
+                  Grade {classroom.grade} - {classroom.section}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -243,7 +286,7 @@ function Results() {
                 filteredResults.map((result) => (
                   <tr key={result._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-text-dark font-medium">
-                      {result.student?.name}
+                      {getStudentName(result.student)}
                     </td>
                     <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-text-muted hidden sm:table-cell">
                       {result.exam?.name}
