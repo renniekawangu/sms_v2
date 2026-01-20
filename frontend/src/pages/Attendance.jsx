@@ -19,34 +19,9 @@ function Attendance() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAttendance, setEditingAttendance] = useState(null)
-  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [studentStatuses, setStudentStatuses] = useState({})
   const [submitting, setSubmitting] = useState(false)
-
-  // Export attendance to CSV
-  const handleExportCSV = () => {
-    if (!attendance.length) return;
-    const headers = ['Date','Student','Status','Marked By'];
-    const rows = attendance.map(a => [
-      a.date ? (a.date.includes('T') ? a.date.split('T')[0] : a.date) : '',
-      a.studentId?.name || a.studentId || '',
-      typeof a.status === 'string' ? a.status : (a.status ? 'present' : 'absent'),
-      a.markedBy?.email || a.markedBy || ''
-    ]);
-    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `attendance_${selectedClassroom?.grade}_${selectedClassroom?.section}_${selectedDate}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
 
   useEffect(() => {
     loadClassrooms()
