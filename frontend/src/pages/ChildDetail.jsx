@@ -583,34 +583,34 @@ function ChildDetail() {
                   </h3>
 
                   {/* Fees Overview */}
-                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
                     <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
                       <div
                         className="bg-orange-500 h-3 rounded-full transition-all"
                         style={{ width: `${feesStatus.percentage}%` }}
                       />
                     </div>
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
                       <div>
-                        <p className="text-text-muted text-xs font-medium">Total</p>
-                        <p className="text-lg font-bold text-text-dark">
+                        <p className="text-text-muted text-xs sm:text-sm font-medium">Total</p>
+                        <p className="text-xl sm:text-lg font-bold text-text-dark mt-1">
                           K{(feesStatus.paid + feesStatus.pending).toFixed(2)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-text-muted text-xs font-medium">Paid</p>
-                        <p className="text-lg font-bold text-green-600">
+                        <p className="text-text-muted text-xs sm:text-sm font-medium">Paid</p>
+                        <p className="text-xl sm:text-lg font-bold text-green-600 mt-1">
                           K{feesStatus.paid.toFixed(2)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-text-muted text-xs font-medium">Pending</p>
-                        <p className="text-lg font-bold text-red-600">
+                        <p className="text-text-muted text-xs sm:text-sm font-medium">Pending</p>
+                        <p className="text-xl sm:text-lg font-bold text-red-600 mt-1">
                           K{feesStatus.pending.toFixed(2)}
                         </p>
                       </div>
                     </div>
-                    <p className="text-center text-sm text-text-muted mt-2">
+                    <p className="text-center text-xs sm:text-sm text-text-muted mt-2">
                       Payment Progress: {feesStatus.percentage}%
                     </p>
                   </div>
@@ -620,7 +620,7 @@ function ChildDetail() {
                     <div className="mb-6">
                       <button
                         onClick={() => setShowPaymentForm(!showPaymentForm)}
-                        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                        className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm sm:text-base"
                       >
                         {showPaymentForm ? 'Cancel Payment' : 'Make Payment'}
                       </button>
@@ -629,25 +629,25 @@ function ChildDetail() {
 
                   {/* Payment Form */}
                   {showPaymentForm && feesStatus.pending > 0 && (
-                    <form onSubmit={handlePayment} className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                      <h4 className="font-semibold text-text-dark mb-4">Record Payment</h4>
+                    <form onSubmit={handlePayment} className="mb-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="font-semibold text-text-dark mb-4 text-sm sm:text-base">Record Payment</h4>
                       
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {/* Select Fee (optional) */}
                         {fees.fees && fees.fees.length > 0 && (
                           <div>
-                            <label className="block text-sm font-medium text-text-dark mb-1">
+                            <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">
                               Apply to Specific Fee (Optional)
                             </label>
                             <select
                               value={paymentForm.fee_id}
                               onChange={(e) => setPaymentForm({...paymentForm, fee_id: e.target.value})}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                              className="w-full px-2 sm:px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                             >
                               <option value="">Distribute to all unpaid fees</option>
                               {fees.fees.filter(f => f.status !== 'paid').map((fee) => (
                                 <option key={fee._id} value={fee._id}>
-                                  {fee.feeType} - K{fee.amount}
+                                  {fee.description || 'Fee'} - K{fee.amount}
                                 </option>
                               ))}
                             </select>
@@ -656,7 +656,7 @@ function ChildDetail() {
 
                         {/* Amount */}
                         <div>
-                          <label className="block text-sm font-medium text-text-dark mb-1">
+                          <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">
                             Amount (K)
                           </label>
                           <input
@@ -667,20 +667,20 @@ function ChildDetail() {
                             value={paymentForm.amount}
                             onChange={(e) => setPaymentForm({...paymentForm, amount: e.target.value})}
                             placeholder={`Max: K${feesStatus.pending.toFixed(2)}`}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-2 sm:px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                             required
                           />
                         </div>
 
                         {/* Payment Method */}
                         <div>
-                          <label className="block text-sm font-medium text-text-dark mb-1">
+                          <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">
                             Payment Method
                           </label>
                           <select
                             value={paymentForm.paymentMethod}
                             onChange={(e) => setPaymentForm({...paymentForm, paymentMethod: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-2 sm:px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                           >
                             <option value="cash">Cash</option>
                             <option value="bank_transfer">Bank Transfer</option>
@@ -692,7 +692,7 @@ function ChildDetail() {
 
                         {/* Notes */}
                         <div>
-                          <label className="block text-sm font-medium text-text-dark mb-1">
+                          <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">
                             Notes (Optional)
                           </label>
                           <textarea
@@ -700,7 +700,7 @@ function ChildDetail() {
                             onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
                             placeholder="e.g., Reference number, payment details..."
                             rows="2"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            className="w-full px-2 sm:px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                           />
                         </div>
 
@@ -708,7 +708,7 @@ function ChildDetail() {
                         <button
                           type="submit"
                           disabled={paymentLoading}
-                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 font-medium"
+                          className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 font-medium text-xs sm:text-sm"
                         >
                           {paymentLoading ? 'Recording Payment...' : 'Record Payment'}
                         </button>
@@ -719,16 +719,16 @@ function ChildDetail() {
                   {/* Fees List */}
                   {fees.fees && fees.fees.length > 0 ? (
                     <div className="space-y-2">
-                      <h4 className="font-medium text-text-dark mb-3">Fee Breakdown</h4>
+                      <h4 className="font-medium text-text-dark mb-3 text-sm">Fee Breakdown</h4>
                       {fees.fees.map((fee, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                          <div className="flex-1">
-                            <p className="font-medium text-text-dark">{fee.feeType || 'Fee'}</p>
+                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-text-dark text-sm">{fee.description || 'Fee'}</p>
                             {fee.term && <p className="text-xs text-text-muted">Term {fee.term}</p>}
                             {fee.dueDate && <p className="text-xs text-text-muted">Due: {new Date(fee.dueDate).toLocaleDateString()}</p>}
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-text-dark">K{fee.amount}</p>
+                          <div className="text-left sm:text-right flex items-center justify-between sm:flex-col gap-2">
+                            <p className="font-semibold text-text-dark text-sm">K{fee.amount}</p>
                             <p className={`text-xs font-medium ${fee.status === 'paid' ? 'text-green-600' : 'text-red-600'}`}>
                               {fee.status === 'paid' ? 'Paid' : 'Pending'}
                             </p>
@@ -738,7 +738,7 @@ function ChildDetail() {
                     </div>
                   ) : (
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-text-muted">No fee records available yet</p>
+                      <p className="text-text-muted text-sm">No fee records available yet</p>
                     </div>
                   )}
                 </div>
