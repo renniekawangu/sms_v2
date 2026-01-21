@@ -505,68 +505,130 @@ function AccountsDashboard() {
         <p className="text-sm sm:text-base text-text-muted mt-1">Financial overview</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div>
-            <p className="text-sm text-text-muted mb-1">Total Fees</p>
-            <p className="text-3xl font-semibold text-text-dark">${stats.totalFees}</p>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        {/* Total Fees Card */}
+        <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-blue-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Total Fees</p>
+            <DollarSign className="text-blue-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">K{stats.totalFees.toFixed(2)}</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">All fees charged</p>
         </Link>
 
-        <Link to="/payments" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div>
-            <p className="text-sm text-text-muted mb-1">Total Payments</p>
-            <p className="text-3xl font-semibold text-green-600">${stats.totalPayments}</p>
+        {/* Total Payments Card */}
+        <Link to="/payments" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-green-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Payments Received</p>
+            <TrendingUp className="text-green-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-green-600">K{stats.totalPayments.toFixed(2)}</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Collected so far</p>
         </Link>
 
-        <Link to="/expenses" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div>
-            <p className="text-sm text-text-muted mb-1">Total Expenses</p>
-            <p className="text-3xl font-semibold text-red-600">${stats.totalExpenses}</p>
+        {/* Total Expenses Card */}
+        <Link to="/expenses" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-red-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Total Expenses</p>
+            <TrendingDown className="text-red-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-red-600">K{stats.totalExpenses.toFixed(2)}</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Amount spent</p>
         </Link>
 
-        <div className="bg-card-white rounded-custom shadow-custom p-6">
-          <div>
-            <p className="text-sm text-text-muted mb-1">Net Balance</p>
-            <p className={`text-3xl font-semibold ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${netBalance}
-            </p>
+        {/* Net Balance Card */}
+        <div className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-purple-500">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Net Balance</p>
+            <Award className="text-purple-500" size={24} />
+          </div>
+          <p className={`text-2xl sm:text-3xl font-semibold ${netBalance >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+            K{Math.abs(netBalance).toFixed(2)}
+          </p>
+          <p className={`text-xs sm:text-sm ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'} mt-2`}>
+            {netBalance >= 0 ? '✓ Surplus' : '✗ Deficit'}
+          </p>
+        </div>
+      </div>
+
+      {/* Financial Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+        {/* Payment Collection Rate */}
+        <div className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6">
+          <h3 className="font-semibold text-text-dark mb-4 text-sm sm:text-base">Collection Rate</h3>
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs sm:text-sm text-text-muted">Payment Progress</p>
+                <p className="text-xs sm:text-sm font-medium text-text-dark">
+                  {stats.totalFees > 0 ? ((stats.totalPayments / stats.totalFees) * 100).toFixed(1) : 0}%
+                </p>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-green-500 h-3 rounded-full transition-all"
+                  style={{ width: `${stats.totalFees > 0 ? Math.min((stats.totalPayments / stats.totalFees) * 100, 100) : 0}%` }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-between text-xs sm:text-sm text-text-muted pt-2">
+              <span>Collected: K{stats.totalPayments.toFixed(2)}</span>
+              <span>Pending: K{(stats.totalFees - stats.totalPayments).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Financial Status */}
+        <div className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6">
+          <h3 className="font-semibold text-text-dark mb-4 text-sm sm:text-base">Financial Status</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <span className="text-xs sm:text-sm text-text-muted">Total Income</span>
+              <span className="font-semibold text-blue-600">K{stats.totalPayments.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+              <span className="text-xs sm:text-sm text-text-muted">Total Expenses</span>
+              <span className="font-semibold text-red-600">K{stats.totalExpenses.toFixed(2)}</span>
+            </div>
+            <div className={`flex items-center justify-between p-3 ${netBalance >= 0 ? 'bg-green-50' : 'bg-orange-50'} rounded-lg border-l-4 ${netBalance >= 0 ? 'border-l-green-500' : 'border-l-orange-500'}`}>
+              <span className="text-xs sm:text-sm text-text-muted">Balance</span>
+              <span className={`font-semibold ${netBalance >= 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                K{Math.abs(netBalance).toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-4">
-            <DollarSign className="text-primary-blue" size={32} />
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-lg sm:text-xl font-semibold text-text-dark mb-3 sm:mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <DollarSign className="text-blue-500" size={32} />
             <div>
-              <h3 className="font-semibold text-text-dark">Fees</h3>
-              <p className="text-sm text-text-muted">Manage fees</p>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Manage Fees</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Add/edit fees</p>
             </div>
-          </div>
-        </Link>
+          </Link>
 
-        <Link to="/payments" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-4">
-            <DollarSign className="text-primary-blue" size={32} />
+          <Link to="/payments" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <DollarSign className="text-green-500" size={32} />
             <div>
-              <h3 className="font-semibold text-text-dark">Payments</h3>
-              <p className="text-sm text-text-muted">View payments</p>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">View Payments</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Payment history</p>
             </div>
-          </div>
-        </Link>
+          </Link>
 
-        <Link to="/expenses" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-4">
-            <DollarSign className="text-primary-blue" size={32} />
+          <Link to="/expenses" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <DollarSign className="text-red-500" size={32} />
             <div>
-              <h3 className="font-semibold text-text-dark">Expenses</h3>
-              <p className="text-sm text-text-muted">Manage expenses</p>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Manage Expenses</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Add/view expenses</p>
             </div>
-          </div>
-        </Link>
+          </Link>
+        </div>
       </div>
     </div>
   )
