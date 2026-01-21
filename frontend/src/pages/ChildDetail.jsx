@@ -141,6 +141,20 @@ function ChildDetail() {
 
   const calculateAverageGrade = () => {
     if (grades.length === 0) return 'N/A'
+    
+    // Handle exam results format (from /results endpoint)
+    if (grades[0]?.overallGrade !== undefined || grades[0]?.percentage !== undefined) {
+      const total = grades.reduce((sum, result) => {
+        // Use percentage if available, or try to convert grade to numeric
+        const value = result.percentage || 
+                     (result.overallGrade ? gradeToNumber(result.overallGrade) : 0)
+        return sum + value
+      }, 0)
+      const average = total / grades.length
+      return isNaN(average) ? 'N/A' : average.toFixed(2)
+    }
+    
+    // Handle legacy grades format
     const total = grades.reduce((sum, g) => {
       // Try to get grade in order of preference: finalGrade > grade > endTermGrade > midTermGrade
       const gradeValue = g.finalGrade || g.grade || g.endTermGrade || g.midTermGrade || 0
@@ -148,6 +162,11 @@ function ChildDetail() {
     }, 0)
     const average = total / grades.length
     return isNaN(average) ? 'N/A' : average.toFixed(2)
+  }
+
+  const gradeToNumber = (grade) => {
+    const gradeMap = { 'A+': 95, 'A': 90, 'B+': 85, 'B': 80, 'C+': 75, 'C': 70, 'D': 60, 'F': 0 }
+    return gradeMap[grade] || 0
   }
 
   const calculateFeesStatus = () => {
@@ -438,36 +457,59 @@ function ChildDetail() {
                   </h3>
                   {grades.length > 0 ? (
                     <div className="space-y-2">
-                      {grades.map((grade, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                          <div className="flex-1">
-                            <p className="font-medium text-text-dark">{grade.subject}</p>
-                            {grade.term && <p className="text-xs text-text-muted">Term {grade.term}</p>}
-                            {grade.academicYear && <p className="text-xs text-text-muted">{grade.academicYear}</p>}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-primary-blue">
-                              {grade.finalGrade || grade.grade || grade.endTermGrade || grade.midTermGrade || 'N/A'}
-                            </p>
-                            {grade.midTermGrade && grade.endTermGrade && (
-                              <p className="text-xs text-text-muted">
-                                Mid: {grade.midTermGrade}, End: {grade.endTermGrade}
+                      {grades.map((result, idx) => (
+                        <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex-1">
+                              <p className="font-semibold text-text-dark">
+                                {result.exam?.name || 'Exam'} - {result.exam?.examType || 'Regular'}
                               </p>
-                            )}
+                              <p className="text-xs text-text-muted">
+                                {result.term && result.term.charAt(0).toUpperCase() + result.term.slice(1)} • {result.academicYear}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-3xl font-bold text-primary-blue">{result.overallGrade || 'NA'}</p>
+                              <p className="text-sm text-text-muted">{result.percentage}%</p>
+                            </div>
                           </div>
+                          
+                          {/* Subject-wise results */}
+                          {result.subjectResults && result.subjectResults.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <p className="text-xs font-semibold text-text-muted mb-2">Subject Scores:</p>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {result.subjectResults.map((sr, sidx) => (
+                                  <div key={sidx} className="bg-gray-50 p-2 rounded text-sm">
+                                    <p className="text-xs text-text-muted truncate">
+                                      {sr.subject?.name || 'Subject'}
+                                    </p>
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-semibold text-primary-blue">
+                                        {sr.score}/{sr.maxMarks}
+                                      </span>
+                                      <span className="text-xs font-medium text-text-dark">
+                                        {sr.grade}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-text-dark">Average Grade</p>
-                          <p className="text-2xl font-bold text-primary-blue">{avgGrade}</p>
+                          <p className="font-semibold text-text-dark">Average Performance</p>
+                          <p className="text-2xl font-bold text-primary-blue">{avgGrade}%</p>
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-text-muted">No grades available yet</p>
-                      <p className="text-xs text-text-muted mt-1">Grades will appear once teachers enter them in the system</p>
+                      <p className="text-text-muted">No exam results available yet</p>
+                      <p className="text-xs text-text-muted mt-1">Results will appear once exams are conducted and graded</p>
                     </div>
                   )}
                 </div>

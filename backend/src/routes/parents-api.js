@@ -161,7 +161,7 @@ router.get('/children', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHa
 
 /**
  * GET /api/parents/children/:student_id/grades
- * Get a child's grades
+ * Get a child's exam results (grades)
  */
 router.get('/children/:student_id/grades', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
@@ -185,10 +185,15 @@ router.get('/children/:student_id/grades', requireAuth, requireRole('parent', RO
     return res.status(403).json({ error: 'Access denied' });
   }
 
-  const { Grade } = require('../models/grades');
-  const grades = await Grade.find({ studentId: req.params.student_id }).lean();
+  // Get exam results instead of Grade records
+  const ExamResult = require('../models/examResult');
+  const results = await ExamResult.find({ student: req.params.student_id })
+    .populate('exam', 'name examType')
+    .populate('subjectResults.subject', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
   
-  res.json(grades);
+  res.json(results);
 }));
 
 /**
