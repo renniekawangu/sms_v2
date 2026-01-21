@@ -43,7 +43,7 @@ router.get(
   requireRole('admin', 'head-teacher', 'teacher'),
   async (req, res) => {
     try {
-      const { academicYear, term, examId, studentId, classroomId, status } = req.query
+      const { academicYear, term, examId, studentId, classroomId, status, examType } = req.query
       
       let filter = {}
       if (academicYear) filter.academicYear = academicYear
@@ -53,11 +53,18 @@ router.get(
       if (classroomId) filter.classroom = classroomId
       if (status) filter.status = status
 
-      console.log('GET /results query:', { academicYear, term, examId, studentId, classroomId, status })
+      // If examType is provided, first find exams with that type, then filter results
+      if (examType) {
+        const exams = await Exam.find({ examType }).select('_id')
+        const examIds = exams.map(e => e._id)
+        filter.exam = { $in: examIds }
+      }
+
+      console.log('GET /results query:', { academicYear, term, examId, studentId, classroomId, status, examType })
       console.log('Filter object:', filter)
 
       const results = await ExamResult.find(filter)
-        .populate('exam', 'name date totalMarks')
+        .populate('exam', 'name date totalMarks examType')
         .populate('student', 'firstName lastName email')
         .populate('classroom', 'grade section')
         .populate('subjectResults.subject', 'name code')

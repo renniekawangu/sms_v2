@@ -118,12 +118,12 @@ const toExpenseDto = (expense) => ({
 });
 
 // ============= Students API =============
-router.get('/students', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (_req, res) => {
+router.get('/students', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER, ROLES.ACCOUNTS), asyncHandler(async (_req, res) => {
   const students = await Student.find().lean();
   res.json(students.map(toStudentDto));
 }));
 
-router.get('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
+router.get('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER, ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
   const student = await findStudentByIdOrStudentId(req.params.id);
   if (!student) return res.status(404).json({ error: 'Student not found' });
   res.json(toStudentDto(student));
@@ -717,14 +717,44 @@ router.get('/fees/:id', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.ADMIN, RO
 }));
 
 router.post('/fees', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.ADMIN), asyncHandler(async (req, res) => {
-  const fee = new Fee(req.body);
+  const { studentId, amount, description, dueDate, type, academicYear, term } = req.body;
+  
+  if (!studentId || !amount) {
+    return res.status(400).json({ error: 'Missing required fields: studentId, amount' });
+  }
+
+  const fee = new Fee({
+    studentId,
+    amount,
+    description,
+    dueDate: dueDate ? new Date(dueDate) : undefined,
+    type,
+    academicYear,
+    term: term || 'General',
+    status: 'unpaid',
+    createdBy: req.user.id
+  });
+  
   await fee.save();
   res.status(201).json(fee);
 }));
 
 router.put('/fees/:id', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.ADMIN), asyncHandler(async (req, res) => {
-  const fee = await Fee.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const { amount, description, dueDate, status, type, academicYear, term } = req.body;
+  const fee = await Fee.findById(req.params.id);
+  
   if (!fee) return res.status(404).json({ error: 'Fee not found' });
+  
+  // Update allowed fields
+  if (amount !== undefined) fee.amount = amount;
+  if (description !== undefined) fee.description = description;
+  if (dueDate !== undefined) fee.dueDate = new Date(dueDate);
+  if (status !== undefined) fee.status = status;
+  if (type !== undefined) fee.type = type;
+  if (academicYear !== undefined) fee.academicYear = academicYear;
+  if (term !== undefined) fee.term = term;
+  
+  await fee.save();
   res.json(fee);
 }));
 

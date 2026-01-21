@@ -473,12 +473,17 @@ export const feesApi = {
     return apiCall('/fees');
   },
 
+  listByFilters: async (queryParams) => {
+    const queryString = queryParams.toString();
+    return apiCall(`/accounts/fees${queryString ? '?' + queryString : ''}`);
+  },
+
   get: async (fee_id) => {
     return apiCall(`/fees/${fee_id}`);
   },
 
   create: async (data) => {
-    return apiCall('/fees', {
+    return apiCall('/accounts/fees', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1015,6 +1020,20 @@ export const parentsApi = {
     });
   },
 
+  getChildHomework: async (student_id, academicYear) => {
+    const query = new URLSearchParams();
+    if (academicYear) query.append('academicYear', academicYear);
+    return apiCall(`/parents/children/${student_id}/homework${query.toString() ? '?' + query.toString() : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  getHomeworkDetails: async (homework_id) => {
+    return apiCall(`/parents/homework/${homework_id}`, {
+      method: 'GET',
+    });
+  },
+
   downloadChildReport: async (student_id) => {
     const token = getToken();
     const response = await fetch(`${API_BASE_URL}/parents/children/${student_id}/report`, {
@@ -1027,6 +1046,20 @@ export const parentsApi = {
       throw new Error('Failed to download report');
     }
     return await response.blob();
+  },
+
+  makePayment: async (student_id, paymentData) => {
+    // paymentData: { fee_id?, amount, paymentMethod, notes? }
+    return apiCall(`/parents/children/${student_id}/payments`, {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  },
+
+  getPaymentHistory: async (student_id) => {
+    return apiCall(`/parents/children/${student_id}/payment-history`, {
+      method: 'GET',
+    });
   },
 
   createPayment: async (data) => {
@@ -1203,6 +1236,52 @@ export const examApi = {
   delete: async (id) => {
     return apiCall(`/exams/${id}`, {
       method: 'DELETE',
+    })
+  }
+}
+
+// Homework API
+export const homeworkApi = {
+  getByClassroom: async (classroomId, academicYear) => {
+    const query = new URLSearchParams();
+    if (academicYear) query.append('academicYear', academicYear);
+    return apiCall(`/homework/classroom/${classroomId}${query.toString() ? '?' + query.toString() : ''}`)
+  },
+
+  getById: async (id) => {
+    return apiCall(`/homework/${id}`)
+  },
+
+  create: async (data) => {
+    return apiCall('/homework', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  update: async (id, data) => {
+    return apiCall(`/homework/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id) => {
+    return apiCall(`/homework/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  submit: async (id) => {
+    return apiCall(`/homework/${id}/submit`, {
+      method: 'POST',
+    })
+  },
+
+  grade: async (id, studentId, grade, feedback) => {
+    return apiCall(`/homework/${id}/grade`, {
+      method: 'POST',
+      body: JSON.stringify({ studentId, grade, feedback }),
     })
   }
 }

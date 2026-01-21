@@ -1,52 +1,60 @@
 import { useState, useEffect } from 'react'
+import { useSettings } from '../contexts/SettingsContext'
 
 function FeeForm({ fee, students, onSubmit, onCancel }) {
+  const { currentAcademicYear, academicYears } = useSettings()
   const [formData, setFormData] = useState({
-    student_id: '',
+    studentId: '',
     amount: '',
-    term: '',
-    year: new Date().getFullYear(),
-    status: 'UNPAID',
+    description: '',
+    dueDate: '',
+    academicYear: currentAcademicYear?.year || '',
+    term: 'General',
+    status: 'unpaid',
   })
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
     if (fee) {
       setFormData({
-        student_id: fee.student_id || '',
+        studentId: fee.studentId?._id || fee.studentId || '',
         amount: fee.amount || '',
-        term: fee.term || '',
-        year: fee.year || new Date().getFullYear(),
-        status: fee.status || 'UNPAID',
+        description: fee.description || '',
+        dueDate: fee.dueDate ? new Date(fee.dueDate).toISOString().split('T')[0] : '',
+        academicYear: fee.academicYear || currentAcademicYear?.year || '',
+        term: fee.term || 'General',
+        status: fee.status || 'unpaid',
       })
     } else {
       setFormData({
-        student_id: '',
+        studentId: '',
         amount: '',
-        term: '',
-        year: new Date().getFullYear(),
-        status: 'UNPAID',
+        description: '',
+        dueDate: '',
+        academicYear: currentAcademicYear?.year || '',
+        term: 'General',
+        status: 'unpaid',
       })
     }
-  }, [fee])
+  }, [fee, currentAcademicYear])
 
   const validate = () => {
     const newErrors = {}
 
-    if (!formData.student_id) {
-      newErrors.student_id = 'Student is required'
+    if (!formData.studentId) {
+      newErrors.studentId = 'Student is required'
     }
 
     if (!formData.amount || formData.amount <= 0) {
       newErrors.amount = 'Amount must be greater than 0'
     }
 
-    if (!formData.term.trim()) {
-      newErrors.term = 'Term is required'
+    if (!formData.dueDate) {
+      newErrors.dueDate = 'Due date is required'
     }
 
-    if (!formData.year || formData.year < 2000) {
-      newErrors.year = 'Valid year is required'
+    if (!formData.academicYear) {
+      newErrors.academicYear = 'Academic year is required'
     }
 
     setErrors(newErrors)
@@ -58,9 +66,7 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
     if (validate()) {
       onSubmit({
         ...formData,
-        student_id: parseInt(formData.student_id),
         amount: parseFloat(formData.amount),
-        year: parseInt(formData.year),
       })
     }
   }
@@ -76,28 +82,28 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="student_id" className="block text-sm font-medium text-text-dark mb-2">
+        <label htmlFor="studentId" className="block text-sm font-medium text-text-dark mb-2">
           Student <span className="text-red-500">*</span>
         </label>
         <select
-          id="student_id"
-          name="student_id"
-          value={formData.student_id}
+          id="studentId"
+          name="studentId"
+          value={formData.studentId}
           onChange={handleChange}
           className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-            errors.student_id
+            errors.studentId
               ? 'border-red-300 focus:ring-red-500'
               : 'border-gray-200 focus:ring-primary-blue'
           }`}
         >
           <option value="">Select a student</option>
           {students.map((student) => (
-            <option key={student.student_id} value={student.student_id}>
-              {student.name} (ID: {student.student_id})
+            <option key={student._id} value={student._id}>
+              {student.firstName} {student.lastName} (ID: {student.studentId})
             </option>
           ))}
         </select>
-        {errors.student_id && <p className="mt-1 text-sm text-red-500">{errors.student_id}</p>}
+        {errors.studentId && <p className="mt-1 text-sm text-red-500">{errors.studentId}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -124,44 +130,80 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
         </div>
 
         <div>
-          <label htmlFor="term" className="block text-sm font-medium text-text-dark mb-2">
-            Term <span className="text-red-500">*</span>
+          <label htmlFor="dueDate" className="block text-sm font-medium text-text-dark mb-2">
+            Due Date <span className="text-red-500">*</span>
           </label>
           <input
-            type="text"
+            type="date"
+            id="dueDate"
+            name="dueDate"
+            value={formData.dueDate}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+              errors.dueDate
+                ? 'border-red-300 focus:ring-red-500'
+                : 'border-gray-200 focus:ring-primary-blue'
+            }`}
+          />
+          {errors.dueDate && <p className="mt-1 text-sm text-red-500">{errors.dueDate}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="academicYear" className="block text-sm font-medium text-text-dark mb-2">
+            Academic Year <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="academicYear"
+            name="academicYear"
+            value={formData.academicYear}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+              errors.academicYear
+                ? 'border-red-300 focus:ring-red-500'
+                : 'border-gray-200 focus:ring-primary-blue'
+            }`}
+          >
+            <option value="">Select academic year</option>
+            {academicYears?.map((year) => (
+              <option key={year._id} value={year.year}>
+                {year.year}
+              </option>
+            ))}
+          </select>
+          {errors.academicYear && <p className="mt-1 text-sm text-red-500">{errors.academicYear}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="term" className="block text-sm font-medium text-text-dark mb-2">
+            Term
+          </label>
+          <select
             id="term"
             name="term"
             value={formData.term}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.term
-                ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-200 focus:ring-primary-blue'
-            }`}
-            placeholder="e.g., Term 1, Semester 1"
-          />
-          {errors.term && <p className="mt-1 text-sm text-red-500">{errors.term}</p>}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+          >
+            <option value="General">General</option>
+            <option value="Term 1">Term 1</option>
+            <option value="Term 2">Term 2</option>
+            <option value="Term 3">Term 3</option>
+          </select>
         </div>
 
         <div>
-          <label htmlFor="year" className="block text-sm font-medium text-text-dark mb-2">
-            Year <span className="text-red-500">*</span>
+          <label htmlFor="description" className="block text-sm font-medium text-text-dark mb-2">
+            Description
           </label>
           <input
-            type="number"
-            id="year"
-            name="year"
-            value={formData.year}
+            type="text"
+            id="description"
+            name="description"
+            value={formData.description}
             onChange={handleChange}
-            min="2000"
-            max="2100"
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.year
-                ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-200 focus:ring-primary-blue'
-            }`}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            placeholder="e.g., Tuition Fee"
           />
-          {errors.year && <p className="mt-1 text-sm text-red-500">{errors.year}</p>}
         </div>
 
         <div>
@@ -175,9 +217,9 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
             onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
           >
-            <option value="UNPAID">Unpaid</option>
-            <option value="PARTIAL">Partial</option>
-            <option value="PAID">Paid</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
           </select>
         </div>
       </div>

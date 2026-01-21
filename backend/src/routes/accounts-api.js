@@ -11,6 +11,8 @@ const { Fee } = require('../models/fees');
 const { Payment } = require('../models/payment');
 const { Expense } = require('../models/expense');
 const { getCurrentAcademicYear, getFeeStructure } = require('../models/school-settings');
+const { validateRequiredFields, validateEnum, sanitizeString, validateObjectId } = require('../utils/validation');
+const cacheManager = require('../utils/cache');
 
 const router = express.Router();
 
@@ -20,10 +22,20 @@ const router = express.Router();
  * Get accounts dashboard data
  */
 router.get('/dashboard', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
-  const currentYear = await getCurrentAcademicYear();
+  // Check cache first
+  const cacheKey = 'dashboard-stats';
+  const cachedData = cacheManager.get(cacheKey);
+  if (cachedData) {
+    return res.json(cachedData);
+  }
 
-  // Get all fees
-  const fees = await Fee.find().lean();
+  const currentYear = await getCurrentAcademicYear();
+  const academicYear = currentYear?.year;
+
+  // Get all fees for current academic year
+  const fees = academicYear 
+    ? await Fee.find({ academicYear }).lean()
+    : await Fee.find().lean();
 
   // Calculate fee statistics
   const totalFees = fees.length;
@@ -63,7 +75,7 @@ router.get('/dashboard', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(
     }
   ]);
 
-  res.json({
+  const responseData = {
     currentYear,
     stats: {
       totalFees,
@@ -82,7 +94,12 @@ router.get('/dashboard', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(
     feesByStatus: Object.fromEntries(feesByStatus.map(f => [f._id || 'unknown', { count: f.count, amount: f.amount }])),
     recentPayments: payments.slice(0, 10),
     recentExpenses: expenses.slice(0, 10)
-  });
+  };
+
+  // Cache for 5 minutes
+  cacheManager.set('dashboard-stats', responseData, 5 * 60 * 1000);
+
+  res.json(responseData);
 }));
 
 // ============= Fees Management =============
@@ -91,11 +108,13 @@ router.get('/dashboard', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(
  * Get all fees with filters
  */
 router.get('/fees', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
-  const { status, page = 1, limit = 50 } = req.query;
+  const { status, academicYear, term, page = 1, limit = 50 } = req.query;
   const skip = (page - 1) * limit;
 
   const filter = {};
   if (status) filter.status = status;
+  if (academicYear) filter.academicYear = academicYear;
+  if (term) filter.term = term;
 
   const fees = await Fee.find(filter)
     .populate('studentId', 'firstName lastName studentId')
@@ -122,23 +141,49 @@ router.get('/fees', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async
  * Create new fee
  */
 router.post('/fees', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
-  const { studentId, amount, description, dueDate, type } = req.body;
+  const { studentId, amount, description, dueDate, type, academicYear, term } = req.body;
 
-  if (!studentId || !amount || !dueDate) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Validate required fields
+  const missingFields = validateRequiredFields({ studentId, amount, dueDate, academicYear });
+  if (missingFields.length > 0) {
+    return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
   }
+
+  // Validate studentId is a valid ObjectId
+  if (!validateObjectId(studentId)) {
+    return res.status(400).json({ error: 'Invalid studentId format' });
+  }
+
+  // Validate amount is a positive number
+  if (typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ error: 'Amount must be a positive number' });
+  }
+
+  // Validate term enum if provided
+  if (term && !validateEnum(term, ['General', 'First', 'Second', 'Third'])) {
+    return res.status(400).json({ error: 'Invalid term. Must be one of: General, First, Second, Third' });
+  }
+
+  // Sanitize description
+  const sanitizedDescription = description ? sanitizeString(description) : '';
 
   const fee = new Fee({
     studentId,
     amount,
-    description,
+    description: sanitizedDescription,
     dueDate: new Date(dueDate),
     type,
+    academicYear,
+    term: term || 'General',
     status: 'unpaid',
     createdBy: req.user.id
   });
 
   await fee.save();
+  
+  // Invalidate cache
+  cacheManager.delete('dashboard-stats');
+
   res.status(201).json({ message: 'Fee created', fee });
 }));
 
@@ -202,38 +247,107 @@ router.get('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(a
 
 /**
  * POST /api/accounts/payments
- * Create new payment
+ * Create new payment (by accounts staff)
  */
 router.post('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
-  const { feeId, amount, method = 'cash', paymentDate } = req.body;
+  const { feeId, amount, method = 'cash', paymentDate, notes } = req.body;
 
+  // Validate required fields
   if (!feeId || !amount) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: 'Missing required fields: feeId and amount' });
+  }
+
+  // Validate amount
+  if (amount <= 0) {
+    return res.status(400).json({ error: 'Payment amount must be greater than 0' });
+  }
+
+  // Validate fee ID
+  if (!require('mongoose').Types.ObjectId.isValid(feeId)) {
+    return res.status(400).json({ error: 'Invalid fee ID' });
   }
 
   // Update fee record
   const fee = await Fee.findById(feeId);
   if (!fee) return res.status(404).json({ error: 'Fee not found' });
 
-  fee.amountPaid = (fee.amountPaid || 0) + amount;
+  // Check if payment exceeds remaining balance
+  const remaining = fee.amount - (fee.amountPaid || 0);
+  if (amount > remaining && remaining > 0) {
+    return res.status(400).json({ 
+      error: `Payment amount exceeds remaining balance. Remaining: K${remaining}` 
+    });
+  }
+
+  // Record payment in fee's payments array
+  fee.amountPaid = Math.min((fee.amountPaid || 0) + amount, fee.amount);
+  fee.payments = fee.payments || [];
+  fee.payments.push({
+    amount,
+    date: paymentDate ? new Date(paymentDate) : new Date(),
+    method,
+    notes: notes || '',
+    paidBy: req.user.id
+  });
+
+  // Update status
   if (fee.amountPaid >= fee.amount) {
     fee.status = 'paid';
+    fee.amountPaid = fee.amount; // Cap to total
   } else if (fee.amountPaid > 0) {
     fee.status = 'pending';
   }
+
   await fee.save();
 
-  // Create payment record
+  // Create payment record for auditing
   const payment = new Payment({
     feeId,
     amountPaid: amount,
     method,
     paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
-    createdBy: req.user.id
+    createdBy: req.user.id,
+    notes
   });
 
-  await payment.save();
-  res.status(201).json({ message: 'Payment recorded', payment });
+  try {
+    await payment.save();
+  } catch (saveError) {
+    console.error('Error saving payment:', saveError);
+    // If payment save fails but fee was updated, that's okay - return success
+    // as the fee has already been updated
+    return res.status(201).json({
+      success: true,
+      message: 'Payment recorded (fee updated)',
+      fee: {
+        _id: fee._id,
+        amount: fee.amount,
+        amountPaid: fee.amountPaid,
+        remaining: fee.amount - fee.amountPaid,
+        status: fee.status
+      }
+    });
+  }
+
+  res.status(201).json({
+    success: true,
+    message: 'Payment recorded successfully',
+    payment: {
+      _id: payment._id,
+      feeId,
+      amount,
+      method,
+      paymentDate: payment.paymentDate,
+      notes
+    },
+    fee: {
+      _id: fee._id,
+      amount: fee.amount,
+      amountPaid: fee.amountPaid,
+      remaining: fee.amount - fee.amountPaid,
+      status: fee.status
+    }
+  });
 }));
 
 // ============= Expenses Management =============

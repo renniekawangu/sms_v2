@@ -116,6 +116,7 @@ const settingsApiRoutes = require('./routes/settings-api');
 const parentsApiRoutes = require('./routes/parents-api');
 const rolesApiRoutes = require('./routes/roles-api');
 const usersApiRoutes = require('./routes/users-api');
+const homeworkApiRoutes = require('./routes/homework-api');
 
 // API Routes for Frontend SPA
 app.use('/api/auth', authApiRoutes);
@@ -130,6 +131,7 @@ app.use('/api/parents', parentsApiRoutes);
 app.use('/api/admin/roles', rolesApiRoutes);
 app.use('/api/roles', rolesApiRoutes);
 app.use('/api/users', usersApiRoutes);
+app.use('/api/homework', homeworkApiRoutes);
 
 // Health check for uptime/monitoring
 app.get('/health', (req, res) => {

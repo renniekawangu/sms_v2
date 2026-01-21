@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 
 function PaymentForm({ payment, fees, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
-    fee_id: '',
-    amount_paid: '',
-    payment_date: new Date().toISOString().split('T')[0],
-    method: 'Cash',
+    feeId: '',
+    amount: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    method: 'cash',
+    notes: '',
   })
   const [errors, setErrors] = useState({})
   const [selectedFee, setSelectedFee] = useState(null)
@@ -13,54 +14,61 @@ function PaymentForm({ payment, fees, onSubmit, onCancel }) {
   useEffect(() => {
     if (payment) {
       setFormData({
-        fee_id: payment.fee_id || '',
-        amount_paid: payment.amount_paid || '',
-        payment_date: payment.payment_date ? (payment.payment_date.includes('T') ? payment.payment_date.split('T')[0] : payment.payment_date) : new Date().toISOString().split('T')[0],
-        method: payment.method || 'Cash',
+        feeId: payment.feeId || '',
+        amount: payment.amount || '',
+        paymentDate: payment.paymentDate ? (payment.paymentDate.includes('T') ? payment.paymentDate.split('T')[0] : payment.paymentDate) : new Date().toISOString().split('T')[0],
+        method: payment.method || 'cash',
+        notes: payment.notes || '',
       })
     } else {
       setFormData({
-        fee_id: '',
-        amount_paid: '',
-        payment_date: new Date().toISOString().split('T')[0],
-        method: 'Cash',
+        feeId: '',
+        amount: '',
+        paymentDate: new Date().toISOString().split('T')[0],
+        method: 'cash',
+        notes: '',
       })
     }
   }, [payment])
 
   useEffect(() => {
-    if (formData.fee_id && fees) {
-      const fee = fees.find(f => f.fee_id === parseInt(formData.fee_id))
+    if (formData.feeId && fees) {
+      const fee = fees.find(f => (f._id || f.id) === formData.feeId)
       setSelectedFee(fee)
       if (fee) {
-        // Set max amount to remaining balance
-        const maxAmount = fee.amount
-        if (formData.amount_paid > maxAmount) {
-          setFormData(prev => ({ ...prev, amount_paid: maxAmount }))
+        // Calculate remaining balance using correct field names
+        const totalAmount = fee.amount || 0
+        const paidAmount = fee.amountPaid || 0
+        const remainingBalance = totalAmount - paidAmount
+        if (formData.amount > remainingBalance) {
+          setFormData(prev => ({ ...prev, amount: remainingBalance }))
         }
       }
     } else {
       setSelectedFee(null)
     }
-  }, [formData.fee_id, fees])
+  }, [formData.feeId, fees])
 
   const validate = () => {
     const newErrors = {}
 
-    if (!formData.fee_id) {
-      newErrors.fee_id = 'Fee is required'
+    if (!formData.feeId) {
+      newErrors.feeId = 'Fee is required'
     }
 
-    if (!formData.amount_paid || formData.amount_paid <= 0) {
-      newErrors.amount_paid = 'Amount must be greater than 0'
+    if (!formData.amount || formData.amount <= 0) {
+      newErrors.amount = 'Amount must be greater than 0'
     }
 
-    if (selectedFee && formData.amount_paid > selectedFee.amount) {
-      newErrors.amount_paid = `Amount cannot exceed fee amount ($${selectedFee.amount})`
+    if (selectedFee) {
+      const remainingBalance = (selectedFee.amount || 0) - (selectedFee.amountPaid || 0)
+      if (formData.amount > remainingBalance) {
+        newErrors.amount = `Amount cannot exceed remaining balance (K${remainingBalance.toFixed(2)})`
+      }
     }
 
-    if (!formData.payment_date) {
-      newErrors.payment_date = 'Payment date is required'
+    if (!formData.paymentDate) {
+      newErrors.paymentDate = 'Payment date is required'
     }
 
     if (!formData.method) {
@@ -77,9 +85,9 @@ function PaymentForm({ payment, fees, onSubmit, onCancel }) {
       // Convert date to ISO string and numbers for backend
       onSubmit({
         ...formData,
-        fee_id: parseInt(formData.fee_id),
-        amount_paid: parseFloat(formData.amount_paid),
-        payment_date: formData.payment_date ? new Date(formData.payment_date).toISOString() : formData.payment_date
+        feeId: formData.feeId,
+        amount: parseFloat(formData.amount),
+        paymentDate: formData.paymentDate ? new Date(formData.paymentDate).toISOString() : formData.paymentDate
       })
     }
   }
@@ -93,81 +101,101 @@ function PaymentForm({ payment, fees, onSubmit, onCancel }) {
   }
 
   // Filter fees to show only unpaid or partially paid
-  const availableFees = (fees || []).filter(f => f.status !== 'PAID')
+  const availableFees = (fees || []).filter(f => f.status !== 'paid')
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {selectedFee && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-text-dark font-semibold">
+            Payment for: <span className="text-primary-blue">
+              {selectedFee.studentId?.firstName || selectedFee.studentId?.name || 'Student'}
+              {selectedFee.studentId?.lastName ? ` ${selectedFee.studentId.lastName}` : ''}
+            </span>
+          </p>
+        </div>
+      )}
       <div>
-        <label htmlFor="fee_id" className="block text-sm font-medium text-text-dark mb-2">
+        <label htmlFor="feeId" className="block text-sm font-medium text-text-dark mb-2">
           Fee <span className="text-red-500">*</span>
         </label>
         <select
-          id="fee_id"
-          name="fee_id"
-          value={formData.fee_id}
+          id="feeId"
+          name="feeId"
+          value={formData.feeId}
           onChange={handleChange}
           className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-            errors.fee_id
+            errors.feeId
               ? 'border-red-300 focus:ring-red-500'
               : 'border-gray-200 focus:ring-primary-blue'
           }`}
         >
           <option value="">Select a fee</option>
-          {availableFees.map((fee) => (
-            <option key={fee.fee_id} value={fee.fee_id}>
-              Fee #{fee.fee_id} - ${fee.amount} ({fee.term} {fee.year}) - {fee.status}
-            </option>
-          ))}
+          {availableFees.map((fee) => {
+            const feeId = fee._id || fee.id
+            const totalAmount = fee.amount || 0
+            const amountPaid = fee.amountPaid || 0
+            const remaining = totalAmount - amountPaid
+            const studentName = fee.studentId?.firstName 
+              ? `${fee.studentId.firstName}${fee.studentId.lastName ? ` ${fee.studentId.lastName}` : ''}`
+              : fee.studentId?.name || 'Unknown'
+            const feeDescription = fee.description || 'Fee'
+            return (
+              <option key={feeId} value={feeId}>
+                {studentName} - {feeDescription} - K{totalAmount.toFixed(2)} ({fee.term || 'General'}) - K{remaining.toFixed(2)} remaining
+              </option>
+            )
+          })}
         </select>
-        {errors.fee_id && <p className="mt-1 text-sm text-red-500">{errors.fee_id}</p>}
+        {errors.feeId && <p className="mt-1 text-sm text-red-500">{errors.feeId}</p>}
         {selectedFee && (
           <p className="mt-1 text-sm text-text-muted">
-            Fee Amount: ${selectedFee.amount} | Status: {selectedFee.status}
+            Total: K{(selectedFee.amount || 0).toFixed(2)} | Paid: K{(selectedFee.amountPaid || 0).toFixed(2)} | Remaining: K{((selectedFee.amount || 0) - (selectedFee.amountPaid || 0)).toFixed(2)} | Status: {selectedFee.status}
           </p>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="amount_paid" className="block text-sm font-medium text-text-dark mb-2">
-            Amount Paid <span className="text-red-500">*</span>
+          <label htmlFor="amount" className="block text-sm font-medium text-text-dark mb-2">
+            Amount to Pay (K) <span className="text-red-500">*</span>
           </label>
           <input
             type="number"
-            id="amount_paid"
-            name="amount_paid"
-            value={formData.amount_paid}
+            id="amount"
+            name="amount"
+            value={formData.amount}
             onChange={handleChange}
             min="0"
-            max={selectedFee ? selectedFee.amount : undefined}
+            max={selectedFee ? ((selectedFee.amount || 0) - (selectedFee.amountPaid || 0)) : undefined}
             step="0.01"
             className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.amount_paid
+              errors.amount
                 ? 'border-red-300 focus:ring-red-500'
                 : 'border-gray-200 focus:ring-primary-blue'
             }`}
             placeholder="Enter amount"
           />
-          {errors.amount_paid && <p className="mt-1 text-sm text-red-500">{errors.amount_paid}</p>}
+          {errors.amount && <p className="mt-1 text-sm text-red-500">{errors.amount}</p>}
         </div>
 
         <div>
-          <label htmlFor="payment_date" className="block text-sm font-medium text-text-dark mb-2">
+          <label htmlFor="paymentDate" className="block text-sm font-medium text-text-dark mb-2">
             Payment Date <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
-            id="payment_date"
-            name="payment_date"
-            value={formData.payment_date}
+            id="paymentDate"
+            name="paymentDate"
+            value={formData.paymentDate}
             onChange={handleChange}
             className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.payment_date
+              errors.paymentDate
                 ? 'border-red-300 focus:ring-red-500'
                 : 'border-gray-200 focus:ring-primary-blue'
             }`}
           />
-          {errors.payment_date && <p className="mt-1 text-sm text-red-500">{errors.payment_date}</p>}
+          {errors.paymentDate && <p className="mt-1 text-sm text-red-500">{errors.paymentDate}</p>}
         </div>
 
         <div>
@@ -185,12 +213,28 @@ function PaymentForm({ payment, fees, onSubmit, onCancel }) {
                 : 'border-gray-200 focus:ring-primary-blue'
             }`}
           >
-            <option value="Cash">Cash</option>
-            <option value="Card">Card</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-            <option value="Online">Online</option>
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="mobile_money">Mobile Money</option>
+            <option value="cheque">Cheque</option>
+            <option value="other">Other</option>
           </select>
           {errors.method && <p className="mt-1 text-sm text-red-500">{errors.method}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium text-text-dark mb-2">
+            Notes / Receipt #
+          </label>
+          <input
+            type="text"
+            id="notes"
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            placeholder="Optional notes or receipt number"
+          />
         </div>
       </div>
 

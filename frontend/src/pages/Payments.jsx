@@ -1,42 +1,54 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CreditCard, Plus, AlertCircle, Search } from 'lucide-react'
-import { paymentsApi, feesApi } from '../services/api'
+import { CreditCard, Plus, AlertCircle, Search, RefreshCw } from 'lucide-react'
+import { accountsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import PaymentForm from '../components/PaymentForm'
-import { useCurrency, formatCurrency } from '../hooks/useCurrency'
 
 function Payments() {
   const [payments, setPayments] = useState([])
   const [fees, setFees] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pagination, setPagination] = useState({ total: 0, pages: 1, page: 1, limit: 50 })
   const { success, error: showError } = useToast()
-  const currency = useCurrency()
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [currentPage])
 
   const loadData = async () => {
     try {
       setLoading(true)
       setError(null)
       const [paymentsData, feesData] = await Promise.all([
-        paymentsApi.list(),
-        feesApi.list()
+        accountsApi.getPayments({ page: currentPage, limit: 50 }),
+        accountsApi.getFees()
       ])
-      setPayments(paymentsData)
-      setFees(feesData)
+      setPayments(paymentsData.payments || [])
+      setPagination(paymentsData.pagination || { total: 0, pages: 1, page: 1, limit: 50 })
+      // Ensure fees is always an array - handle both direct array and {fees, pagination} response
+      const feesArray = Array.isArray(feesData) 
+        ? feesData 
+        : (feesData?.fees || feesData?.data || [])
+      setFees(feesArray)
     } catch (err) {
       const errorMessage = err.message || 'Failed to load data'
       setError(errorMessage)
       showError(errorMessage)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await loadData()
   }
 
   const handleCreate = () => {
@@ -45,9 +57,10 @@ function Payments() {
 
   const handleSubmit = async (formData) => {
     try {
-      await paymentsApi.create(formData)
+      await accountsApi.createPayment(formData)
       success('Payment recorded successfully')
       setIsModalOpen(false)
+      setCurrentPage(1)
       await loadData()
     } catch (err) {
       const errorMessage = err.message || 'Failed to record payment'
@@ -55,21 +68,29 @@ function Payments() {
     }
   }
 
-  const getFeeInfo = (fee_id) => {
-    return fees.find(f => f.fee_id === fee_id)
+  const getFeeInfo = (feeId) => {
+    if (!Array.isArray(fees)) return null
+    return fees.find(f => f._id === feeId || f.id === feeId)
+  }
+
+  const getStudentName = (feeId) => {
+    const fee = getFeeInfo(feeId)
+    if (fee?.studentId?.firstName && fee?.studentId?.lastName) {
+      return `${fee.studentId.firstName} ${fee.studentId.lastName}`
+    }
+    return fee?.studentId?.name || 'Unknown'
   }
 
   const filteredPayments = useMemo(() => {
     if (!searchQuery.trim()) return payments
     const query = searchQuery.toLowerCase()
     return payments.filter((payment) => {
-      const fee = getFeeInfo(payment.fee_id)
       return (
-        payment.payment_id?.toString().includes(query) ||
-        payment.fee_id?.toString().includes(query) ||
-        payment.amount_paid?.toString().includes(query) ||
+        payment._id?.toString().includes(query) ||
+        payment.feeId?.toString().includes(query) ||
+        payment.amountPaid?.toString().includes(query) ||
         payment.method?.toLowerCase().includes(query) ||
-        (fee && fee.student_id?.toString().includes(query))
+        getStudentName(payment.feeId).toLowerCase().includes(query)
       )
     })
   }, [payments, fees, searchQuery])
@@ -105,10 +126,20 @@ function Payments() {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Payments</h1>
-        <p className="text-sm sm:text-base text-text-muted mt-1">Record and view payment records</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Payments</h1>
+          <p className="text-sm sm:text-base text-text-muted mt-1">Record and manage payment records</p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-2 px-3 py-2 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+        </button>
       </div>
+
       <button
         onClick={handleCreate}
         className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
@@ -117,14 +148,14 @@ function Payments() {
         <span>Record Payment</span>
       </button>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+      <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">
         {payments.length > 0 && (
           <div className="mb-4 sm:mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
               <input
                 type="text"
-                placeholder="Search payments..."
+                placeholder="Search by student name, amount, method..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
@@ -149,35 +180,70 @@ function Payments() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">ID</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Fee ID</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Amount Paid</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Payment Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Method</th>
+                    <th className="text-left py-3 px-3 sm:px-4 font-semibold text-text-dark">Date</th>
+                    <th className="text-left py-3 px-3 sm:px-4 font-semibold text-text-dark">Student</th>
+                    <th className="text-left py-3 px-3 sm:px-4 font-semibold text-text-dark">Fee Type</th>
+                    <th className="text-left py-3 px-3 sm:px-4 font-semibold text-text-dark">Amount</th>
+                    <th className="text-left py-3 px-3 sm:px-4 font-semibold text-text-dark">Method</th>
+                    <th className="text-left py-3 px-3 sm:px-4 font-semibold text-text-dark">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPayments.map((payment) => {
-                    const fee = getFeeInfo(payment.fee_id)
+                    const fee = getFeeInfo(payment.feeId)
+                    const studentName = getStudentName(payment.feeId)
                     return (
-                      <tr key={payment.payment_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-4 text-sm text-text-dark">{payment.payment_id}</td>
-                        <td className="py-3 px-4 text-sm text-text-dark">Fee #{payment.fee_id}</td>
-                        <td className="py-3 px-4 text-sm text-text-dark font-medium">{formatCurrency(payment.amount_paid, currency)}</td>
-                        <td className="py-3 px-4 text-sm text-text-muted">
-                          {payment.payment_date ? (payment.payment_date.includes('T') ? payment.payment_date.split('T')[0] : payment.payment_date) : '-'}
+                      <tr key={payment._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-3 sm:px-4 text-text-dark">
+                          {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : '-'}
                         </td>
-                        <td className="py-3 px-4 text-sm text-text-muted">{payment.method}</td>
+                        <td className="py-3 px-3 sm:px-4 text-text-dark font-medium">{studentName}</td>
+                        <td className="py-3 px-3 sm:px-4 text-text-dark text-sm">{fee?.description || '-'}</td>
+                        <td className="py-3 px-3 sm:px-4 text-text-dark font-semibold">K{payment.amountPaid?.toFixed(2)}</td>
+                        <td className="py-3 px-3 sm:px-4 text-text-muted capitalize">{payment.method}</td>
+                        <td className="py-3 px-3 sm:px-4">
+                          {fee?.status === 'paid' ? (
+                            <span className="inline-block px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Paid</span>
+                          ) : (
+                            <span className="inline-block px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Pending</span>
+                          )}
+                        </td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
             </div>
-            <div className="mt-6">
+
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className="mt-6 flex items-center justify-between">
+                <p className="text-sm text-text-muted">
+                  Page {pagination.page} of {pagination.pages} ({pagination.total} total)
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(pagination.pages, prev + 1))}
+                    disabled={currentPage === pagination.pages}
+                    className="px-3 py-1 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4">
               <p className="text-sm text-text-muted">
                 Showing {filteredPayments.length} of {payments.length} payments
               </p>

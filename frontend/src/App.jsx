@@ -20,6 +20,7 @@ import Timetable from './pages/Timetable'
 import Exams from './pages/Exams'
 import Results from './pages/Results'
 import Children from './pages/Children'
+import ChildDetail from './pages/ChildDetail'
 import Parents from './pages/Parents'
 import Attendance from './pages/Attendance'
 import Fees from './pages/Fees'
@@ -220,6 +221,18 @@ function App() {
                   <ProtectedRoute requiredRole="parent">
                     <Layout>
                       <Children />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Child Detail - accessible to parents */}
+              <Route
+                path="/children/:id"
+                element={
+                  <ProtectedRoute requiredRole="parent">
+                    <Layout>
+                      <ChildDetail />
                     </Layout>
                   </ProtectedRoute>
                 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { classroomsApi, teachersApi } from '../services/api';
 import { ArrowLeft, School, Users, User, AlertCircle, Mail } from 'lucide-react';
+import Homework from '../components/Homework';
 
 function ViewClassroom() {
   const { id } = useParams();
@@ -143,6 +144,11 @@ function ViewClassroom() {
             <p className="text-text-muted text-sm mb-3">Enrolled</p>
             <p className="text-text-dark font-bold text-3xl">{studentCount}</p>
           </div>
+        </div>
+
+        {/* Homework Section */}
+        <div className="mb-6">
+          <Homework classroomId={id} />
         </div>
 
         {/* Students List Card */}

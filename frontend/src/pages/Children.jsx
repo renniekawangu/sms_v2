@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { User, BookOpen, CheckCircle, DollarSign, TrendingUp, ChevronRight, AlertCircle, Loader } from 'lucide-react'
 import { parentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
+import ChildHomework from '../components/ChildHomework'
 
 function Children() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const { error: showError } = useToast()
   const [children, setChildren] = useState([])
   const [loading, setLoading] = useState(true)
@@ -85,9 +88,18 @@ function Children() {
   }
 
   const calculateFeesStatus = (fees) => {
-    if (fees.length === 0) return { paid: 0, pending: 0, percentage: 0 }
-    const totalAmount = fees.reduce((sum, f) => sum + (f.amount || 0), 0)
-    const paidAmount = fees.reduce((sum, f) => sum + (f.amountPaid || 0), 0)
+    // Handle different response formats
+    if (!fees) return { paid: 0, pending: 0, percentage: 0 }
+    
+    // If fees is an object with fees array (from API response)
+    const feesList = Array.isArray(fees) ? fees : (fees.fees ? fees.fees : [])
+    
+    if (!Array.isArray(feesList) || feesList.length === 0) {
+      return { paid: 0, pending: 0, percentage: 0 }
+    }
+    
+    const totalAmount = feesList.reduce((sum, f) => sum + (f.amount || 0), 0)
+    const paidAmount = feesList.reduce((sum, f) => sum + (f.amountPaid || 0), 0)
     const percentage = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0
     return {
       paid: paidAmount,
@@ -155,15 +167,26 @@ function Children() {
                   </div>
                   <div className="flex items-center gap-3">
                     {isExpanded && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDownloadReport(child._id, `${child.firstName}_${child.lastName}`)
-                        }}
-                        className="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-primary-blue text-white hover:bg-primary-blue/90 transition-colors font-medium"
-                      >
-                        Download Report
-                      </button>
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/children/${child._id}`)
+                          }}
+                          className="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-primary-blue text-white hover:bg-primary-blue/90 transition-colors font-medium"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDownloadReport(child._id, `${child.firstName}_${child.lastName}`)
+                          }}
+                          className="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-gray-200 text-text-dark hover:bg-gray-300 transition-colors font-medium"
+                        >
+                          Download Report
+                        </button>
+                      </>
                     )}
                     <ChevronRight
                       size={20}
@@ -274,16 +297,18 @@ function Children() {
                   </div>
 
                   {/* Fees Section */}
-                  <div className="p-3 sm:p-4">
+                  <div className="p-3 sm:p-4 border-b border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
                       <DollarSign size={18} className="text-orange-600" />
                       <h4 className="font-semibold text-text-dark">Fees & Payments</h4>
                     </div>
-                    {details.fees.length > 0 ? (
-                      <div className="space-y-3">
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-orange-500 h-2 rounded-full transition-all"
+                    {(() => {
+                      const feesList = Array.isArray(details.fees) ? details.fees : (details.fees?.fees || [])
+                      return feesList.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-orange-500 h-2 rounded-full transition-all"
                             style={{ width: `${calculateFeesStatus(details.fees).percentage}%` }}
                           />
                         </div>
@@ -291,13 +316,13 @@ function Children() {
                           <div>
                             <p className="text-text-muted text-xs">Paid</p>
                             <p className="font-semibold text-text-dark">
-                              ${calculateFeesStatus(details.fees).paid.toFixed(2)}
+                              K{calculateFeesStatus(details.fees).paid.toFixed(2)}
                             </p>
                           </div>
                           <div>
                             <p className="text-text-muted text-xs">Pending</p>
                             <p className="font-semibold text-orange-600">
-                              ${calculateFeesStatus(details.fees).pending.toFixed(2)}
+                              K{calculateFeesStatus(details.fees).pending.toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -310,7 +335,17 @@ function Children() {
                       </div>
                     ) : (
                       <p className="text-sm text-text-muted">No fee information available</p>
-                    )}
+                    )
+                    })()}
+                  </div>
+
+                  {/* Homework Section */}
+                  <div className="p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <BookOpen size={18} className="text-primary-blue" />
+                      <h4 className="font-semibold text-text-dark">Homework Assignments</h4>
+                    </div>
+                    <ChildHomework studentId={child._id} />
                   </div>
                 </div>
               )}

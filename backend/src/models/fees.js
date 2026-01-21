@@ -16,7 +16,9 @@ const feeSchema = new mongoose.Schema({
       notes: { type: String }
     }
   ],
-  latePenaltyApplied: { type: Boolean, default: false }
+  latePenaltyApplied: { type: Boolean, default: false },
+  academicYear: { type: String }, // e.g., "2024-2025"
+  term: { type: String } // e.g., "Term 1", "Term 2"
 }, { timestamps: true });
 
 // Virtual for remaining balance
@@ -35,16 +37,31 @@ feeSchema.set('toObject', { virtuals: true });
 
 const Fee = mongoose.model('Fee', feeSchema);
 
-async function getAllFees() {
-  return await Fee.find().populate('studentId');
+async function getAllFees(academicYear) {
+  const query = {};
+  if (academicYear) query.academicYear = academicYear;
+  return await Fee.find(query).populate('studentId');
 }
 
 async function getFeeById(id) {
   return await Fee.findById(id).populate('studentId');
 }
 
-async function getFeesByStudent(studentId) {
-  return await Fee.find({ studentId }).populate('studentId');
+async function getFeesByStudent(studentId, academicYear) {
+  const query = { studentId };
+  if (academicYear) query.academicYear = academicYear;
+  return await Fee.find(query).populate('studentId');
+}
+
+async function getFeesByAcademicYear(academicYear) {
+  return await Fee.find({ academicYear }).populate('studentId');
+}
+
+async function getFeesByTerm(academicYear, term) {
+  const query = {};
+  if (academicYear) query.academicYear = academicYear;
+  if (term) query.term = term;
+  return await Fee.find(query).populate('studentId');
 }
 
 async function createFee(feeData) {
@@ -108,4 +125,4 @@ async function getPaidFees() {
   return await Fee.find({ status: 'paid' }).populate('studentId');
 }
 
-module.exports = { Fee, getAllFees, getFeeById, getFeesByStudent, createFee, updateFee, deleteFee, markFeeAsPaid, getUnpaidFees, getPaidFees, addPartialPayment };
+module.exports = { Fee, getAllFees, getFeeById, getFeesByStudent, getFeesByAcademicYear, getFeesByTerm, createFee, updateFee, deleteFee, markFeeAsPaid, getUnpaidFees, getPaidFees, addPartialPayment };

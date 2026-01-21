@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { DollarSign, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
 import { feesApi, studentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
@@ -6,32 +6,74 @@ import { useSettings } from '../contexts/SettingsContext'
 import Modal from '../components/Modal'
 import FeeForm from '../components/FeeForm'
 import { useCurrency, formatCurrency } from '../hooks/useCurrency'
+import { debounce } from '../utils/helpers'
+import { TableSkeleton } from '../components/LoadingSkeleton'
+import ErrorBoundary from '../components/ErrorBoundary'
 
 function Fees() {
   const [fees, setFees] = useState([])
   const [students, setStudents] = useState([])
+  const [academicYears, setAcademicYears] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingFee, setEditingFee] = useState(null)
+  const [filters, setFilters] = useState({
+    academicYear: '',
+    term: ''
+  })
   const { success, error: showError } = useToast()
-  const { schoolSettings, currentAcademicYear } = useSettings()
+  const { schoolSettings, currentAcademicYear, academicYears: contextAcademicYears } = useSettings()
   const currency = useCurrency()
+  const filterTimeoutRef = useRef(null)
+
+  // Debounced filter update function
+  const debouncedFilterUpdate = useCallback(
+    debounce((newFilters) => {
+      setFilters(newFilters)
+    }, 500),
+    []
+  )
+
+  const handleFilterChange = useCallback((key, value) => {
+    const newFilters = { ...filters, [key]: value }
+    debouncedFilterUpdate(newFilters)
+  }, [filters, debouncedFilterUpdate])
+
+  useEffect(() => {
+    // Set default academic year filter
+    if (currentAcademicYear?.year && !filters.academicYear) {
+      setFilters(prev => ({ ...prev, academicYear: currentAcademicYear.year }))
+    }
+  }, [currentAcademicYear])
+
+  useEffect(() => {
+    // Use academic years from context
+    if (contextAcademicYears && contextAcademicYears.length > 0) {
+      setAcademicYears(contextAcademicYears)
+    }
+  }, [contextAcademicYears])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [filters])
 
   const loadData = async () => {
     try {
       setLoading(true)
       setError(null)
+      
+      // Build query params
+      const queryParams = new URLSearchParams()
+      if (filters.academicYear) queryParams.append('academicYear', filters.academicYear)
+      if (filters.term) queryParams.append('term', filters.term)
+
       const [feesData, studentsData] = await Promise.all([
-        feesApi.list(),
+        feesApi.listByFilters(queryParams),
         studentsApi.list()
       ])
-      setFees(feesData)
+      setFees(feesData.fees || feesData)
       setStudents(studentsData)
     } catch (err) {
       const errorMessage = err.message || 'Failed to load data'
@@ -102,12 +144,14 @@ function Fees() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-text-muted">Loading fees...</p>
+      <ErrorBoundary>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold mb-4">Fees Management</h2>
+            <TableSkeleton rows={5} />
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
     )
   }
 
@@ -130,7 +174,8 @@ function Fees() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+    <ErrorBoundary>
+      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Fees</h1>
@@ -146,6 +191,48 @@ function Fees() {
       </div>
 
       <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-text-dark mb-2">Academic Year</label>
+            <select
+              value={filters.academicYear}
+              onChange={(e) => handleFilterChange('academicYear', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+            >
+              <option value="">All Years</option>
+              {academicYears.map((year) => (
+                <option key={year._id} value={year.year}>
+                  {year.year}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-text-dark mb-2">Term</label>
+            <select
+              value={filters.term}
+              onChange={(e) => handleFilterChange('term', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+            >
+              <option value="">All Terms</option>
+              <option value="Term 1">Term 1</option>
+              <option value="Term 2">Term 2</option>
+              <option value="Term 3">Term 3</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              onClick={() => setFilters({ academicYear: currentAcademicYear?.year || '', term: '' })}
+              className="w-full px-4 py-2 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+            >
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
         <div className="mb-4 sm:mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
@@ -166,8 +253,8 @@ function Fees() {
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">ID</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Student</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Amount</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Academic Year</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Term</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Year</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Status</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Actions</th>
               </tr>
@@ -182,22 +269,22 @@ function Fees() {
               ) : (
                 filteredFees.map((fee) => (
                   <tr key={fee._id || fee.fee_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 text-sm text-text-dark">{fee.fee_id}</td>
-                    <td className="py-3 px-4 text-sm text-text-dark">{getStudentName(fee.student_id)}</td>
+                    <td className="py-3 px-4 text-sm text-text-dark">{fee._id}</td>
+                    <td className="py-3 px-4 text-sm text-text-dark">{fee.studentId?.firstName} {fee.studentId?.lastName}</td>
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{formatCurrency(fee.amount, currency)}</td>
+                    <td className="py-3 px-4 text-sm text-text-muted">{fee.academicYear}</td>
                     <td className="py-3 px-4 text-sm text-text-muted">{fee.term}</td>
-                    <td className="py-3 px-4 text-sm text-text-muted">{fee.year}</td>
                     <td className="py-3 px-4">
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
-                          fee.status === 'PAID'
+                          fee.status === 'paid'
                             ? 'bg-green-100 text-green-700'
-                            : fee.status === 'PARTIAL'
+                            : fee.status === 'pending'
                             ? 'bg-yellow-100 text-yellow-700'
                             : 'bg-red-100 text-red-700'
                         }`}
                       >
-                        {fee.status}
+                        {fee.status?.charAt(0).toUpperCase() + fee.status?.slice(1)}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -250,7 +337,8 @@ function Fees() {
           }}
         />
       </Modal>
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }
 
