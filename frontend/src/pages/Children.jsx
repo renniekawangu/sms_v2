@@ -165,15 +165,15 @@ function Children() {
                       <p className="text-xs text-text-muted">ID: {child.studentId}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
                     {isExpanded && (
-                      <>
+                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             navigate(`/children/${child._id}`)
                           }}
-                          className="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-primary-blue text-white hover:bg-primary-blue/90 transition-colors font-medium"
+                          className="px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm rounded-lg bg-primary-blue text-white hover:bg-primary-blue/90 transition-colors font-medium flex-1 sm:flex-none whitespace-nowrap text-center sm:text-left"
                         >
                           View Details
                         </button>
@@ -182,11 +182,11 @@ function Children() {
                             e.stopPropagation()
                             handleDownloadReport(child._id, `${child.firstName}_${child.lastName}`)
                           }}
-                          className="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-gray-200 text-text-dark hover:bg-gray-300 transition-colors font-medium"
+                          className="px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm rounded-lg bg-gray-200 text-text-dark hover:bg-gray-300 transition-colors font-medium flex-1 sm:flex-none whitespace-nowrap text-center sm:text-left"
                         >
-                          Download Report
+                          Report
                         </button>
-                      </>
+                      </div>
                     )}
                     <ChevronRight
                       size={20}

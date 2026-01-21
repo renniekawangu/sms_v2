@@ -237,94 +237,97 @@ function ChildDetail() {
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between mb-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div className="flex flex-col gap-3 mb-4">
               <button
                 onClick={() => navigate('/children')}
-                className="flex items-center gap-2 text-primary-blue hover:text-primary-blue/80 transition"
+                className="flex items-center gap-2 text-primary-blue hover:text-primary-blue/80 transition text-xs sm:text-sm font-medium w-fit"
               >
-                <ArrowLeft size={20} />
-                Back to Children
+                <ArrowLeft size={16} className="sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">Back to Children</span>
+                <span className="sm:hidden">Back</span>
               </button>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
+                  className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 transition disabled:opacity-50 text-xs sm:text-sm font-medium flex-1 sm:flex-none"
                 >
-                  <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-                  {refreshing ? 'Refreshing...' : 'Refresh'}
+                  <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                  <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                  <span className="sm:hidden text-center">Refresh</span>
                 </button>
                 <button
                   onClick={handleDownloadReport}
                   disabled={downloadingReport}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-blue/90 transition disabled:opacity-50"
+                  className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-blue/90 transition disabled:opacity-50 text-xs sm:text-sm font-medium flex-1 sm:flex-none"
                 >
-                  <Download size={18} />
-                  {downloadingReport ? 'Downloading...' : 'Download Report'}
+                  <Download size={16} />
+                  <span className="hidden sm:inline">{downloadingReport ? 'Downloading...' : 'Download Report'}</span>
+                  <span className="sm:hidden text-center">{downloadingReport ? 'Loading...' : 'Report'}</span>
                 </button>
               </div>
             </div>
 
             {/* Child Header */}
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-blue to-blue-600 flex items-center justify-center text-white flex-shrink-0">
-                <User size={32} />
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary-blue to-blue-600 flex items-center justify-center text-white flex-shrink-0">
+                <User size={24} className="sm:w-8 sm:h-8" />
               </div>
-              <div className="flex-1">
-                <h1 className="text-3xl font-semibold text-text-dark">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-semibold text-text-dark truncate">
                   {child.firstName} {child.lastName}
                 </h1>
-                <p className="text-text-muted">Student ID: {child.studentId}</p>
+                <p className="text-xs sm:text-sm text-text-muted truncate">Student ID: {child.studentId}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             {/* Average Grade */}
-            <div className="bg-white rounded-lg shadow-custom p-6 border-l-4 border-blue-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-text-muted text-sm font-medium">Average Grade</p>
-                  <p className="text-3xl font-bold text-primary-blue mt-2">{avgGrade}</p>
+            <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-blue-500">
+              <div className="flex items-start sm:items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-text-muted text-xs sm:text-sm font-medium">Average Grade</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-primary-blue mt-1 sm:mt-2">{avgGrade}</p>
                 </div>
-                <TrendingUp size={32} className="text-blue-500 opacity-20" />
+                <TrendingUp size={24} className="hidden sm:block text-blue-500 opacity-20 flex-shrink-0" />
               </div>
             </div>
 
             {/* Attendance */}
-            <div className="bg-white rounded-lg shadow-custom p-6 border-l-4 border-green-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-text-muted text-sm font-medium">Attendance Rate</p>
-                  <p className="text-3xl font-bold text-green-600 mt-2">{attendancePercentage}%</p>
+            <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-green-500">
+              <div className="flex items-start sm:items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-text-muted text-xs sm:text-sm font-medium">Attendance Rate</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600 mt-1 sm:mt-2">{attendancePercentage}%</p>
                 </div>
-                <CheckCircle size={32} className="text-green-500 opacity-20" />
+                <CheckCircle size={24} className="hidden sm:block text-green-500 opacity-20 flex-shrink-0" />
               </div>
             </div>
 
             {/* Fees Status */}
-            <div className="bg-white rounded-lg shadow-custom p-6 border-l-4 border-orange-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-text-muted text-sm font-medium">Fees Paid</p>
-                  <p className="text-3xl font-bold text-orange-600 mt-2">K{feesStatus.paid.toFixed(2)}</p>
+            <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-orange-500">
+              <div className="flex items-start sm:items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-text-muted text-xs sm:text-sm font-medium">Fees Paid</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-600 mt-1 sm:mt-2">K{feesStatus.paid.toFixed(2)}</p>
                 </div>
-                <DollarSign size={32} className="text-orange-500 opacity-20" />
+                <DollarSign size={24} className="hidden sm:block text-orange-500 opacity-20 flex-shrink-0" />
               </div>
             </div>
 
             {/* Pending Fees */}
-            <div className="bg-white rounded-lg shadow-custom p-6 border-l-4 border-red-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-text-muted text-sm font-medium">Fees Pending</p>
-                  <p className="text-3xl font-bold text-red-600 mt-2">K{feesStatus.pending.toFixed(2)}</p>
+            <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-red-500">
+              <div className="flex items-start sm:items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-text-muted text-xs sm:text-sm font-medium">Fees Pending</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-red-600 mt-1 sm:mt-2">K{feesStatus.pending.toFixed(2)}</p>
                 </div>
-                <AlertCircle size={32} className="text-red-500 opacity-20" />
+                <AlertCircle size={24} className="hidden sm:block text-red-500 opacity-20 flex-shrink-0" />
               </div>
             </div>
           </div>
@@ -340,7 +343,7 @@ function ChildDetail() {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-6 py-3 font-medium text-sm capitalize transition border-b-2 ${
+                    className={`px-3 sm:px-6 py-3 font-medium text-xs sm:text-sm capitalize transition border-b-2 whitespace-nowrap ${
                       activeTab === tab
                         ? 'text-primary-blue border-primary-blue'
                         : 'text-text-muted border-transparent hover:text-text-dark'
