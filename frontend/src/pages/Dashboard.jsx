@@ -347,36 +347,64 @@ function TeacherDashboard() {
         <p className="text-sm sm:text-base text-text-muted mt-1">Welcome back, {user?.name}</p>
       </div>
 
+      {/* Quick Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-4">
-            <School className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Classrooms</h3>
-              <p className="text-sm text-text-muted">View classes</p>
-            </div>
+        <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-blue-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Classes</p>
+            <School className="text-blue-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">Manage</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Teaching schedule</p>
         </Link>
 
-        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
-          <div className="flex items-center gap-4">
-            <Calendar className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Attendance</h3>
-              <p className="text-sm text-text-muted">Mark attendance</p>
-            </div>
+        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-green-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Attendance</p>
+            <Calendar className="text-green-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">Mark</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Student presence</p>
         </Link>
 
-        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-4">
-            <Award className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Results</h3>
-              <p className="text-sm text-text-muted">Manage results</p>
-            </div>
+        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-purple-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Results</p>
+            <Award className="text-purple-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">Manage</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Grades & scores</p>
         </Link>
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-lg sm:text-xl font-semibold text-text-dark mb-3 sm:mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <School className="text-blue-500" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">View Classes</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Class details</p>
+            </div>
+          </Link>
+
+          <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <Calendar className="text-green-500" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Mark Attendance</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Daily records</p>
+            </div>
+          </Link>
+
+          <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <Award className="text-purple-500" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Enter Results</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Student grades</p>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   )
@@ -393,57 +421,64 @@ function StudentDashboard() {
         <p className="text-sm sm:text-base text-text-muted mt-1">Welcome back, {user?.name}</p>
       </div>
 
+      {/* Quick Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <Link to="/subjects" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
-          <div className="flex items-center gap-4">
-            <FileText className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Subjects</h3>
-              <p className="text-sm text-text-muted">View subjects</p>
-            </div>
+        <Link to="/subjects" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-blue-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Subjects</p>
+            <FileText className="text-blue-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">Browse</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Course materials</p>
         </Link>
 
-
-        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
-          <div className="flex items-center gap-4">
-            <Calendar className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Timetable</h3>
-              <p className="text-sm text-text-muted">View schedule</p>
-            </div>
+        <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-green-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Attendance</p>
+            <Calendar className="text-green-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">Check</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Your records</p>
         </Link>
 
-        <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
-          <div className="flex items-center gap-4">
-            <Calendar className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Attendance</h3>
-              <p className="text-sm text-text-muted">View attendance</p>
-            </div>
+        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-purple-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Results</p>
+            <Award className="text-purple-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">View</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Your grades</p>
         </Link>
+      </div>
 
-        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
-          <div className="flex items-center gap-4">
-            <Award className="text-primary-blue" size={32} />
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-lg sm:text-xl font-semibold text-text-dark mb-3 sm:mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <Link to="/subjects" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <FileText className="text-blue-500" size={32} />
             <div>
-              <h3 className="font-semibold text-text-dark">Results</h3>
-              <p className="text-sm text-text-muted">View results</p>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Subjects</h3>
+              <p className="text-xs sm:text-sm text-text-muted">View all courses</p>
             </div>
-          </div>
-        </Link>
+          </Link>
 
-        <Link to="/issues" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
-          <div className="flex items-center gap-4">
-            <AlertCircle className="text-primary-blue" size={32} />
+          <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <Calendar className="text-blue-500" size={32} />
             <div>
-              <h3 className="font-semibold text-text-dark">Issues</h3>
-              <p className="text-sm text-text-muted">Report issues</p>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Timetable</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Class schedule</p>
             </div>
-          </div>
-        </Link>
+          </Link>
+
+          <Link to="/issues" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <AlertCircle className="text-orange-500" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Report Issue</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Need help?</p>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   )
@@ -656,35 +691,62 @@ function HeadTeacherDashboard (){
           </div>
         </Link>
 
-        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
-          <div className="flex items-center gap-4">
-            <Calendar className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Timetable</h3>
-              <p className="text-sm text-text-muted">View schedule</p>
-            </div>
+        <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-green-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Timetable</p>
+            <Calendar className="text-green-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">View</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Classes schedule</p>
         </Link>
 
-        <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-4">
-            <Calendar className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Attendance</h3>
-              <p className="text-sm text-text-muted">View attendance</p>
-            </div>
+        <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-orange-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Attendance</p>
+            <Calendar className="text-orange-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">Monitor</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Student presence</p>
         </Link>
 
-        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-4">
-            <Award className="text-primary-blue" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark">Results</h3>
-              <p className="text-sm text-text-muted">View results</p>
-            </div>
+        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-purple-500 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs sm:text-sm text-text-muted font-medium">Results</p>
+            <Award className="text-purple-500" size={24} />
           </div>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">Review</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Academic progress</p>
         </Link>
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-lg sm:text-xl font-semibold text-text-dark mb-3 sm:mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <Link to="/subjects" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <FileText className="text-blue-500" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Subjects</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Manage curriculum</p>
+            </div>
+          </Link>
+
+          <Link to="/attendance" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <Calendar className="text-orange-500" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Attendance</h3>
+              <p className="text-xs sm:text-sm text-text-muted">View records</p>
+            </div>
+          </Link>
+
+          <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
+            <Award className="text-purple-500" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Results</h3>
+              <p className="text-xs sm:text-sm text-text-muted">Review performance</p>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   )       
