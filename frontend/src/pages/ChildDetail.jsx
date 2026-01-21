@@ -286,7 +286,7 @@ function ChildDetail() {
 
         {/* Stats Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             {/* Average Grade */}
             <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-blue-500">
               <div className="flex items-start sm:items-center justify-between gap-2">
