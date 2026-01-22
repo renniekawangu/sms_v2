@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Search, Plus, Filter, Eye, Edit, Trash2 } from 'lucide-react'
-import { examResultsApi, examsApi, classroomApi } from '../services/api'
+import { BarChart3, Search, Plus, Filter, Eye, Edit, Trash2, Lock } from 'lucide-react'
+import { examResultsApi, examsApi, classroomApi, teacherApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
 import ResultsForm from '../components/ResultsForm'
 import ResultsViewer from '../components/ResultsViewer'
 import ClassroomGradingForm from '../components/ClassroomGradingForm'
 
 function Results() {
+  const { user } = useAuth()
   const [results, setResults] = useState([])
   const [exams, setExams] = useState([])
   const [classrooms, setClassrooms] = useState([])
@@ -16,6 +18,8 @@ function Results() {
   const [showViewer, setShowViewer] = useState(false)
   const [showClassroomGrading, setShowClassroomGrading] = useState(false)
   const [selectedResult, setSelectedResult] = useState(null)
+  const [isTeacher, setIsTeacher] = useState(false)
+  const [teacherClassrooms, setTeacherClassrooms] = useState([])
   
   // Filters
   const [filters, setFilters] = useState({
@@ -33,6 +37,16 @@ function Results() {
   }, [])
 
   useEffect(() => {
+    // If user is teacher and has classrooms, auto-set filter
+    if (isTeacher && teacherClassrooms.length === 1 && filters.classroom === 'all') {
+      setFilters(prev => ({
+        ...prev,
+        classroom: teacherClassrooms[0]._id
+      }))
+    }
+  }, [isTeacher, teacherClassrooms])
+
+  useEffect(() => {
     console.log('Filters changed:', filters)
     loadResults()
   }, [filters])
@@ -40,16 +54,33 @@ function Results() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [examsData, classroomsData, resultsData] = await Promise.all([
+      
+      // Check if user is teacher
+      if (user && user.role === 'teacher') {
+        setIsTeacher(true)
+        try {
+          const myClassrooms = await teacherApi.getMyClassrooms()
+          const classroomList = myClassrooms.data || myClassrooms || []
+          setTeacherClassrooms(classroomList)
+          
+          // Set classrooms based on teacher's classrooms
+          setClassrooms(classroomList)
+        } catch (err) {
+          console.error('Failed to load teacher classrooms:', err)
+        }
+      } else {
+        const classroomsData = await classroomApi.list()
+        setClassrooms(classroomsData.data || classroomsData || [])
+      }
+      
+      const [examsData, resultsData] = await Promise.all([
         examsApi.list(),
-        classroomApi.list(),
         examResultsApi.list({
           academicYear: filters.academicYear,
           term: filters.term
         })
       ])
       setExams(examsData || [])
-      setClassrooms(classroomsData.data || classroomsData || [])
       setResults(resultsData.results || [])
     } catch (err) {
       showError(err.message || 'Failed to load data')
@@ -223,21 +254,44 @@ function Results() {
             </select>
           </div>
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1">Classroom</label>
+            <div className="flex items-center gap-1 mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-text-dark flex-1">Classroom</label>
+              {isTeacher && teacherClassrooms.length === 1 && (
+                <div className="flex items-center gap-0.5 text-xs text-primary-blue">
+                  <Lock size={12} />
+                  <span>Locked</span>
+                </div>
+              )}
+            </div>
             <select
               value={filters.classroom}
               onChange={(e) => {
                 console.log('Classroom changed to:', e.target.value)
                 setFilters({ ...filters, classroom: e.target.value })
               }}
-              className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              disabled={isTeacher && teacherClassrooms.length === 1}
+              className={`w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue ${
+                isTeacher && teacherClassrooms.length === 1 ? 'bg-gray-50 cursor-not-allowed' : ''
+              }`}
             >
-              <option value="all">All Classrooms</option>
-              {classrooms.map(classroom => (
-                <option key={classroom._id} value={classroom._id}>
-                  Grade {classroom.grade} - {classroom.section}
-                </option>
-              ))}
+              {isTeacher ? (
+                <>
+                  {teacherClassrooms.map(classroom => (
+                    <option key={classroom._id} value={classroom._id}>
+                      Grade {classroom.grade} - {classroom.section}
+                    </option>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <option value="all">All Classrooms</option>
+                  {classrooms.map(classroom => (
+                    <option key={classroom._id} value={classroom._id}>
+                      Grade {classroom.grade} - {classroom.section}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
           <div>

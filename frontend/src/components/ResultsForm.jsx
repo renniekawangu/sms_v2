@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Trash2 } from 'lucide-react'
-import { examResultsApi, classroomsApi, studentsApi } from '../services/api'
+import { X, Plus, Trash2, Lock } from 'lucide-react'
+import { examResultsApi, classroomsApi, studentsApi, teacherApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
 
 function ResultsForm({ result, exams, onClose }) {
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     exam: '',
     student: '',
@@ -18,6 +20,8 @@ function ResultsForm({ result, exams, onClose }) {
   const [classrooms, setClassrooms] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(false)
+  const [isTeacher, setIsTeacher] = useState(false)
+  const [teacherClassrooms, setTeacherClassrooms] = useState([])
   const { success, error: showError } = useToast()
 
   useEffect(() => {
@@ -45,6 +49,26 @@ function ResultsForm({ result, exams, onClose }) {
       ])
       setClassrooms(classroomsData || [])
       setStudents(studentsData || [])
+
+      // If user is a teacher, fetch their classrooms
+      if (user && user.role === 'teacher') {
+        setIsTeacher(true)
+        try {
+          const myClassrooms = await teacherApi.getMyClassrooms()
+          const classroomList = myClassrooms.data || myClassrooms || []
+          setTeacherClassrooms(classroomList)
+
+          // Auto-set classroom if teacher has exactly one classroom
+          if (classroomList.length === 1 && !result) {
+            setFormData(prev => ({
+              ...prev,
+              classroom: classroomList[0]._id
+            }))
+          }
+        } catch (err) {
+          console.error('Failed to load teacher classrooms:', err)
+        }
+      }
     } catch (err) {
       showError('Failed to load data')
     }
@@ -178,19 +202,38 @@ function ResultsForm({ result, exams, onClose }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-dark mb-2">Classroom *</label>
+              <div className="flex items-center gap-2">
+                <label className="block text-sm font-medium text-text-dark mb-2 flex-1">Classroom *</label>
+                {isTeacher && teacherClassrooms.length === 1 && (
+                  <div className="flex items-center gap-1 text-xs text-primary-blue mb-2">
+                    <Lock size={14} />
+                    <span>Locked</span>
+                  </div>
+                )}
+              </div>
               <select
                 value={formData.classroom}
                 onChange={(e) => setFormData({ ...formData, classroom: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                disabled={isTeacher && teacherClassrooms.length === 1}
+                className={`w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue ${
+                  isTeacher && teacherClassrooms.length === 1 ? 'bg-gray-50 cursor-not-allowed' : ''
+                }`}
                 required
               >
                 <option value="">Select Classroom</option>
-                {classrooms.map(classroom => (
-                  <option key={classroom._id} value={classroom._id}>
-                    Grade {classroom.grade} - {classroom.section}
-                  </option>
-                ))}
+                {isTeacher ? (
+                  teacherClassrooms.map(classroom => (
+                    <option key={classroom._id} value={classroom._id}>
+                      Grade {classroom.grade} - {classroom.section}
+                    </option>
+                  ))
+                ) : (
+                  classrooms.map(classroom => (
+                    <option key={classroom._id} value={classroom._id}>
+                      Grade {classroom.grade} - {classroom.section}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 

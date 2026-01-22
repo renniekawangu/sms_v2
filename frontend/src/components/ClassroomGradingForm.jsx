@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { X, Plus, Trash2, AlertCircle } from 'lucide-react'
+import { X, Plus, Trash2, AlertCircle, Lock } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
-import { examResultsApi, classroomApi, examApi, subjectsApi } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
+import { examResultsApi, classroomApi, examApi, subjectsApi, teacherApi } from '../services/api'
 
 export default function ClassroomGradingForm({ onClose, onSuccess }) {
   const { showToast } = useToast()
+  const { user } = useAuth()
   
   // Form state
   const [classroom, setClassroom] = useState('')
@@ -18,6 +20,8 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [selectedClassroomData, setSelectedClassroomData] = useState(null)
+  const [isTeacher, setIsTeacher] = useState(false)
+  const [teacherClassrooms, setTeacherClassrooms] = useState([])
 
   // Load initial data
   useEffect(() => {
@@ -30,6 +34,23 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
         ])
         setClassrooms(classroomsRes.data || classroomsRes)
         setExams(examsRes.data || examsRes)
+
+        // If user is a teacher, fetch their classrooms
+        if (user && user.role === 'teacher') {
+          setIsTeacher(true)
+          try {
+            const myClassrooms = await teacherApi.getMyClassrooms()
+            const classroomList = myClassrooms.data || myClassrooms || []
+            setTeacherClassrooms(classroomList)
+
+            // Auto-set classroom if teacher has exactly one classroom
+            if (classroomList.length === 1) {
+              setClassroom(classroomList[0]._id)
+            }
+          } catch (err) {
+            console.error('Failed to load teacher classrooms:', err)
+          }
+        }
       } catch (err) {
         showToast('Failed to load classrooms and exams', 'error')
         console.error(err)
@@ -222,21 +243,39 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Classroom Select */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Classroom *
-                </label>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 flex-1">
+                    Classroom *
+                  </label>
+                  {isTeacher && teacherClassrooms.length === 1 && (
+                    <div className="flex items-center gap-1 text-xs text-primary-blue">
+                      <Lock size={14} />
+                      <span>Locked</span>
+                    </div>
+                  )}
+                </div>
                 <select
                   value={classroom}
                   onChange={(e) => setClassroom(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                  disabled={loading}
+                  disabled={loading || (isTeacher && teacherClassrooms.length === 1)}
+                  className={`w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent ${
+                    isTeacher && teacherClassrooms.length === 1 ? 'bg-gray-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   <option value="">Select classroom...</option>
-                  {classrooms.map(c => (
-                    <option key={c._id} value={c._id}>
-                      Grade {c.grade} - {c.section} ({c.students?.length || 0} students)
-                    </option>
-                  ))}
+                  {isTeacher ? (
+                    teacherClassrooms.map(c => (
+                      <option key={c._id} value={c._id}>
+                        Grade {c.grade} - {c.section} ({c.students?.length || 0} students)
+                      </option>
+                    ))
+                  ) : (
+                    classrooms.map(c => (
+                      <option key={c._id} value={c._id}>
+                        Grade {c.grade} - {c.section} ({c.students?.length || 0} students)
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
