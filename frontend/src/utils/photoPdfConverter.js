@@ -36,9 +36,12 @@ export const convertImageToPdf = async (imageFile) => {
             img.height
           );
 
-          // Convert to blob and resolve
+          // Convert to blob and resolve - make sure it's a proper PDF blob
           const blob = pdf.output('blob');
-          resolve(blob);
+          
+          // Create a proper PDF blob with correct MIME type
+          const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+          resolve(pdfBlob);
         };
 
         img.onerror = () => {

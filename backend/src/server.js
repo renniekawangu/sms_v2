@@ -104,6 +104,25 @@ app.use(sanitizeInput);
 // Structured access logging
 app.use(accessLogger);
 
+// Static file serving for uploads (with proper Content-Type headers)
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads'), {
+  setHeaders: (res, filePath, stat) => {
+    // Set appropriate Content-Type for different file types
+    if (filePath.endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename=' + path.basename(filePath));
+    } else if (filePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filePath.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (filePath.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/webp');
+    }
+  }
+}));
+
 // API Route Imports
 const authApiRoutes = require('./routes/auth-api');
 const apiRoutes = require('./routes/api');
