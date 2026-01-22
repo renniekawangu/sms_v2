@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { School, Search, Plus, Edit, Trash2, AlertCircle, Eye } from 'lucide-react'
-import { classroomsApi, adminApi, timetableApi } from '../services/api'
+import { classroomsApi, adminApi, timetableApi, teachersApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import ClassroomForm from '../components/ClassroomForm'
@@ -27,17 +27,18 @@ function Classrooms() {
     try {
       setLoading(true)
       setError(null)
-      const [classroomsData, staffResp, studentsResp, coursesData] = await Promise.all([
+      const [classroomsData, teachersData, studentsResp, coursesData] = await Promise.all([
         classroomsApi.list(),
-        adminApi.listStaff({ role: 'teacher', limit: 1000 }),
+        teachersApi.list(),
         adminApi.listStudents({ limit: 1000 }),
         timetableApi.courses.list()
       ])
       setClassrooms(classroomsData)
-      // Normalize teachers to {_id, name}
-      const teacherList = (staffResp.staff || []).map(t => ({
+      // Normalize teachers to {_id, name} - teachersApi returns both Staff and User teachers
+      const teacherList = (teachersData || []).map(t => ({
         _id: t._id,
-        name: [t.firstName, t.lastName].filter(Boolean).join(' ').trim() || 'Teacher'
+        name: t.name || [t.firstName, t.lastName].filter(Boolean).join(' ').trim() || 'Teacher',
+        type: t.type || 'staff'  // type indicator: 'staff' or 'user'
       }))
       setTeachers(teacherList)
       // Normalize students to {_id, name}

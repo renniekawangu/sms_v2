@@ -7,6 +7,7 @@ const router = express.Router();
 const { requireAuth, requireRole, requirePermission } = require('../middleware/rbac');
 const { ROLES, PERMISSIONS } = require('../config/rbac');
 const { Teacher } = require('../models/teacher');
+const { Staff } = require('../models/staff');
 const { Classroom } = require('../models/classroom');
 const Grade = require('../models/grades');
 const { Attendance, markSubjectAttendance } = require('../models/attendance');
@@ -16,23 +17,57 @@ const logger = require('../utils/logger');
 // Get teacher dashboard
 router.get('/dashboard', requireAuth, requireRole(ROLES.TEACHER), async (req, res, next) => {
   try {
-    const teacher = await Teacher.findOne({ userId: req.user.id })
-      .populate('classroomIds')
-      .populate('subjectIds');
+    const { User } = require('../models/user');
     
-    if (!teacher) {
-      return res.status(404).json({ message: 'Teacher profile not found' });
+    // Get user info to find teacher record
+    const user = await User.findById(req.user.id)
+      .select('name email teacherId role')
+      .lean();
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    const classCount = teacher.classroomIds?.length || 0;
-    const subjectCount = teacher.subjectIds?.length || 0;
+    let staff;
+    let staffClassrooms = [];
+    
+    if (user.teacherId) {
+      // Look up by teacherId from User
+      staff = await Staff.findById(user.teacherId)
+        .populate('classroomIds', 'name grade section')
+        .lean();
+      staffClassrooms = staff?.classroomIds || [];
+    } else {
+      // Fallback: look up by userId
+      staff = await Staff.findOne({ userId: req.user.id })
+        .populate('classroomIds', 'name grade section')
+        .lean();
+      staffClassrooms = staff?.classroomIds || [];
+    }
+
+    // Also check if user is assigned directly via classroom.teacher_id (for User teachers)
+    const directAssignedClassrooms = await Classroom.find({ teacher_id: req.user.id })
+      .select('name grade section')
+      .lean();
+    
+    // Combine both lists (avoid duplicates)
+    const staffClassroomIds = new Set(staffClassrooms.map(c => c._id?.toString()));
+    const directClassrooms = directAssignedClassrooms.filter(c => !staffClassroomIds.has(c._id?.toString()));
+    
+    const allClassrooms = [...staffClassrooms, ...directClassrooms];
+    const classroomCount = allClassrooms.length;
 
     res.json({
       success: true,
       data: {
-        teacher,
-        classroomCount: classCount,
-        subjectCount: subjectCount
+        teacher: {
+          name: user.name || staff?.firstName + ' ' + staff?.lastName,
+          email: user.email || staff?.email,
+          role: user.role
+        },
+        classroomCount,
+        classrooms: allClassrooms,
+        staffId: staff?._id || null
       }
     });
   } catch (err) {
@@ -45,19 +80,44 @@ router.get('/classrooms', requireAuth, requireRole(ROLES.TEACHER, ROLES.ADMIN, R
   try {
     // Admin and Head Teacher can see all classrooms
     if (req.user.role === 'admin' || req.user.role === 'head-teacher') {
-      const classrooms = await Classroom.find().lean();
+      const classrooms = await Classroom.find()
+        .populate('teacher_id', 'firstName lastName email')
+        .lean();
       return res.json({ success: true, data: classrooms });
     }
 
     // Teacher sees only their assigned classrooms
-    const teacher = await Teacher.findOne({ userId: req.user.id })
-      .populate('classroomIds');
+    // First, get the user to check if they have a teacherId reference
+    const { User } = require('../models/user');
+    const user = await User.findById(req.user.id).select('teacherId').lean();
     
-    if (!teacher) {
-      return res.status(404).json({ message: 'Teacher profile not found' });
+    let staff;
+    let staffClassrooms = [];
+    
+    if (user?.teacherId) {
+      // Look up by teacherId from User
+      staff = await Staff.findById(user.teacherId)
+        .populate('classroomIds', 'name grade section capacity students');
+      staffClassrooms = staff?.classroomIds || [];
+    } else {
+      // Fallback: look up by userId
+      staff = await Staff.findOne({ userId: req.user.id })
+        .populate('classroomIds', 'name grade section capacity students');
+      staffClassrooms = staff?.classroomIds || [];
     }
-
-    res.json({ success: true, data: teacher.classroomIds || [] });
+    
+    // Also check if teacher is assigned directly via classroom.teacher_id (for User teachers)
+    const directAssignedClassrooms = await Classroom.find({ teacher_id: req.user.id })
+      .select('name grade section capacity students')
+      .lean();
+    
+    // Combine both lists (avoid duplicates)
+    const staffClassroomIds = new Set(staffClassrooms.map(c => c._id?.toString()));
+    const directClassrooms = directAssignedClassrooms.filter(c => !staffClassroomIds.has(c._id?.toString()));
+    
+    const allClassrooms = [...staffClassrooms, ...directClassrooms];
+    
+    res.json({ success: true, data: allClassrooms });
   } catch (err) {
     next(err);
   }

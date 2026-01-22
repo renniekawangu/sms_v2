@@ -100,6 +100,19 @@ const toClassroomDto = (classroom, teacher, students) => ({
   students: students || []
 });
 
+const toClassroomDtoWithTimetable = (classroom, teacher, students, timetable) => ({
+  _id: classroom._id,
+  grade: classroom.grade,
+  section: classroom.section,
+  teacher_id: classroom.teacher_id || null,
+  students: students || [],
+  timetable: timetable ? {
+    schedule: timetable.timetable || [],
+    academicYear: timetable.academicYear || '',
+    term: timetable.term || ''
+  } : null
+});
+
 const toPaymentDto = (payment) => ({
   payment_id: payment.paymentId,
   fee_id: payment.feeId ? payment.feeId.toString() : null,
@@ -216,8 +229,37 @@ router.delete('/students/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_
 
 // ============= Teachers API =============
 router.get('/teachers', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (_req, res) => {
-  const teachers = await Staff.find({}).lean();
-  res.json(teachers.map(t => toTeacherDto(t, t.teacherId || t._id)));
+  // Get Staff teachers
+  const staffTeachers = await Staff.find({}).lean();
+  const staffDtos = staffTeachers.map(t => ({
+    _id: t._id,
+    name: `${t.firstName} ${t.lastName}`,
+    email: t.email,
+    phone: t.phone,
+    role: 'teacher',
+    type: 'staff',
+    ...t
+  }));
+  
+  // Get User teachers (role=teacher) who don't have a Staff record
+  const { User } = require('../models/user');
+  const staffUserIds = new Set(staffTeachers.map(t => t.userId?.toString()).filter(Boolean));
+  const userTeachers = await User.find({ role: 'teacher' })
+    .select('_id name email phone date_of_join')
+    .lean();
+  const userTeacherDtos = userTeachers
+    .filter(u => !staffUserIds.has(u._id.toString()))
+    .map(u => ({
+      _id: u._id,
+      name: u.name || 'Teacher',
+      email: u.email,
+      phone: u.phone,
+      role: 'teacher',
+      type: 'user',
+      userId: u._id
+    }));
+  
+  res.json([...staffDtos, ...userTeacherDtos]);
 }));
 
 router.get('/teachers/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
@@ -299,14 +341,21 @@ router.get('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACH
     const teacherIds = classrooms
       .map(c => c.teacher_id)
       .filter(isValidObjectId);
-    const teachers = teacherIds.length > 0 ? await Staff.find({ _id: { $in: teacherIds } }).lean() : [];
+    
+    // Fetch both Staff and User teachers
+    const staffTeachers = teacherIds.length > 0 ? await Staff.find({ _id: { $in: teacherIds } }).lean() : [];
+    const { User } = require('../models/user');
+    const userTeachers = teacherIds.length > 0 ? await User.find({ _id: { $in: teacherIds }, role: 'teacher' }).select('_id firstName lastName email phone').lean() : [];
     
     const allStudentIds = classrooms
       .flatMap(c => c.students || [])
       .filter(isValidObjectId);
     const students = allStudentIds.length > 0 ? await Student.find({ _id: { $in: allStudentIds } }).lean() : [];
 
-    const teacherMap = new Map(teachers.map(t => [t._id.toString(), t]));
+    const teacherMap = new Map([
+      ...staffTeachers.map(t => [t._id.toString(), t]),
+      ...userTeachers.map(t => [t._id.toString(), t])
+    ]);
     const studentMap = new Map(students.map(s => [s._id.toString(), s]));
 
     const response = classrooms.map(c => {
@@ -335,7 +384,14 @@ router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
 
   let teacher = null;
   if (classroom.teacher_id) {
-    teacher = await Teacher.findById(classroom.teacher_id).lean();
+    teacher = await Staff.findById(classroom.teacher_id).lean();
+    if (!teacher) {
+      const { User } = require('../models/user');
+      const userTeacher = await User.findById(classroom.teacher_id).select('_id firstName lastName email phone').lean();
+      if (userTeacher) {
+        teacher = userTeacher;
+      }
+    }
   }
   
   const mongoose = require('mongoose');
@@ -349,7 +405,13 @@ router.get('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
   const students = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
   console.log('[GET /classrooms/:id] Found students:', students);
 
-  res.json(toClassroomDto(classroom.toObject ? classroom.toObject() : classroom, teacher, students));
+  // Fetch timetable for this classroom
+  const { TimetableSchedule } = require('../models/timetable-container');
+  const timetable = await TimetableSchedule.findOne({ classroomId: classroom._id })
+    .select('timetable academicYear term')
+    .lean();
+
+  res.json(toClassroomDtoWithTimetable(classroom.toObject ? classroom.toObject() : classroom, teacher, students, timetable));
 }));
 
 router.post('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
@@ -358,9 +420,20 @@ router.post('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEAC
   let teacherRef = null;
   if (teacher_id) {
     if (!isValidObjectId(teacher_id)) return res.status(400).json({ error: 'Invalid teacher ID' });
-    const t = await Staff.findById(teacher_id);
-    if (!t) return res.status(400).json({ error: 'Teacher not found' });
-    teacherRef = t._id;
+    // Check if it's a Staff record
+    const staff = await Staff.findById(teacher_id);
+    if (staff) {
+      teacherRef = staff._id;
+    } else {
+      // Check if it's a User with role=teacher
+      const { User } = require('../models/user');
+      const user = await User.findById(teacher_id).select('role _id').lean();
+      if (user && user.role === 'teacher') {
+        teacherRef = user._id;
+      } else {
+        return res.status(400).json({ error: 'Teacher not found or invalid role' });
+      }
+    }
   }
 
   const validStudentIds = students.filter(isValidObjectId);
@@ -376,7 +449,19 @@ router.post('/classrooms', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEAC
   const finalStudents = validStudentIds.length > 0 
     ? await Student.find({ _id: { $in: validStudentIds } }).lean() 
     : [];
-  const teacher = teacherRef ? await Staff.findById(teacherRef).lean() : null;
+  
+  // Fetch teacher - could be Staff or User with role='teacher'
+  let teacher = null;
+  if (teacherRef) {
+    teacher = await Staff.findById(teacherRef).lean();
+    if (!teacher) {
+      const { User } = require('../models/user');
+      const userTeacher = await User.findById(teacherRef).select('_id firstName lastName email phone').lean();
+      if (userTeacher) {
+        teacher = userTeacher;
+      }
+    }
+  }
   
   res.status(201).json(toClassroomDto(classroom.toObject(), teacher, finalStudents));
 }));
@@ -421,9 +506,20 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
     if (teacher_id === null) {
       finalTeacherId = null;
     } else if (isValidObjectId(teacher_id)) {
-      const t = await Staff.findById(teacher_id);
-      if (!t) return res.status(400).json({ error: 'Teacher not found' });
-      finalTeacherId = t._id;
+      // Check if it's a Staff record
+      const staff = await Staff.findById(teacher_id);
+      if (staff) {
+        finalTeacherId = staff._id;
+      } else {
+        // Check if it's a User with role=teacher
+        const { User } = require('../models/user');
+        const user = await User.findById(teacher_id).select('role _id').lean();
+        if (user && user.role === 'teacher') {
+          finalTeacherId = user._id;
+        } else {
+          return res.status(400).json({ error: 'Teacher not found or invalid role' });
+        }
+      }
     } else {
       return res.status(400).json({ error: 'Invalid teacher ID' });
     }
@@ -455,7 +551,19 @@ router.put('/classrooms/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_T
     { new: true, runValidators: true }
   ).lean();
 
-  const teacher = classroom.teacher_id ? await Staff.findById(classroom.teacher_id).lean() : null;
+  // Fetch teacher - could be Staff or User with role='teacher'
+  let teacher = null;
+  if (classroom.teacher_id) {
+    teacher = await Staff.findById(classroom.teacher_id).lean();
+    if (!teacher) {
+      const { User } = require('../models/user');
+      const userTeacher = await User.findById(classroom.teacher_id).select('_id firstName lastName email phone').lean();
+      if (userTeacher) {
+        teacher = userTeacher;
+      }
+    }
+  }
+  
   const studentIds = classroom.students || [];
   const finalResult = studentIds.length > 0 ? await Student.find({ _id: { $in: studentIds } }).lean() : [];
 

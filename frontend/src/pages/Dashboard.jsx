@@ -3,7 +3,7 @@ import { useSettings } from '../contexts/SettingsContext'
 import { Link } from 'react-router-dom'
 import { GraduationCap, User, Users, School, FileText, Award, DollarSign, Calendar, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { studentsApi, teachersApi, classroomsApi, examsApi, feesApi, expensesApi, issuesApi, parentsApi } from '../services/api'
+import { studentsApi, teachersApi, classroomsApi, examsApi, feesApi, expensesApi, issuesApi, parentsApi, teacherApi } from '../services/api'
 
 // Admin Dashboard
 function AdminDashboard() {
@@ -339,7 +339,35 @@ function ParentDashboard() {
 // Teacher Dashboard
 function TeacherDashboard() {
   const { user } = useAuth()
-  
+  const [classrooms, setClassrooms] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadClassrooms()
+  }, [])
+
+  const loadClassrooms = async () => {
+    try {
+      const data = await teacherApi.getMyClassrooms()
+      setClassrooms(data.data || [])
+    } catch (error) {
+      console.error('Error loading classrooms:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-text-muted">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
       <div>
@@ -349,14 +377,14 @@ function TeacherDashboard() {
 
       {/* Quick Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-blue-500 hover:shadow-lg transition-shadow">
+        <div className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-blue-500">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs sm:text-sm text-text-muted font-medium">Classes</p>
+            <p className="text-xs sm:text-sm text-text-muted font-medium">My Classes</p>
             <School className="text-blue-500" size={24} />
           </div>
-          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">Manage</p>
-          <p className="text-xs sm:text-sm text-text-muted mt-2">Teaching schedule</p>
-        </Link>
+          <p className="text-2xl sm:text-3xl font-semibold text-text-dark">{classrooms.length}</p>
+          <p className="text-xs sm:text-sm text-text-muted mt-2">Classrooms assigned</p>
+        </div>
 
         <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 border-t-4 border-t-green-500 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between mb-4">
@@ -377,18 +405,60 @@ function TeacherDashboard() {
         </Link>
       </div>
 
+      {/* My Classrooms Section */}
+      <div>
+        <h2 className="text-lg sm:text-xl font-semibold text-text-dark mb-3 sm:mb-4">My Classrooms</h2>
+        {classrooms && classrooms.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+            {classrooms.map((classroom) => (
+              <div key={classroom._id} className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-xs sm:text-sm text-text-muted font-medium">Class</p>
+                    <p className="text-lg sm:text-xl font-semibold text-text-dark">{classroom.name}</p>
+                  </div>
+                  <div className="bg-blue-100 rounded-lg p-2">
+                    <School className="text-blue-600" size={20} />
+                  </div>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-xs sm:text-sm">
+                    <span className="text-text-muted">Grade:</span>
+                    <span className="font-medium text-text-dark">{classroom.grade}</span>
+                  </div>
+                  <div className="flex justify-between text-xs sm:text-sm">
+                    <span className="text-text-muted">Section:</span>
+                    <span className="font-medium text-text-dark">{classroom.section}</span>
+                  </div>
+                  <div className="flex justify-between text-xs sm:text-sm">
+                    <span className="text-text-muted">Students:</span>
+                    <span className="font-medium text-blue-600">{classroom.students?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-xs sm:text-sm">
+                    <span className="text-text-muted">Capacity:</span>
+                    <span className="font-medium text-text-dark">{classroom.capacity}</span>
+                  </div>
+                </div>
+                <Link
+                  to={`/classrooms/${classroom._id}`}
+                  className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs sm:text-sm font-medium text-center inline-block"
+                >
+                  View Details
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-text-muted text-sm">No classrooms assigned yet</p>
+          </div>
+        )}
+      </div>
+
       {/* Quick Actions */}
       <div>
         <h2 className="text-lg sm:text-xl font-semibold text-text-dark mb-3 sm:mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-          <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
-            <School className="text-blue-500" size={32} />
-            <div>
-              <h3 className="font-semibold text-text-dark text-sm sm:text-base">View Classes</h3>
-              <p className="text-xs sm:text-sm text-text-muted">Class details</p>
-            </div>
-          </Link>
-
           <Link to="/timetable" className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 hover:shadow-lg transition-shadow flex items-center gap-4">
             <Calendar className="text-green-500" size={32} />
             <div>
@@ -404,6 +474,14 @@ function TeacherDashboard() {
               <p className="text-xs sm:text-sm text-text-muted">Student grades</p>
             </div>
           </Link>
+
+          <div className="bg-card-white rounded-custom shadow-custom p-4 sm:p-6 flex items-center gap-4">
+            <School className="text-blue-500" size={32} />
+            <div>
+              <h3 className="font-semibold text-text-dark text-sm sm:text-base">Classes</h3>
+              <p className="text-xs sm:text-sm text-blue-600">{classrooms.length} assigned</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

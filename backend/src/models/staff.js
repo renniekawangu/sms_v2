@@ -9,6 +9,7 @@ const staffSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   address: { type: String, required: true },
   role: { type: String, required: true },
+  classroomIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Classroom' }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
