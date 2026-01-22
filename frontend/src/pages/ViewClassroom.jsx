@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { classroomsApi, teachersApi } from '../services/api';
-import { ArrowLeft, School, Users, User, AlertCircle, Mail } from 'lucide-react';
+import { ArrowLeft, School, Users, User, AlertCircle, Mail, Calendar, Clock } from 'lucide-react';
 import Homework from '../components/Homework';
 
 function ViewClassroom() {
@@ -145,6 +145,65 @@ function ViewClassroom() {
             <p className="text-text-dark font-bold text-3xl">{studentCount}</p>
           </div>
         </div>
+
+        {/* Timetable Section */}
+        {classroom.timetable && classroom.timetable.schedule && classroom.timetable.schedule.length > 0 ? (
+          <div className="bg-card-white rounded-lg shadow-custom p-6 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Calendar className="text-purple-600" size={24} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-text-dark">Class Timetable</h2>
+                <p className="text-text-muted text-xs">
+                  {classroom.timetable.academicYear && `Year: ${classroom.timetable.academicYear}`}
+                  {classroom.timetable.term && ` | Term: ${classroom.timetable.term}`}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {classroom.timetable.schedule.map((day, dayIdx) => (
+                <div key={dayIdx} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-purple-50 px-4 py-3 font-semibold text-text-dark flex items-center gap-2">
+                    <Calendar size={16} className="text-purple-600" />
+                    {day.day}
+                  </div>
+                  <div className="divide-y divide-gray-200">
+                    {day.periods && day.periods.length > 0 ? (
+                      day.periods.map((period, periodIdx) => (
+                        <div key={periodIdx} className="px-4 py-3 bg-white hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3 flex-1">
+                              <div className="flex-shrink-0 mt-1">
+                                <span className="inline-flex items-center justify-center w-8 h-8 bg-purple-100 rounded-full text-xs font-semibold text-purple-700">
+                                  P{period.period}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-text-dark">{period.subject}</p>
+                                <p className="text-xs text-text-muted mt-1">
+                                  {period.instructorId ? 'Instructor: ' + (typeof period.instructorId === 'object' ? period.instructorId.name || period.instructorId._id : period.instructorId) : 'Instructor: TBA'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 text-text-muted text-sm flex-shrink-0">
+                              <Clock size={14} />
+                              {period.time}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-center text-text-muted text-sm">
+                        No classes scheduled
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {/* Homework Section */}
         <div className="mb-6">
