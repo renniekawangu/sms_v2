@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { classroomApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, School, Users, User, AlertCircle, Mail, Calendar, Clock } from 'lucide-react';
 import Homework from '../components/Homework';
+import ChildHomework from '../components/ChildHomework';
 
 function ViewClassroom() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [classroom, setClassroom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -194,7 +197,21 @@ function ViewClassroom() {
 
         {/* Homework Section */}
         <div className="mb-6">
-          <Homework classroomId={id} />
+          {/* Teacher View: Homework Management */}
+          {user?.role === 'teacher' && (
+            <Homework classroomId={id} />
+          )}
+          
+          {/* Student/Parent View: Homework Submission */}
+          {(user?.role === 'student' || user?.role === 'parent') && (
+            <div className="bg-card-white rounded-lg shadow-custom p-3 sm:p-4 lg:p-6">
+              <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-text-dark mb-3 sm:mb-4 flex items-center gap-2">
+                <School size={18} className="text-primary-blue sm:size-5" />
+                📚 Homework Assignments
+              </h2>
+              <ChildHomework studentId={user?.id} />
+            </div>
+          )}
         </div>
 
         {/* Students List Card */}
