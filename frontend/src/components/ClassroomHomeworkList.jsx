@@ -137,14 +137,14 @@ function ClassroomHomeworkList({ classroomId }) {
                   <p className="text-sm text-text-muted mb-3">{hw.description}</p>
                   
                   {/* Show teacher materials */}
-                  {hw.materials && hw.materials.length > 0 && (
+                  {hw.attachments && hw.attachments.length > 0 && (
                     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <h5 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
                         <FileText size={16} />
                         📚 Learning Materials
                       </h5>
                       <div className="space-y-2">
-                        {hw.materials.map((material, idx) => (
+                        {hw.attachments.map((material, idx) => (
                           <div key={idx} className="flex items-center justify-between bg-white p-2 rounded border border-blue-100">
                             <a
                               href={material.url || material.path}

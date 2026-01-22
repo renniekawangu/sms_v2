@@ -3,7 +3,7 @@ import { parentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useSettings } from '../contexts/SettingsContext'
 import { useAuth } from '../contexts/AuthContext'
-import { BookOpen, Calendar, User } from 'lucide-react'
+import { BookOpen, Calendar, User, Download, FileText } from 'lucide-react'
 import ErrorBoundary from '../components/ErrorBoundary'
 import HomeworkSubmission from './HomeworkSubmission'
 
@@ -118,6 +118,40 @@ function ChildHomework({ studentId }) {
               {expandedId === hw._id && (
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <p className="text-sm text-text-muted mb-3">{hw.description}</p>
+                  
+                  {/* Show teacher materials */}
+                  {hw.attachments && hw.attachments.length > 0 && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h5 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
+                        <FileText size={16} />
+                        📚 Learning Materials
+                      </h5>
+                      <div className="space-y-2">
+                        {hw.attachments.map((material, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-white p-2 rounded border border-blue-100">
+                            <a
+                              href={material.url || material.path}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary-blue hover:underline truncate flex-1 flex items-center gap-2"
+                              title={material.name || material.filename}
+                            >
+                              <FileText size={14} />
+                              {material.name || material.filename}
+                            </a>
+                            <a
+                              href={material.url || material.path}
+                              download
+                              className="ml-2 p-1 text-blue-600 hover:bg-blue-100 rounded transition"
+                              title="Download"
+                            >
+                              <Download size={16} />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Show submission form for students/parents/teachers who haven't submitted */}
                   {!isSubmitted && showingSubmissionId === hw._id && (

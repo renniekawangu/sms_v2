@@ -426,14 +426,14 @@ router.post(
       academicYear: currentYear,
       term: term || 'General',
       createdBy: req.user.id,
-      materials: [] // Will populate with file data
+      attachments: [] // Will populate with file data
     });
 
     // Process uploaded files if any
     if (req.files && req.files.length > 0) {
       try {
         const uploadedFiles = await processUploadedFiles(req.files, 'homework/materials');
-        homework.materials = uploadedFiles;
+        homework.attachments = uploadedFiles;
       } catch (uploadErr) {
         console.error('File upload error:', uploadErr);
         return res.status(400).json({ error: 'Failed to upload files: ' + uploadErr.message });
