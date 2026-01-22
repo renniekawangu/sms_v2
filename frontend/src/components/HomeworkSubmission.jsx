@@ -165,7 +165,10 @@ function HomeworkSubmission({ homeworkId, classroomId, onSubmitSuccess }) {
 
       {/* File Upload Area */}
       <div
-        onClick={() => fileInputRef.current?.click()}
+        onClick={(e) => {
+          e.stopPropagation()
+          fileInputRef.current?.click()
+        }}
         className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 text-center cursor-pointer hover:border-primary-blue hover:bg-blue-50 transition-all mb-4"
       >
         <input
@@ -310,7 +313,11 @@ function HomeworkSubmission({ homeworkId, classroomId, onSubmitSuccess }) {
 
       {/* Submit Button */}
       <button
-        onClick={handleSubmit}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          handleSubmit()
+        }}
         disabled={submitting || (selectedFiles.length === 0 && !convertedPdf) || isConverting}
         className="w-full px-4 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-sm sm:text-base flex items-center justify-center gap-2"
       >

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { parentsApi } from '../services/api'
+import { parentsApi, homeworkApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useSettings } from '../contexts/SettingsContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -39,6 +39,69 @@ function ChildHomework({ studentId }) {
       showError(err.message || 'Failed to load homework')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDownloadAttachment = async (homeworkId, attachment, e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    try {
+      // Get attachment ID - could be _id or filename
+      const attachmentId = attachment._id || attachment.filename || attachment.url?.split('/').pop()
+      
+      if (!attachmentId) {
+        showError('Unable to identify attachment')
+        return
+      }
+
+      const blob = await parentsApi.downloadHomeworkAttachment(homeworkId, attachmentId)
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = attachment.name || attachment.filename || 'homework-material.pdf'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      success('File downloaded successfully')
+    } catch (err) {
+      showError(err.message || 'Failed to download file')
+    }
+  }
+
+  const handleDownloadSubmissionAttachment = async (homeworkId, studentId, attachment, e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    try {
+      // Get attachment ID - could be _id or filename
+      const attachmentId = attachment._id || attachment.filename || attachment.url?.split('/').pop()
+      
+      if (!attachmentId) {
+        showError('Unable to identify attachment')
+        return
+      }
+
+      // Use homeworkApi for submission attachments
+      const blob = await homeworkApi.downloadSubmissionAttachment(homeworkId, studentId, attachmentId)
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = attachment.name || attachment.filename || 'submission.pdf'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      success('File downloaded successfully')
+    } catch (err) {
+      showError(err.message || 'Failed to download file')
     }
   }
 
@@ -127,35 +190,39 @@ function ChildHomework({ studentId }) {
                         📚 Learning Materials
                       </h5>
                       <div className="space-y-2">
-                        {hw.attachments.map((material, idx) => (
-                          <div key={idx} className="flex items-center justify-between bg-white p-2 rounded border border-blue-100">
-                            <a
-                              href={material.url || material.path}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary-blue hover:underline truncate flex-1 flex items-center gap-2"
-                              title={material.name || material.filename}
-                            >
-                              <FileText size={14} />
-                              {material.name || material.filename}
-                            </a>
-                            <a
-                              href={material.url || material.path}
-                              download
-                              className="ml-2 p-1 text-blue-600 hover:bg-blue-100 rounded transition"
-                              title="Download"
-                            >
-                              <Download size={16} />
-                            </a>
-                          </div>
-                        ))}
+                        {hw.attachments.map((material, idx) => {
+                          const attachmentId = material._id || material.filename || material.url?.split('/').pop();
+                          const displayName = material.name || material.filename || 'Learning Material';
+                          
+                          return (
+                            <div key={idx} className="flex items-center justify-between bg-white p-2 rounded border border-blue-100">
+                              <span
+                                className="text-sm text-primary-blue truncate flex-1 flex items-center gap-2"
+                                title={displayName}
+                              >
+                                <FileText size={14} />
+                                {displayName}
+                              </span>
+                              <button
+                                onClick={(e) => handleDownloadAttachment(hw._id, material, e)}
+                                className="ml-2 p-1 text-blue-600 hover:bg-blue-100 rounded transition"
+                                title="Download"
+                              >
+                                <Download size={16} />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
                   
                   {/* Show submission form for students/parents/teachers who haven't submitted */}
                   {!isSubmitted && showingSubmissionId === hw._id && (
-                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div 
+                      className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="text-xs text-blue-700 mb-3 font-medium">
                         {isStudent && '📝 Submit your homework'}
                         {isParent && `👨‍👩‍👧 Submitting on behalf of your child`}
@@ -177,7 +244,10 @@ function ChildHomework({ studentId }) {
                   {/* Show submit button for those who haven't submitted */}
                   {!isSubmitted && showingSubmissionId !== hw._id && (
                     <button
-                      onClick={() => setShowingSubmissionId(hw._id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowingSubmissionId(hw._id)
+                      }}
                       className="w-full mb-3 px-4 py-3 bg-primary-blue text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium shadow-md"
                     >
                       {isStudent && '📝 Submit Homework'}
@@ -216,16 +286,19 @@ function ChildHomework({ studentId }) {
                           <p className="text-xs font-medium text-text-dark mb-2">Submitted Files:</p>
                           <div className="space-y-1">
                             {hw.studentSubmission.attachments.map((att, idx) => (
-                              <a
-                                key={idx}
-                                href={att.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-primary-blue hover:underline block truncate"
-                                title={att.name}
-                              >
-                                📄 {att.name} ({(att.size / 1024 / 1024).toFixed(2)} MB)
-                              </a>
+                              <div key={idx} className="flex items-center justify-between">
+                                <span className="text-xs text-text-dark truncate flex-1 flex items-center gap-1">
+                                  📄 {att.name || att.filename || 'Submission file'} 
+                                  {att.size && ` (${(att.size / 1024 / 1024).toFixed(2)} MB)`}
+                                </span>
+                                <button
+                                  onClick={(e) => handleDownloadSubmissionAttachment(hw._id, studentId, att, e)}
+                                  className="ml-2 p-1 text-primary-blue hover:bg-blue-100 rounded transition"
+                                  title="Download"
+                                >
+                                  <Download size={14} />
+                                </button>
+                              </div>
                             ))}
                           </div>
                         </div>

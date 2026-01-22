@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { homeworkApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -23,7 +23,8 @@ function Homework({ classroomId }) {
     description: '',
     subject: '',
     dueDate: '',
-    files: []
+    files: [],
+    existingAttachments: []
   })
 
   useEffect(() => {
@@ -54,7 +55,8 @@ function Homework({ classroomId }) {
       description: '',
       subject: '',
       dueDate: '',
-      files: []
+      files: [],
+      existingAttachments: []
     })
     setIsModalOpen(true)
   }
@@ -66,7 +68,8 @@ function Homework({ classroomId }) {
       description: hw.description,
       subject: hw.subject,
       dueDate: hw.dueDate.split('T')[0],
-      files: []
+      files: [],
+      existingAttachments: hw.attachments || []
     })
     setIsModalOpen(true)
   }
@@ -109,6 +112,13 @@ function Homework({ classroomId }) {
     }))
   }
 
+  const handleRemoveExistingAttachment = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      existingAttachments: prev.existingAttachments.filter((_, i) => i !== index)
+    }))
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -119,16 +129,28 @@ function Homework({ classroomId }) {
 
     try {
       if (editingHomework) {
-        // For edit, just update the fields (files are for new homework)
+        // For edit, update fields and attachments
         const data = {
           title: formData.title,
           description: formData.description,
           subject: formData.subject,
           dueDate: formData.dueDate,
           classroomId,
-          academicYear: currentAcademicYear?.year
+          academicYear: currentAcademicYear?.year,
+          attachments: formData.existingAttachments // Updated attachments list (removed ones are excluded)
         }
+        
         await homeworkApi.update(editingHomework._id, data)
+        
+        // If there are new files, add them separately
+        if (formData.files.length > 0) {
+          const formDataWithFiles = new FormData()
+          formData.files.forEach((file) => {
+            formDataWithFiles.append('files', file)
+          })
+          await homeworkApi.addFiles(editingHomework._id, formDataWithFiles)
+        }
+        
         success('Homework updated successfully')
       } else {
         // For create, upload files along with homework
@@ -180,6 +202,10 @@ function Homework({ classroomId }) {
       }
     }
   }
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false)
+  }, [])
 
   const isTeacher = user?.role === 'teacher' || user?.role === 'admin' || user?.role === 'head-teacher'
 
@@ -274,6 +300,22 @@ function Homework({ classroomId }) {
 
                 <p className="text-text-muted text-sm mb-3">{hw.description}</p>
 
+                {/* Show attachments if any */}
+                {hw.attachments && hw.attachments.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-text-muted mb-2">
+                      📚 Materials ({hw.attachments.length}):
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {hw.attachments.map((att, idx) => (
+                        <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                          📄 {att.name || att.filename}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {hw.submissions && hw.submissions.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <p className="text-xs font-semibold text-text-muted mb-2">
@@ -287,7 +329,7 @@ function Homework({ classroomId }) {
         )}
 
         {/* Modal for Create/Edit */}
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingHomework ? 'Edit Homework' : 'Add Homework'}>
+        <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingHomework ? 'Edit Homework' : 'Add Homework'}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-dark mb-2">
@@ -296,8 +338,9 @@ function Homework({ classroomId }) {
               <input
                 type="text"
                 value={formData.title || ''}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                onKeyDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, title: e.target.value }))
+                }}
                 autoComplete="off"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 required
@@ -311,8 +354,9 @@ function Homework({ classroomId }) {
               <input
                 type="text"
                 value={formData.subject || ''}
-                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                onKeyDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, subject: e.target.value }))
+                }}
                 autoComplete="off"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 required
@@ -325,8 +369,9 @@ function Homework({ classroomId }) {
               </label>
               <textarea
                 value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                onKeyDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, description: e.target.value }))
+                }}
                 rows="4"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 required
@@ -340,58 +385,83 @@ function Homework({ classroomId }) {
               <input
                 type="date"
                 value={formData.dueDate || ''}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                onKeyDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, dueDate: e.target.value }))
+                }}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 required
               />
             </div>
 
-            {!editingHomework && (
-              <div>
-                <label className="block text-sm font-medium text-text-dark mb-2">
-                  📸 Upload Materials (Photos/PDFs) - Optional
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-blue transition cursor-pointer">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,.pdf"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="file-input"
-                  />
-                  <label htmlFor="file-input" className="cursor-pointer">
-                    <Upload size={24} className="mx-auto text-text-muted mb-2" />
-                    <p className="text-sm text-text-muted">Click to upload photos or PDFs</p>
-                    <p className="text-xs text-text-muted mt-1">Photos will be converted to PDF</p>
-                  </label>
-                </div>
-
-                {formData.files.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-xs font-semibold text-text-muted">Files ({formData.files.length}):</p>
-                    {formData.files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
-                        <span className="text-text-muted truncate">{file.name}</span>
+            {/* File upload section - show for both create and edit */}
+            <div>
+              <label className="block text-sm font-medium text-text-dark mb-2">
+                📸 Upload Materials (Photos/PDFs) - Optional
+              </label>
+              
+              {/* Show existing attachments when editing */}
+              {editingHomework && formData.existingAttachments.length > 0 && (
+                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs font-semibold text-blue-900 mb-2">Existing Materials ({formData.existingAttachments.length}):</p>
+                  <div className="space-y-2">
+                    {formData.existingAttachments.map((att, index) => (
+                      <div key={index} className="flex items-center justify-between bg-white p-2 rounded border border-blue-100 text-sm">
+                        <span className="text-text-dark truncate flex-1">📄 {att.name || att.filename || 'Material'}</span>
                         <button
                           type="button"
-                          onClick={() => handleRemoveFile(index)}
-                          className="text-red-600 hover:bg-red-50 p-1 rounded transition"
+                          onClick={() => handleRemoveExistingAttachment(index)}
+                          className="ml-2 text-red-600 hover:bg-red-50 p-1 rounded transition"
+                          title="Remove attachment"
                         >
                           <X size={16} />
                         </button>
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
+              )}
+
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-blue transition cursor-pointer">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="file-input"
+                />
+                <label htmlFor="file-input" className="cursor-pointer">
+                  <Upload size={24} className="mx-auto text-text-muted mb-2" />
+                  <p className="text-sm text-text-muted">
+                    {editingHomework ? 'Click to add more materials' : 'Click to upload photos or PDFs'}
+                  </p>
+                  <p className="text-xs text-text-muted mt-1">Photos will be converted to PDF</p>
+                </label>
               </div>
-            )}
+
+              {formData.files.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-semibold text-text-muted">New Files ({formData.files.length}):</p>
+                  {formData.files.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
+                      <span className="text-text-muted truncate">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(index)}
+                        className="text-red-600 hover:bg-red-50 p-1 rounded transition"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="flex gap-3 justify-end pt-4">
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={handleCloseModal}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-text-dark hover:bg-gray-50 transition"
               >
                 Cancel

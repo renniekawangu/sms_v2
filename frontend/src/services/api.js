@@ -1034,6 +1034,20 @@ export const parentsApi = {
     });
   },
 
+  downloadHomeworkAttachment: async (homework_id, attachment_id) => {
+    const token = getToken();
+    const response = await fetch(`${API_BASE_URL}/homework/${homework_id}/attachment/${attachment_id}/download`, {
+      method: 'GET',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to download attachment');
+    }
+    return await response.blob();
+  },
+
   downloadChildReport: async (student_id) => {
     const token = getToken();
     const response = await fetch(`${API_BASE_URL}/parents/children/${student_id}/report`, {
@@ -1266,6 +1280,24 @@ export const homeworkApi = {
     })
   },
 
+  addFiles: async (id, formData) => {
+    const token = getToken()
+    const response = await fetch(`${API_BASE_URL}/homework/${id}/add-files`, {
+      method: 'PUT',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to add files')
+    }
+
+    return await response.json()
+  },
+
   delete: async (id) => {
     return apiCall(`/homework/${id}`, {
       method: 'DELETE',
@@ -1319,5 +1351,33 @@ export const homeworkApi = {
       method: 'POST',
       body: JSON.stringify({ studentId, grade, feedback }),
     })
+  },
+
+  downloadAttachment: async (homeworkId, attachmentId) => {
+    const token = getToken()
+    const response = await fetch(`${API_BASE_URL}/homework/${homeworkId}/attachment/${attachmentId}/download`, {
+      method: 'GET',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    })
+    if (!response.ok) {
+      throw new Error('Failed to download attachment')
+    }
+    return await response.blob()
+  },
+
+  downloadSubmissionAttachment: async (homeworkId, studentId, attachmentId) => {
+    const token = getToken()
+    const response = await fetch(`${API_BASE_URL}/homework/${homeworkId}/submission/${studentId}/attachment/${attachmentId}/download`, {
+      method: 'GET',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    })
+    if (!response.ok) {
+      throw new Error('Failed to download submission attachment')
+    }
+    return await response.blob()
   }
 }

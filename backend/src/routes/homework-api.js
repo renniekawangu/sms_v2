@@ -224,6 +224,20 @@ router.put(
     if (dueDate) homework.dueDate = new Date(dueDate);
     if (status && ['pending', 'assigned', 'completed'].includes(status)) homework.status = status;
     if (term) homework.term = term;
+    
+    // Update attachments if provided (for removing attachments)
+    if (req.body.attachments !== undefined) {
+      // Parse attachments if it's a string (JSON)
+      let attachments = req.body.attachments;
+      if (typeof attachments === 'string') {
+        try {
+          attachments = JSON.parse(attachments);
+        } catch (e) {
+          return res.status(400).json({ error: 'Invalid attachments format' });
+        }
+      }
+      homework.attachments = attachments;
+    }
 
     await homework.save();
     await homework.populate('teacher', 'firstName lastName email');
@@ -453,6 +467,378 @@ router.post(
       message: 'Homework created successfully with materials',
       homework
     });
+  })
+);
+
+/**
+ * PUT /api/homework/:id/add-files
+ * Add files to existing homework
+ */
+router.put(
+  '/:id/add-files',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER),
+  upload.array('files', 10),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (!validateObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid homework ID' });
+    }
+
+    const homework = await Homework.findById(id);
+    if (!homework) {
+      return res.status(404).json({ error: 'Homework not found' });
+    }
+
+    // Check authorization
+    if (homework.teacher.toString() !== req.user.id && req.user.role !== ROLES.ADMIN && req.user.role !== ROLES.HEAD_TEACHER) {
+      return res.status(403).json({ error: 'Not authorized to update this homework' });
+    }
+
+    // Process uploaded files if any
+    if (req.files && req.files.length > 0) {
+      try {
+        const uploadedFiles = await processUploadedFiles(req.files, 'homework/materials');
+        // Add new files to existing attachments
+        homework.attachments = [...(homework.attachments || []), ...uploadedFiles];
+      } catch (uploadErr) {
+        console.error('File upload error:', uploadErr);
+        return res.status(400).json({ error: 'Failed to upload files: ' + uploadErr.message });
+      }
+    }
+
+    await homework.save();
+    await homework.populate('teacher', 'firstName lastName email');
+    await homework.populate('classroomId', 'className grade section');
+
+    // Invalidate cache
+    cacheManager.delete(`homework-classroom-${homework.classroomId}`);
+
+    res.json({
+      message: 'Files added successfully',
+      homework
+    });
+  })
+);
+
+/**
+ * GET /api/homework/:id/attachment/:attachmentId/download
+ * Download homework attachment (teacher-uploaded materials)
+ * Accessible by teachers, parents (of students in the classroom), and admins
+ */
+router.get(
+  '/:id/attachment/:attachmentId/download',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.PARENT, ROLES.STUDENT),
+  asyncHandler(async (req, res) => {
+    const { id, attachmentId } = req.params;
+    const fs = require('fs');
+    const path = require('path');
+
+    if (!validateObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid homework ID' });
+    }
+
+    const homework = await Homework.findById(id)
+      .populate('classroomId', 'className grade section')
+      .lean();
+
+    if (!homework) {
+      return res.status(404).json({ error: 'Homework not found' });
+    }
+
+    // Find the attachment - try _id first, then filename
+    let attachment = null;
+    if (attachmentId && attachmentId.length === 24) {
+      // Try as ObjectId first (24 hex characters)
+      try {
+        const mongoose = require('mongoose');
+        const attachmentObjectId = new mongoose.Types.ObjectId(attachmentId);
+        attachment = homework.attachments?.find(
+          att => att._id && att._id.toString() === attachmentObjectId.toString()
+        );
+      } catch (e) {
+        // Not a valid ObjectId, continue to filename check
+      }
+    }
+    
+    // If not found by _id, try filename
+    if (!attachment) {
+      attachment = homework.attachments?.find(
+        att => att.filename === attachmentId || att.url?.includes(attachmentId)
+      );
+    }
+
+    if (!attachment) {
+      return res.status(404).json({ error: 'Attachment not found' });
+    }
+
+    // Authorization check
+    const userRole = req.user.role;
+    let hasAccess = false;
+
+    if (userRole === ROLES.ADMIN || userRole === ROLES.HEAD_TEACHER) {
+      hasAccess = true;
+    } else if (userRole === ROLES.TEACHER) {
+      // Teacher can access if they created the homework
+      hasAccess = homework.teacher?.toString() === req.user.id;
+    } else if (userRole === ROLES.PARENT || userRole === ROLES.STUDENT) {
+      // Parent/Student can access if they are linked to a student in the classroom
+      const { Student } = require('../models/student');
+      const { Parent } = require('../models/parent');
+      const { User } = require('../models/user');
+
+      const user = await User.findById(req.user.id).lean();
+      
+      if (userRole === ROLES.STUDENT) {
+        // Student can access if they are in the classroom
+        const student = await Student.findById(req.user.id).lean();
+        hasAccess = student?.classroomId?.toString() === homework.classroomId?._id?.toString();
+      } else {
+        // Parent can access if they have a child in the classroom
+        let parent = null;
+        if (user.parentId) {
+          parent = await Parent.findById(user.parentId).lean();
+        } else {
+          parent = await Parent.findOne({ email: user.email }).lean();
+        }
+
+        if (parent) {
+          const studentsInClassroom = await Student.find({
+            _id: { $in: parent.students || [] },
+            classroomId: homework.classroomId?._id
+          }).lean();
+          hasAccess = studentsInClassroom.length > 0;
+        }
+      }
+    }
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Construct file path
+    // attachment.url is like /uploads/homework/materials/filename.pdf
+    // We need to get the actual file path
+    const filename = attachment.filename || attachment.url?.split('/').pop();
+    if (!filename) {
+      return res.status(404).json({ error: 'Filename not found in attachment' });
+    }
+    const filePath = path.join(__dirname, '../../uploads/homework/materials', filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found on server' });
+    }
+
+    // Determine content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    } else if (ext === '.png') {
+      contentType = 'image/png';
+    } else if (ext === '.jpg' || ext === '.jpeg') {
+      contentType = 'image/jpeg';
+    } else if (ext === '.gif') {
+      contentType = 'image/gif';
+    } else if (ext === '.webp') {
+      contentType = 'image/webp';
+    }
+
+    // Set headers for download
+    const originalName = attachment.name || filename;
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  })
+);
+
+/**
+ * GET /api/homework/:id/submission/:studentId/attachment/:attachmentId/download
+ * Download student submission attachment
+ * Accessible by the student who submitted, their parent, teacher of the homework, and admins
+ */
+router.get(
+  '/:id/submission/:studentId/attachment/:attachmentId/download',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.PARENT, ROLES.STUDENT),
+  asyncHandler(async (req, res) => {
+    const { id, studentId, attachmentId } = req.params;
+    const fs = require('fs');
+    const path = require('path');
+
+    if (!validateObjectId(id) || !validateObjectId(studentId)) {
+      return res.status(400).json({ error: 'Invalid homework or student ID' });
+    }
+
+    const homework = await Homework.findById(id)
+      .populate('classroomId', 'className grade section')
+      .lean();
+
+    if (!homework) {
+      return res.status(404).json({ error: 'Homework not found' });
+    }
+
+    // Find the student submission
+    const submission = homework.submissions?.find(
+      sub => sub.student?.toString() === studentId || sub.student === studentId
+    );
+
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    // Find the attachment
+    let attachment = null;
+    if (attachmentId && attachmentId.length === 24) {
+      // Try as ObjectId first
+      try {
+        const mongoose = require('mongoose');
+        const attachmentObjectId = new mongoose.Types.ObjectId(attachmentId);
+        attachment = submission.attachments?.find(
+          att => att._id && att._id.toString() === attachmentObjectId.toString()
+        );
+      } catch (e) {
+        // Not a valid ObjectId, continue to filename check
+      }
+    }
+    
+    // If not found by _id, try filename
+    if (!attachment) {
+      attachment = submission.attachments?.find(
+        att => att.filename === attachmentId || att.url?.includes(attachmentId) || att.name === attachmentId
+      );
+    }
+
+    if (!attachment) {
+      return res.status(404).json({ error: 'Attachment not found' });
+    }
+
+    // Authorization check
+    const userRole = req.user.role;
+    let hasAccess = false;
+
+    if (userRole === ROLES.ADMIN || userRole === ROLES.HEAD_TEACHER) {
+      hasAccess = true;
+    } else if (userRole === ROLES.TEACHER) {
+      // Teacher can access if they created the homework
+      hasAccess = homework.teacher?.toString() === req.user.id;
+    } else if (userRole === ROLES.STUDENT) {
+      // Student can access their own submission
+      hasAccess = studentId === req.user.id;
+    } else if (userRole === ROLES.PARENT) {
+      // Parent can access if the student is their child
+      const { Parent } = require('../models/parent');
+      const { User } = require('../models/user');
+
+      const user = await User.findById(req.user.id).lean();
+      let parent = null;
+      if (user.parentId) {
+        parent = await Parent.findById(user.parentId).lean();
+      } else {
+        parent = await Parent.findOne({ email: user.email }).lean();
+      }
+
+      if (parent) {
+        hasAccess = parent.students?.some(s => s.toString() === studentId);
+      }
+    }
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Construct file path
+    // attachment.url is like /uploads/submissions/filename.pdf
+    const filename = attachment.filename || attachment.url?.split('/').pop();
+    if (!filename) {
+      return res.status(404).json({ error: 'Filename not found in attachment' });
+    }
+    const filePath = path.join(__dirname, '../../uploads/submissions', filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found on server' });
+    }
+
+    // Determine content type based on file extension
+    const ext = path.extname(filename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    } else if (ext === '.png') {
+      contentType = 'image/png';
+    } else if (ext === '.jpg' || ext === '.jpeg') {
+      contentType = 'image/jpeg';
+    } else if (ext === '.gif') {
+      contentType = 'image/gif';
+    } else if (ext === '.webp') {
+      contentType = 'image/webp';
+    }
+
+    // Set headers for download
+    const originalName = attachment.name || filename;
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  })
+);
+
+/**
+ * POST /api/homework/migrate-paths (TEMPORARY - Admin only)
+ * Migrate attachment paths from old structure to new structure
+ */
+router.post(
+  '/migrate-paths',
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    try {
+      const result = await Homework.updateMany(
+        { 'attachments.url': { $regex: '/uploads/homework/homework/materials/' } },
+        [
+          {
+            $set: {
+              attachments: {
+                $map: {
+                  input: '$attachments',
+                  as: 'att',
+                  in: {
+                    _id: '$$att._id',
+                    filename: '$$att.filename',
+                    url: {
+                      $replaceOne: {
+                        input: '$$att.url',
+                        find: '/uploads/homework/homework/materials/',
+                        replacement: '/uploads/homework/materials/'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      );
+
+      res.json({
+        message: 'Paths migrated successfully',
+        modifiedCount: result.modifiedCount
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: 'Migration failed',
+        message: error.message
+      });
+    }
   })
 );
 
