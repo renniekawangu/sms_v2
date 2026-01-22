@@ -37,9 +37,8 @@ export const convertImageToPdf = async (imageFile) => {
           );
 
           // Convert to blob and resolve
-          pdf.output('blob').then(blob => {
-            resolve(blob);
-          });
+          const blob = pdf.output('blob');
+          resolve(blob);
         };
 
         img.onerror = () => {

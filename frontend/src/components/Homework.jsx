@@ -146,7 +146,7 @@ function Homework({ classroomId }) {
             formDataWithFiles.append('files', file)
           })
 
-          await homeworkApi.submitWithFiles(null, formDataWithFiles)
+          await homeworkApi.createWithFiles(formDataWithFiles)
         } else {
           // Create without files
           const data = {

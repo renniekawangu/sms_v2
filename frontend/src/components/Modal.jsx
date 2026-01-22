@@ -19,11 +19,6 @@ function Modal({ isOpen, onClose, title, children }) {
     }
 
     document.addEventListener('keydown', handleEscape)
-    
-    // Focus the modal when it opens
-    if (modalRef.current) {
-      modalRef.current.focus()
-    }
 
     // Prevent body scroll when modal is open
     if (isOpen) {

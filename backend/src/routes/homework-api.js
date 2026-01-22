@@ -377,4 +377,83 @@ router.post(
   })
 );
 
+/**
+ * POST /api/homework/create-with-files
+ * Create homework with file uploads (for teachers)
+ */
+router.post(
+  '/create-with-files',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER),
+  upload.array('files', 10),
+  asyncHandler(async (req, res) => {
+    const { title, description, classroomId, subject, dueDate, academicYear, term } = req.body;
+
+    // Validate required fields
+    const requiredFields = ['title', 'description', 'classroomId', 'subject', 'dueDate'];
+    const validation = validateRequiredFields({ title, description, classroomId, subject, dueDate }, requiredFields);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    // Validate classroomId
+    if (!validateObjectId(classroomId)) {
+      return res.status(400).json({ error: 'Invalid classroom ID' });
+    }
+
+    // Validate due date format
+    const dueDateObj = new Date(dueDate);
+    if (isNaN(dueDateObj.getTime())) {
+      return res.status(400).json({ error: 'Invalid due date format' });
+    }
+
+    // Sanitize inputs
+    const sanitizedTitle = sanitizeString(title);
+    const sanitizedDescription = sanitizeString(description);
+    const sanitizedSubject = sanitizeString(subject);
+
+    // Get current academic year if not specified
+    const currentYear = academicYear || (await getCurrentAcademicYear())?.year;
+
+    // Create homework
+    const homework = new Homework({
+      title: sanitizedTitle,
+      description: sanitizedDescription,
+      classroomId,
+      subject: sanitizedSubject,
+      teacher: req.user.id,
+      dueDate: dueDateObj,
+      academicYear: currentYear,
+      term: term || 'General',
+      createdBy: req.user.id,
+      materials: [] // Will populate with file data
+    });
+
+    // Process uploaded files if any
+    if (req.files && req.files.length > 0) {
+      try {
+        const uploadedFiles = await processUploadedFiles(req.files, 'homework/materials');
+        homework.materials = uploadedFiles;
+      } catch (uploadErr) {
+        console.error('File upload error:', uploadErr);
+        return res.status(400).json({ error: 'Failed to upload files: ' + uploadErr.message });
+      }
+    }
+
+    await homework.save();
+
+    // Populate teacher info
+    await homework.populate('teacher', 'firstName lastName email');
+    await homework.populate('classroomId', 'className grade section');
+
+    // Invalidate cache
+    cacheManager.delete(`homework-classroom-${classroomId}`);
+
+    res.status(201).json({
+      message: 'Homework created successfully with materials',
+      homework
+    });
+  })
+);
+
 module.exports = router;

@@ -1296,6 +1296,24 @@ export const homeworkApi = {
     return await response.json()
   },
 
+  createWithFiles: async (formData) => {
+    const token = getToken()
+    const response = await fetch(`${API_BASE_URL}/homework/create-with-files`, {
+      method: 'POST',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to create homework')
+    }
+
+    return await response.json()
+  },
+
   grade: async (id, studentId, grade, feedback) => {
     return apiCall(`/homework/${id}/grade`, {
       method: 'POST',
