@@ -4,7 +4,7 @@ import { classroomApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, School, Users, User, AlertCircle, Mail, Calendar, Clock } from 'lucide-react';
 import Homework from '../components/Homework';
-import ChildHomework from '../components/ChildHomework';
+import ClassroomHomeworkList from '../components/ClassroomHomeworkList';
 
 function ViewClassroom() {
   const { id } = useParams();
@@ -209,7 +209,7 @@ function ViewClassroom() {
                 <School size={18} className="text-primary-blue sm:size-5" />
                 📚 Homework Assignments
               </h2>
-              <ChildHomework studentId={user?.id} />
+              <ClassroomHomeworkList classroomId={id} />
             </div>
           )}
         </div>
