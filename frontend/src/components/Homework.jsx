@@ -3,9 +3,10 @@ import { homeworkApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useSettings } from '../contexts/SettingsContext'
-import { BookOpen, Plus, Trash2, Edit, Calendar, User, CheckCircle } from 'lucide-react'
+import { BookOpen, Plus, Trash2, Edit, Calendar, User, CheckCircle, Upload, X } from 'lucide-react'
 import Modal from '../components/Modal'
 import ErrorBoundary from '../components/ErrorBoundary'
+import { convertImageToPdf } from '../utils/photoPdfConverter'
 
 function Homework({ classroomId }) {
   const { user } = useAuth()
@@ -21,7 +22,8 @@ function Homework({ classroomId }) {
     title: '',
     description: '',
     subject: '',
-    dueDate: ''
+    dueDate: '',
+    files: []
   })
 
   useEffect(() => {
@@ -51,7 +53,8 @@ function Homework({ classroomId }) {
       title: '',
       description: '',
       subject: '',
-      dueDate: ''
+      dueDate: '',
+      files: []
     })
     setIsModalOpen(true)
   }
@@ -62,9 +65,48 @@ function Homework({ classroomId }) {
       title: hw.title,
       description: hw.description,
       subject: hw.subject,
-      dueDate: hw.dueDate.split('T')[0]
+      dueDate: hw.dueDate.split('T')[0],
+      files: []
     })
     setIsModalOpen(true)
+  }
+
+  const handleFileChange = async (e) => {
+    const selectedFiles = e.target.files
+    if (!selectedFiles) return
+
+    const newFiles = []
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i]
+      
+      // If it's an image, convert to PDF
+      if (file.type.startsWith('image/')) {
+        try {
+          const pdfBlob = await convertImageToPdf(file)
+          const pdfFile = new File([pdfBlob], `${file.name.split('.')[0]}.pdf`, { type: 'application/pdf' })
+          newFiles.push(pdfFile)
+        } catch (err) {
+          showError(`Failed to convert ${file.name} to PDF`)
+        }
+      } else {
+        newFiles.push(file)
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      files: [...prev.files, ...newFiles]
+    }))
+    
+    // Reset input
+    e.target.value = ''
+  }
+
+  const handleRemoveFile = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      files: prev.files.filter((_, i) => i !== index)
+    }))
   }
 
   const handleSubmit = async (e) => {
@@ -76,20 +118,47 @@ function Homework({ classroomId }) {
     }
 
     try {
-      const data = {
-        title: formData.title,
-        description: formData.description,
-        subject: formData.subject,
-        dueDate: formData.dueDate,
-        classroomId,
-        academicYear: currentAcademicYear?.year
-      }
-
       if (editingHomework) {
+        // For edit, just update the fields (files are for new homework)
+        const data = {
+          title: formData.title,
+          description: formData.description,
+          subject: formData.subject,
+          dueDate: formData.dueDate,
+          classroomId,
+          academicYear: currentAcademicYear?.year
+        }
         await homeworkApi.update(editingHomework._id, data)
         success('Homework updated successfully')
       } else {
-        await homeworkApi.create(data)
+        // For create, upload files along with homework
+        if (formData.files.length > 0) {
+          const formDataWithFiles = new FormData()
+          formDataWithFiles.append('title', formData.title)
+          formDataWithFiles.append('description', formData.description)
+          formDataWithFiles.append('subject', formData.subject)
+          formDataWithFiles.append('dueDate', formData.dueDate)
+          formDataWithFiles.append('classroomId', classroomId)
+          formDataWithFiles.append('academicYear', currentAcademicYear?.year)
+          
+          // Add files
+          formData.files.forEach((file) => {
+            formDataWithFiles.append('files', file)
+          })
+
+          await homeworkApi.submitWithFiles(null, formDataWithFiles)
+        } else {
+          // Create without files
+          const data = {
+            title: formData.title,
+            description: formData.description,
+            subject: formData.subject,
+            dueDate: formData.dueDate,
+            classroomId,
+            academicYear: currentAcademicYear?.year
+          }
+          await homeworkApi.create(data)
+        }
         success('Homework created successfully')
       }
 
@@ -226,8 +295,10 @@ function Homework({ classroomId }) {
               </label>
               <input
                 type="text"
-                value={formData.title}
+                value={formData.title || ''}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onKeyDown={(e) => e.stopPropagation()}
+                autoComplete="off"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 required
               />
@@ -239,8 +310,10 @@ function Homework({ classroomId }) {
               </label>
               <input
                 type="text"
-                value={formData.subject}
+                value={formData.subject || ''}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                onKeyDown={(e) => e.stopPropagation()}
+                autoComplete="off"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 required
               />
@@ -251,8 +324,9 @@ function Homework({ classroomId }) {
                 Description *
               </label>
               <textarea
-                value={formData.description}
+                value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onKeyDown={(e) => e.stopPropagation()}
                 rows="4"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 required
@@ -265,12 +339,54 @@ function Homework({ classroomId }) {
               </label>
               <input
                 type="date"
-                value={formData.dueDate}
+                value={formData.dueDate || ''}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                onKeyDown={(e) => e.stopPropagation()}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-blue"
                 required
               />
             </div>
+
+            {!editingHomework && (
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-2">
+                  📸 Upload Materials (Photos/PDFs) - Optional
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-blue transition cursor-pointer">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="file-input"
+                  />
+                  <label htmlFor="file-input" className="cursor-pointer">
+                    <Upload size={24} className="mx-auto text-text-muted mb-2" />
+                    <p className="text-sm text-text-muted">Click to upload photos or PDFs</p>
+                    <p className="text-xs text-text-muted mt-1">Photos will be converted to PDF</p>
+                  </label>
+                </div>
+
+                {formData.files.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-semibold text-text-muted">Files ({formData.files.length}):</p>
+                    {formData.files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
+                        <span className="text-text-muted truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          className="text-red-600 hover:bg-red-50 p-1 rounded transition"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-3 justify-end pt-4">
               <button

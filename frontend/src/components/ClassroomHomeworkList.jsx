@@ -20,6 +20,8 @@ function ClassroomHomeworkList({ classroomId }) {
   const isParent = user?.role === 'parent'
   const isTeacher = user?.role === 'teacher'
 
+  console.log('ClassroomHomeworkList - User:', { user, isStudent, isParent, isTeacher })
+
   useEffect(() => {
     loadHomework()
   }, [classroomId])
@@ -28,8 +30,22 @@ function ClassroomHomeworkList({ classroomId }) {
     try {
       setLoading(true)
       const data = await homeworkApi.getByClassroom(classroomId)
-      setHomework(data.homework || data || [])
+      console.log('Homework data received:', data)
+      
+      // Handle different response formats
+      let homeworkList = []
+      if (Array.isArray(data)) {
+        homeworkList = data
+      } else if (data?.homework && Array.isArray(data.homework)) {
+        homeworkList = data.homework
+      } else if (data?.data && Array.isArray(data.data)) {
+        homeworkList = data.data
+      }
+      
+      console.log('Parsed homework list:', homeworkList)
+      setHomework(homeworkList)
     } catch (err) {
+      console.error('Error loading homework:', err)
       showError(err.message || 'Failed to load homework')
     } finally {
       setLoading(false)

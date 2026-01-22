@@ -197,7 +197,7 @@ function ViewClassroom() {
 
         {/* Homework Section */}
         <div className="mb-6">
-          {/* Teacher View: Homework Management */}
+          {/* Teacher View: Add Homework */}
           {user?.role === 'teacher' && (
             <Homework classroomId={id} />
           )}
