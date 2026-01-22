@@ -260,27 +260,27 @@ function Attendance() {
   }
 
   return (
-    <div className="space-y-6 p-3 sm:p-4 lg:p-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-text-dark flex items-center gap-2">
-          <Users size={32} className="text-primary-blue" />
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark flex items-center gap-2">
+          <Users size={24} className="text-primary-blue sm:size-8" />
           Classroom Attendance
         </h1>
-        <p className="text-text-muted mt-1">Mark and manage attendance by classroom</p>
+        <p className="text-text-muted text-xs sm:text-sm mt-1">Mark and manage attendance by classroom</p>
       </div>
 
       {/* Classroom & Date Selector */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card-white rounded-lg shadow-custom p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 bg-card-white rounded-lg shadow-custom p-3 sm:p-4 lg:p-6">
         <div>
-          <label className="block text-sm font-medium text-text-dark mb-2">Select Classroom</label>
+          <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1 sm:mb-2">Select Classroom</label>
           <select
             value={selectedClassroom?._id || ''}
             onChange={(e) => {
               const classroom = classrooms.find(c => c._id === e.target.value)
               setSelectedClassroom(classroom)
             }}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
           >
             {classrooms.map((classroom) => (
               <option key={classroom._id} value={classroom._id}>
@@ -291,58 +291,58 @@ function Attendance() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-dark mb-2 flex items-center gap-2">
-            <Calendar size={16} />
+          <label className="block text-xs sm:text-sm font-medium text-text-dark mb-1 sm:mb-2 flex items-center gap-2">
+            <Calendar size={14} className="sm:size-4" />
             Select Date
           </label>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
           />
         </div>
       </div>
 
       {/* Classroom Info */}
       {selectedClassroom && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-xs text-text-muted mb-1">Classroom</p>
-            <p className="font-semibold text-text-dark">Grade {selectedClassroom.grade}-{selectedClassroom.section}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+          <div className="bg-blue-50 rounded-lg p-2 sm:p-3 lg:p-4">
+            <p className="text-xs text-text-muted mb-0.5 sm:mb-1">Classroom</p>
+            <p className="font-semibold text-xs sm:text-sm text-text-dark">Grade {selectedClassroom.grade}-{selectedClassroom.section}</p>
           </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <p className="text-xs text-text-muted mb-1">Total Students</p>
-            <p className="font-semibold text-green-600">{classroomStudents.length}</p>
+          <div className="bg-green-50 rounded-lg p-2 sm:p-3 lg:p-4">
+            <p className="text-xs text-text-muted mb-0.5 sm:mb-1">Total Students</p>
+            <p className="font-semibold text-xs sm:text-sm text-green-600">{classroomStudents.length}</p>
           </div>
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-xs text-text-muted mb-1">Present</p>
-            <p className="font-semibold text-blue-600">{presentCount}</p>
+          <div className="bg-blue-50 rounded-lg p-2 sm:p-3 lg:p-4">
+            <p className="text-xs text-text-muted mb-0.5 sm:mb-1">Present</p>
+            <p className="font-semibold text-xs sm:text-sm text-blue-600">{presentCount}</p>
           </div>
-          <div className="bg-red-50 rounded-lg p-4">
-            <p className="text-xs text-text-muted mb-1">Absent</p>
-            <p className="font-semibold text-red-600">{absentCount}</p>
+          <div className="bg-red-50 rounded-lg p-2 sm:p-3 lg:p-4">
+            <p className="text-xs text-text-muted mb-0.5 sm:mb-1">Absent</p>
+            <p className="font-semibold text-xs sm:text-sm text-red-600">{absentCount}</p>
           </div>
         </div>
       )}
 
       {/* Search */}
-      <div className="bg-card-white rounded-lg shadow-custom p-6">
+      <div className="bg-card-white rounded-lg shadow-custom p-3 sm:p-4 lg:p-6">
         {classroomStudents.length > 0 && (
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
+          <div className="mb-3 sm:mb-6">
+            <div className="relative mb-3 sm:mb-4">
+              <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
               <input
                 type="text"
                 placeholder="Search by student name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
               />
             </div>
             <button
               onClick={handleExportCSV}
-              className="mt-4 flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm bg-primary-blue text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
               title="Export attendance as CSV"
             >
               <Download size={16} />
@@ -352,21 +352,21 @@ function Attendance() {
         )}
 
         {/* Attendance Table */}
-        <div className="overflow-x-auto -mx-6 md:mx-0 md:overflow-visible">
-          <table className="w-full min-w-max md:min-w-0">
+        <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:mx-0 lg:overflow-visible">
+          <table className="w-full min-w-max lg:min-w-0">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-text-dark">Student</th>
-                <th className="text-center py-3 px-2 text-xs md:text-sm font-semibold text-text-dark">Present</th>
-                <th className="text-center py-3 px-2 text-xs md:text-sm font-semibold text-text-dark">Absent</th>
-                <th className="text-center py-3 px-2 text-xs md:text-sm font-semibold text-text-dark">Late</th>
-                <th className="text-center py-3 px-2 text-xs md:text-sm font-semibold text-text-dark">Excused</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs lg:text-sm font-semibold text-text-dark">Student</th>
+                <th className="text-center py-2 sm:py-3 px-1 sm:px-2 text-xs lg:text-sm font-semibold text-text-dark">Present</th>
+                <th className="text-center py-2 sm:py-3 px-1 sm:px-2 text-xs lg:text-sm font-semibold text-text-dark">Absent</th>
+                <th className="text-center py-2 sm:py-3 px-1 sm:px-2 text-xs lg:text-sm font-semibold text-text-dark">Late</th>
+                <th className="text-center py-2 sm:py-3 px-1 sm:px-2 text-xs lg:text-sm font-semibold text-text-dark">Excused</th>
               </tr>
             </thead>
             <tbody>
               {studentAttendanceList.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 px-4 text-center text-text-muted text-sm">
+                  <td colSpan={5} className="py-6 sm:py-8 px-2 sm:px-4 text-center text-text-muted text-xs sm:text-sm">
                     {classroomStudents.length === 0 ? 'No students in this classroom' : 'No students match your search'}
                   </td>
                 </tr>
@@ -377,10 +377,10 @@ function Attendance() {
                   
                   return (
                     <tr key={student._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-4 text-xs md:text-sm text-text-dark font-medium">
+                      <td className="py-2 sm:py-3 px-2 sm:px-3 lg:px-4 text-xs lg:text-sm text-text-dark font-medium">
                         {studentName}
                       </td>
-                      <td className="py-3 px-2 text-center">
+                      <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
                         <input
                           type="checkbox"
                           checked={selectedStatus === 'present'}
@@ -389,7 +389,7 @@ function Attendance() {
                           title="Mark as Present"
                         />
                       </td>
-                      <td className="py-3 px-2 text-center">
+                      <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
                         <input
                           type="checkbox"
                           checked={selectedStatus === 'absent'}
@@ -398,7 +398,7 @@ function Attendance() {
                           title="Mark as Absent"
                         />
                       </td>
-                      <td className="py-3 px-2 text-center">
+                      <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
                         <input
                           type="checkbox"
                           checked={selectedStatus === 'late'}
@@ -407,7 +407,7 @@ function Attendance() {
                           title="Mark as Late"
                         />
                       </td>
-                      <td className="py-3 px-2 text-center">
+                      <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
                         <input
                           type="checkbox"
                           checked={selectedStatus === 'excused'}
@@ -426,20 +426,20 @@ function Attendance() {
 
         {/* Submit Button - Show only if there are pending changes */}
         {Object.values(studentStatuses).some(s => s !== null) && user?.role !== 'student' && (
-          <div className="mt-6 flex gap-3 sticky bottom-0 bg-white p-4 border-t border-gray-200 rounded-b-lg">
+          <div className="mt-3 sm:mt-4 lg:mt-6 flex flex-col sm:flex-row gap-2 sm:gap-3 sticky bottom-0 bg-white p-2 sm:p-3 lg:p-4 border-t border-gray-200 rounded-b-lg">
             <button
               onClick={handleMarkAttendanceSubmit}
               disabled={submitting}
-              className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors font-semibold"
+              className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors font-semibold"
             >
               {submitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Submitting...
                 </>
               ) : (
                 <>
-                  <CheckCircle size={20} />
+                  <CheckCircle size={16} className="sm:size-5" />
                   Submit Attendance ({Object.values(studentStatuses).filter(s => s !== null).length})
                 </>
               )}
@@ -447,7 +447,7 @@ function Attendance() {
             <button
               onClick={() => setStudentStatuses({})}
               disabled={submitting}
-              className="px-4 py-3 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors font-medium"
+              className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors font-medium"
             >
               Clear
             </button>

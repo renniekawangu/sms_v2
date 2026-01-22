@@ -222,29 +222,29 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-primary-blue to-blue-600 p-6 text-white flex justify-between items-center">
+        <div className="sticky top-0 bg-gradient-to-r from-primary-blue to-blue-600 p-3 sm:p-4 lg:p-6 text-white flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold">Add Grades by Classroom</h2>
-            <p className="text-blue-100 text-sm mt-1">Bulk add grades for all students in a classroom</p>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">Add Grades by Classroom</h2>
+            <p className="text-blue-100 text-xs sm:text-sm mt-1">Bulk add grades for all students in a classroom</p>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition"
           >
-            <X size={24} />
+            <X size={18} className="sm:size-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6">
           {/* Selection Section */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
-            <h3 className="font-semibold text-gray-800">1. Select Classroom, Exam & Subject</h3>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
+            <h3 className="font-semibold text-sm sm:text-base text-gray-800">1. Select Classroom, Exam & Subject</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
               {/* Classroom Select */}
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-gray-700 flex-1">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 flex-1">
                     Classroom *
                   </label>
                   {isTeacher && teacherClassrooms.length === 1 && (
@@ -258,7 +258,7 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
                   value={classroom}
                   onChange={(e) => setClassroom(e.target.value)}
                   disabled={loading || (isTeacher && teacherClassrooms.length === 1)}
-                  className={`w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent ${
+                  className={`w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent ${
                     isTeacher && teacherClassrooms.length === 1 ? 'bg-gray-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -281,13 +281,13 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
 
               {/* Exam Select */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Exam *
                 </label>
                 <select
                   value={exam}
                   onChange={(e) => setExam(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                   disabled={!classroom || loading}
                 >
                   <option value="">Select exam...</option>
@@ -301,13 +301,13 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
 
               {/* Subject Select */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Subject *
                 </label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                   disabled={!classroom || loading}
                 >
                   <option value="">Select subject...</option>
@@ -321,7 +321,7 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
             </div>
 
             {classroom && selectedClassroomData && (
-              <div className="text-sm text-gray-600 bg-white p-3 rounded border border-gray-100">
+              <div className="text-xs sm:text-sm text-gray-600 bg-white p-2 sm:p-3 rounded border border-gray-100">
                 <strong>{selectedClassroomData.students?.length || 0}</strong> student(s) in this classroom
                 {selectedExam && <> | Exam: <strong>{selectedExam.name}</strong></>}
                 {selectedSubject && <> | Subject: <strong>{selectedSubject.name}</strong></>}
@@ -331,18 +331,18 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
 
           {/* Grades Table */}
           {students.length > 0 && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
-              <h3 className="font-semibold text-gray-800">2. Enter Grades</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
+              <h3 className="font-semibold text-sm sm:text-base text-gray-800">2. Enter Grades</h3>
               
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-100 border-b border-gray-200">
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Student Name</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Score</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Max Marks</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Percentage</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Remarks</th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-700">Student Name</th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-700">Score</th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-700">Max Marks</th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-700">Percentage</th>
+                      <th className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-700">Remarks</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -354,10 +354,10 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
                       
                       return (
                         <tr key={student._id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="px-4 py-3 text-sm text-gray-900">
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900">
                             {student.name || student.firstName + ' ' + student.lastName}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
                             <input
                               type="number"
                               min="0"
@@ -365,28 +365,28 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
                               value={studentGrade.score || ''}
                               onChange={(e) => handleGradeChange(student._id, 'score', e.target.value)}
                               placeholder="Score"
-                              className="w-20 px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-primary-blue text-sm"
+                              className="w-16 sm:w-20 px-2 py-1 text-xs sm:text-sm border border-gray-200 rounded focus:ring-2 focus:ring-primary-blue"
                             />
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
                             <input
                               type="number"
                               min="0"
                               value={studentGrade.maxMarks || 100}
                               onChange={(e) => handleGradeChange(student._id, 'maxMarks', e.target.value)}
-                              className="w-20 px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-primary-blue text-sm"
+                              className="w-16 sm:w-20 px-2 py-1 text-xs sm:text-sm border border-gray-200 rounded focus:ring-2 focus:ring-primary-blue"
                             />
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 font-medium">
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-600 font-medium">
                             {percentage}%
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
                             <input
                               type="text"
                               value={studentGrade.remarks || ''}
                               onChange={(e) => handleGradeChange(student._id, 'remarks', e.target.value)}
                               placeholder="Optional"
-                              className="w-32 px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-primary-blue text-sm"
+                              className="w-24 sm:w-32 px-2 py-1 text-xs sm:text-sm border border-gray-200 rounded focus:ring-2 focus:ring-primary-blue"
                             />
                           </td>
                         </tr>
@@ -396,8 +396,8 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
                 </table>
               </div>
 
-              <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded border border-blue-200 flex gap-2">
-                <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm text-gray-600 bg-blue-50 p-2 sm:p-3 rounded border border-blue-200 flex gap-2">
+                <AlertCircle size={16} className="flex-shrink-0 mt-0.5 sm:size-5" />
                 <span>Leave Score blank to skip a student. You can update them later.</span>
               </div>
             </div>
@@ -405,8 +405,8 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
 
           {/* Summary */}
           {Object.values(grades).some(g => g.score !== '') && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-sm text-gray-700">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 lg:p-6">
+              <p className="text-xs sm:text-sm text-gray-700">
                 <strong className="text-green-700">
                   {Object.values(grades).filter(g => g.score !== '').length}
                 </strong>
@@ -416,11 +416,11 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 justify-end pt-4 border-t">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 justify-end pt-2 sm:pt-4 border-t">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 text-xs sm:text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition"
               disabled={submitting}
             >
               Cancel
@@ -428,7 +428,7 @@ export default function ClassroomGradingForm({ onClose, onSuccess }) {
             <button
               type="submit"
               disabled={submitting || !classroom || !exam || !subject}
-              className="px-6 py-2 bg-primary-blue text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 text-xs sm:text-sm bg-primary-blue text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
             >
               {submitting ? 'Saving...' : 'Save All Grades'}
             </button>
