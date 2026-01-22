@@ -120,16 +120,17 @@ function ChildHomework({ studentId }) {
                   <p className="text-sm text-text-muted mb-3">{hw.description}</p>
                   
                   {/* Show submission form for students/parents/teachers who haven't submitted */}
-                  {canSubmit && !isSubmitted && showingSubmissionId === hw._id && (
+                  {!isSubmitted && showingSubmissionId === hw._id && (
                     <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="text-xs text-blue-700 mb-2 font-medium">
+                      <div className="text-xs text-blue-700 mb-3 font-medium">
                         {isStudent && '📝 Submit your homework'}
                         {isParent && `👨‍👩‍👧 Submitting on behalf of your child`}
                         {isTeacher && '👨‍🏫 Uploading homework materials'}
+                        {!isStudent && !isParent && !isTeacher && '📝 Upload files'}
                       </div>
                       <HomeworkSubmission
                         homeworkId={hw._id}
-                        classroomId={hw.classroom}
+                        classroomId={hw.classroomId}
                         onSubmitSuccess={() => {
                           success('Homework submitted successfully!')
                           setShowingSubmissionId(null)
@@ -140,14 +141,15 @@ function ChildHomework({ studentId }) {
                   )}
                   
                   {/* Show submit button for those who haven't submitted */}
-                  {canSubmit && !isSubmitted && showingSubmissionId !== hw._id && (
+                  {!isSubmitted && showingSubmissionId !== hw._id && (
                     <button
                       onClick={() => setShowingSubmissionId(hw._id)}
-                      className="w-full mb-3 px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                      className="w-full mb-3 px-4 py-3 bg-primary-blue text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium shadow-md"
                     >
                       {isStudent && '📝 Submit Homework'}
                       {isParent && '👨‍👩‍👧 Submit on Behalf of Child'}
                       {isTeacher && '📤 Upload Materials'}
+                      {!isStudent && !isParent && !isTeacher && '📝 Submit'}
                     </button>
                   )}
                   
