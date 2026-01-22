@@ -3,6 +3,8 @@ import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText,
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { teacherApi } from '../services/api'
 
 // Admin menu items
 const adminMenuItems = [
@@ -32,8 +34,7 @@ const adminMenuItems = [
 // Teacher menu items
 const teacherMenuItems = [
   { label: 'Dashboard', icon: Grid, path: '/' },
-  { label: 'Classrooms', icon: School, path: '/classrooms' },
-  { label: 'Timetable', icon: Calendar, path: '/timetable' },
+  { label: 'My Classrooms', icon: School, path: '/classrooms' },
   { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
   { label: 'Results', icon: Award, path: '/results' },
   { label: 'Messages', icon: Mail, path: '/messages' },
@@ -44,17 +45,13 @@ const teacherMenuItems = [
 const studentMenuItems = [
   { label: 'Dashboard', icon: Grid, path: '/' },
   { label: 'Subjects', icon: BookOpen, path: '/subjects' },
-  { label: 'Timetable', icon: Calendar, path: '/timetable' },
-  { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
   { label: 'Results', icon: Award, path: '/results' },
   { label: 'Messages', icon: Mail, path: '/messages' },
-  { label: 'Reports', icon: BarChart3, path: '/reports' }
 ]
 
 // Accounts menu items
 const accountsMenuItems = [
   { label: 'Dashboard', icon: Grid, path: '/' },
-  { label: 'Students', icon: GraduationCap, path: '/students' },
   { label: 'Fees', icon: DollarSign, path: '/fees' },
   { label: 'Payments', icon: CreditCard, path: '/payments' },
   { label: 'Expenses', icon: TrendingDown, path: '/expenses' },
@@ -66,10 +63,13 @@ const accountsMenuItems = [
 const headTeacherMenuItems = [
   { label: 'Dashboard', icon: Grid, path: '/' },
   { label: 'Students', icon: GraduationCap, path: '/students' },
+  { label: 'Teachers', icon: User, path: '/teachers' },
+  { label: 'Classrooms', icon: School, path: '/classrooms' },
   { label: 'Subjects', icon: BookOpen, path: '/subjects' },
-  { label: 'Staffs', icon: UserCog, path: '/staffs' },
-  { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
+  { label: 'Timetable', icon: Calendar, path: '/timetable' },
+  { label: 'Exams', icon: FileText, path: '/exams' },
   { label: 'Results', icon: Award, path: '/results' },
+  { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
   { label: 'Messages', icon: Mail, path: '/messages' },
   { label: 'Reports', icon: BarChart3, path: '/reports' }
 ]
@@ -87,6 +87,25 @@ function Sidebar({ isOpen, onClose }) {
   const { success } = useToast()
   const navigate = useNavigate()
   const userRole = user?.role || 'admin'
+  const [teacherClassroomId, setTeacherClassroomId] = useState(null)
+
+  // Fetch teacher's classroom on component mount
+  useEffect(() => {
+    if (userRole === 'teacher') {
+      const fetchTeacherClassroom = async () => {
+        try {
+          const classrooms = await teacherApi.getMyClassrooms()
+          const classroomList = classrooms.data || classrooms || []
+          if (classroomList.length === 1) {
+            setTeacherClassroomId(classroomList[0]._id)
+          }
+        } catch (err) {
+          console.error('Failed to fetch teacher classroom:', err)
+        }
+      }
+      fetchTeacherClassroom()
+    }
+  }, [userRole])
 
   const handleLogout = async () => {
     try {
@@ -116,6 +135,14 @@ function Sidebar({ isOpen, onClose }) {
 
   const handleLinkClick = () => {
     if (onClose) onClose()
+  }
+
+  // Helper function to get the correct path for menu items
+  const getMenuItemPath = (item) => {
+    if (userRole === 'teacher' && item.label === 'My Classrooms' && teacherClassroomId) {
+      return `/classrooms/${teacherClassroomId}`
+    }
+    return item.path
   }
 
   return (
@@ -153,11 +180,12 @@ function Sidebar({ isOpen, onClose }) {
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon
-              const isActive = location.pathname === item.path
+              const itemPath = getMenuItemPath(item)
+              const isActive = location.pathname === itemPath
               return (
                 <li key={item.label}>
                   <Link
-                    to={item.path}
+                    to={itemPath}
                     onClick={handleLinkClick}
                     className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors border-l-4 text-sm sm:text-base ${
                       isActive

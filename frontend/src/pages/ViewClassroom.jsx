@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { classroomsApi, teachersApi } from '../services/api';
+import { classroomApi } from '../services/api';
 import { ArrowLeft, School, Users, User, AlertCircle, Mail, Calendar, Clock } from 'lucide-react';
 import Homework from '../components/Homework';
 
@@ -8,7 +8,6 @@ function ViewClassroom() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [classroom, setClassroom] = useState(null);
-  const [teacherName, setTeacherName] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -17,20 +16,8 @@ function ViewClassroom() {
       setLoading(true);
       setError(null);
       try {
-        const data = await classroomsApi.get(id);
+        const data = await classroomApi.getById(id);
         setClassroom(data);
-
-        // Fetch teacher name if teacher_id exists
-        if (data.teacher_id) {
-          try {
-            const teacherResp = await teachersApi.get(data.teacher_id);
-            const name = teacherResp.name || [teacherResp.firstName, teacherResp.lastName].filter(Boolean).join(' ').trim();
-            setTeacherName(name || teacherResp.email || data.teacher_id);
-          } catch (err) {
-            // Fallback to ID if teacher fetch fails
-            setTeacherName(data.teacher_id);
-          }
-        }
       } catch (err) {
         setError(err.message || 'Failed to load classroom');
       } finally {
@@ -130,7 +117,7 @@ function ViewClassroom() {
               <h2 className="text-lg font-semibold text-text-dark">Assigned Teacher</h2>
             </div>
             <p className="text-text-muted text-sm mb-3">Class Teacher</p>
-            <p className="text-text-dark font-medium text-lg">{teacherName || 'No teacher assigned'}</p>
+            <p className="text-text-dark font-medium text-lg">{classroom.teacher_name || 'No teacher assigned'}</p>
           </div>
 
           {/* Student Count Card */}

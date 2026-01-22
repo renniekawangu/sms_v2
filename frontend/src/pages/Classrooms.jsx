@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from 'react'
 import { School, Search, Plus, Edit, Trash2, AlertCircle, Eye } from 'lucide-react'
-import { classroomsApi, adminApi, timetableApi, teachersApi } from '../services/api'
+import { classroomsApi, adminApi, timetableApi, teachersApi, teacherApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
 import Modal from '../components/Modal'
 import ClassroomForm from '../components/ClassroomForm'
 import { useNavigate } from 'react-router-dom'
 
 function Classrooms() {
+  const { user } = useAuth()
   const [classrooms, setClassrooms] = useState([])
   const navigate = useNavigate()
   const [teachers, setTeachers] = useState([])
@@ -27,40 +29,72 @@ function Classrooms() {
     try {
       setLoading(true)
       setError(null)
-      const [classroomsData, teachersData, studentsResp, coursesData] = await Promise.all([
-        classroomsApi.list(),
-        teachersApi.list(),
-        adminApi.listStudents({ limit: 1000 }),
-        timetableApi.courses.list()
-      ])
-      setClassrooms(classroomsData)
-      // Normalize teachers to {_id, name} - teachersApi returns both Staff and User teachers
-      const teacherList = (teachersData || []).map(t => ({
-        _id: t._id,
-        name: t.name || [t.firstName, t.lastName].filter(Boolean).join(' ').trim() || 'Teacher',
-        type: t.type || 'staff'  // type indicator: 'staff' or 'user'
-      }))
-      setTeachers(teacherList)
-      // Normalize students to {_id, name}
-      const studentList = (studentsResp.students || []).map(s => ({
-        _id: s._id,
-        name: s.name || [s.firstName, s.lastName].filter(Boolean).join(' ').trim() || s.email || 'Student'
-      }))
-      setStudents(studentList)
+      
+      // For teachers, fetch only their classrooms
+      if (user?.role === 'teacher') {
+        const [classroomsData, studentsResp, coursesData] = await Promise.all([
+          teacherApi.getMyClassrooms(),
+          adminApi.listStudents({ limit: 1000 }),
+          timetableApi.courses.list()
+        ])
+        const classroomList = classroomsData.data || classroomsData || []
+        setClassrooms(classroomList)
+        setTeachers([]) // Teachers don't need teacher list
+        
+        const studentList = (studentsResp.students || []).map(s => ({
+          _id: s._id,
+          name: s.name || [s.firstName, s.lastName].filter(Boolean).join(' ').trim() || s.email || 'Student'
+        }))
+        setStudents(studentList)
 
-      // Build a map of classroomId -> subjects[] including codes
-      const map = new Map()
-      ;(coursesData || []).forEach(course => {
-        const cid = course?.classroomId?._id || course?.classroomId
-        if (!cid) return
-        // Prefer the latest by updatedAt if multiple
-        const existing = map.get(cid)
-        if (!existing || new Date(course.updatedAt || 0) > new Date(existing._ts || 0)) {
-          const subjects = Array.isArray(course.subjects) ? course.subjects : []
-          map.set(cid, { subjects, _ts: course.updatedAt || course.createdAt || null })
-        }
-      })
-      setCourseSubjectsByClassroom(map)
+        const map = new Map()
+        ;(coursesData || []).forEach(course => {
+          const cid = course?.classroomId?._id || course?.classroomId
+          if (!cid) return
+          const existing = map.get(cid)
+          if (!existing || new Date(course.updatedAt || 0) > new Date(existing._ts || 0)) {
+            const subjects = Array.isArray(course.subjects) ? course.subjects : []
+            map.set(cid, { subjects, _ts: course.updatedAt || course.createdAt || null })
+          }
+        })
+        setCourseSubjectsByClassroom(map)
+      } else {
+        // For admins/others, fetch all classrooms and teachers
+        const [classroomsData, teachersData, studentsResp, coursesData] = await Promise.all([
+          classroomsApi.list(),
+          teachersApi.list(),
+          adminApi.listStudents({ limit: 1000 }),
+          timetableApi.courses.list()
+        ])
+        setClassrooms(classroomsData)
+        // Normalize teachers to {_id, name} - teachersApi returns both Staff and User teachers
+        const teacherList = (teachersData || []).map(t => ({
+          _id: t._id,
+          name: t.name || [t.firstName, t.lastName].filter(Boolean).join(' ').trim() || 'Teacher',
+          type: t.type || 'staff'  // type indicator: 'staff' or 'user'
+        }))
+        setTeachers(teacherList)
+        // Normalize students to {_id, name}
+        const studentList = (studentsResp.students || []).map(s => ({
+          _id: s._id,
+          name: s.name || [s.firstName, s.lastName].filter(Boolean).join(' ').trim() || s.email || 'Student'
+        }))
+        setStudents(studentList)
+
+        // Build a map of classroomId -> subjects[] including codes
+        const map = new Map()
+        ;(coursesData || []).forEach(course => {
+          const cid = course?.classroomId?._id || course?.classroomId
+          if (!cid) return
+          // Prefer the latest by updatedAt if multiple
+          const existing = map.get(cid)
+          if (!existing || new Date(course.updatedAt || 0) > new Date(existing._ts || 0)) {
+            const subjects = Array.isArray(course.subjects) ? course.subjects : []
+            map.set(cid, { subjects, _ts: course.updatedAt || course.createdAt || null })
+          }
+        })
+        setCourseSubjectsByClassroom(map)
+      }
     } catch (err) {
       const errorMessage = err.message || 'Failed to load data'
       setError(errorMessage)
@@ -162,16 +196,22 @@ function Classrooms() {
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Classrooms</h1>
-          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all classrooms</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">
+            {user?.role === 'teacher' ? 'My Classrooms' : 'Classrooms'}
+          </h1>
+          <p className="text-sm sm:text-base text-text-muted mt-1">
+            {user?.role === 'teacher' ? 'View your assigned classrooms' : 'Manage all classrooms'}
+          </p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
-        >
-          <Plus size={18} className="sm:size-5" />
-          <span>Add Classroom</span>
-        </button>
+        {user?.role !== 'teacher' && (
+          <button
+            onClick={handleCreate}
+            className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
+          >
+            <Plus size={18} className="sm:size-5" />
+            <span>Add Classroom</span>
+          </button>
+        )}
       </div>
 
       <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
@@ -204,27 +244,31 @@ function Classrooms() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                                        <button
-                                          onClick={() => navigate(`/classrooms/${classroom._id}`)}
-                                          className="text-primary-blue hover:text-primary-blue/80 p-1"
-                                          title="View"
-                                        >
-                                          <Eye size={16} />
-                                        </button>
                     <button
-                      onClick={() => handleEdit(classroom)}
+                      onClick={() => navigate(`/classrooms/${classroom._id}`)}
                       className="text-primary-blue hover:text-primary-blue/80 p-1"
-                      title="Edit"
+                      title="View"
                     >
-                      <Edit size={16} />
+                      <Eye size={16} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(classroom._id)}
-                      className="text-red-500 hover:text-red-600 p-1"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {user?.role !== 'teacher' && (
+                      <>
+                        <button
+                          onClick={() => handleEdit(classroom)}
+                          className="text-primary-blue hover:text-primary-blue/80 p-1"
+                          title="Edit"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(classroom._id)}
+                          className="text-red-500 hover:text-red-600 p-1"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">
