@@ -2,16 +2,23 @@ import { useState, useEffect } from 'react'
 import { parentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useSettings } from '../contexts/SettingsContext'
+import { useAuth } from '../contexts/AuthContext'
 import { BookOpen, Calendar, User } from 'lucide-react'
 import ErrorBoundary from '../components/ErrorBoundary'
+import HomeworkSubmission from './HomeworkSubmission'
 
 function ChildHomework({ studentId }) {
-  const { error: showError } = useToast()
+  const { user } = useAuth()
+  const { error: showError, success } = useToast()
   const { currentAcademicYear } = useSettings()
   
   const [homework, setHomework] = useState([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState(null)
+  const [showingSubmissionId, setShowingSubmissionId] = useState(null)
+  
+  // Check if current user is a student (viewing their own homework)
+  const isStudent = user?.role === 'student' && user?.id === studentId
 
   useEffect(() => {
     loadHomework()
@@ -109,6 +116,31 @@ function ChildHomework({ studentId }) {
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <p className="text-sm text-text-muted mb-3">{hw.description}</p>
                   
+                  {/* Show submission form for students who haven't submitted */}
+                  {isStudent && !isSubmitted && showingSubmissionId === hw._id && (
+                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <HomeworkSubmission
+                        homeworkId={hw._id}
+                        classroomId={hw.classroom}
+                        onSubmitSuccess={() => {
+                          success('Homework submitted successfully!')
+                          setShowingSubmissionId(null)
+                          loadHomework()
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Show submit button for students who haven't submitted */}
+                  {isStudent && !isSubmitted && showingSubmissionId !== hw._id && (
+                    <button
+                      onClick={() => setShowingSubmissionId(hw._id)}
+                      className="w-full mb-3 px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                    >
+                      Submit Homework
+                    </button>
+                  )}
+                  
                   {hw.studentSubmission && (
                     <div className="bg-gray-50 rounded p-3">
                       <h5 className="font-medium text-sm text-text-dark mb-2">Your Submission:</h5>
@@ -117,8 +149,30 @@ function ChildHomework({ studentId }) {
                           Submitted: {new Date(hw.studentSubmission.submissionDate).toLocaleString()}
                         </p>
                       )}
+                      
+                      {/* Show submitted attachments */}
+                      {hw.studentSubmission.attachments && hw.studentSubmission.attachments.length > 0 && (
+                        <div className="mb-3 p-2 bg-white border border-gray-200 rounded">
+                          <p className="text-xs font-medium text-text-dark mb-2">Submitted Files:</p>
+                          <div className="space-y-1">
+                            {hw.studentSubmission.attachments.map((att, idx) => (
+                              <a
+                                key={idx}
+                                href={att.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary-blue hover:underline block truncate"
+                                title={att.name}
+                              >
+                                📄 {att.name}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
                       {hw.studentSubmission.feedback && (
-                        <div className="mt-2 p-2 bg-white border border-gray-200 rounded">
+                        <div className="p-2 bg-white border border-gray-200 rounded">
                           <p className="text-xs font-medium text-text-dark">Teacher Feedback:</p>
                           <p className="text-sm text-text-muted mt-1">{hw.studentSubmission.feedback}</p>
                         </div>
