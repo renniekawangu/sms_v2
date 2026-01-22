@@ -47,7 +47,8 @@ const saveUploadedFile = (fileBuffer, originalName, subDir = 'submissions') => {
     ensureUploadDirs();
 
     const filename = generateUniqueFilename(originalName);
-    const fileDir = path.join(HOMEWORK_DIR, subDir);
+    // Use UPLOADS_DIR as base, not HOMEWORK_DIR, to avoid double paths
+    const fileDir = path.join(UPLOADS_DIR, 'homework', subDir);
     
     if (!fs.existsSync(fileDir)) {
       fs.mkdirSync(fileDir, { recursive: true });
@@ -57,7 +58,7 @@ const saveUploadedFile = (fileBuffer, originalName, subDir = 'submissions') => {
     fs.writeFileSync(filePath, fileBuffer);
 
     const relativePath = path.relative(path.join(__dirname, '../../'), filePath);
-    const url = `/uploads/${path.relative(UPLOADS_DIR, filePath).replace(/\\/g, '/')}`;
+    const url = `/uploads/homework/${subDir}/${filename}`;
 
     return {
       name: originalName,
