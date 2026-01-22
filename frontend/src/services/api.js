@@ -1278,6 +1278,24 @@ export const homeworkApi = {
     })
   },
 
+  submitWithFiles: async (id, formData) => {
+    const token = getToken()
+    const response = await fetch(`${API_BASE_URL}/homework/${id}/submit`, {
+      method: 'POST',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to submit homework')
+    }
+
+    return await response.json()
+  },
+
   grade: async (id, studentId, grade, feedback) => {
     return apiCall(`/homework/${id}/grade`, {
       method: 'POST',

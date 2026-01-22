@@ -3,6 +3,7 @@
  * Provides endpoints for homework management
  */
 const express = require('express');
+const multer = require('multer');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { requireAuth, requireRole } = require('../middleware/rbac');
 const { ROLES } = require('../config/rbac');
@@ -11,9 +12,26 @@ const { Classroom } = require('../models/classroom');
 const { Student } = require('../models/student');
 const { getCurrentAcademicYear } = require('../models/school-settings');
 const { validateRequiredFields, validateObjectId, sanitizeString } = require('../utils/validation');
+const { processUploadedFiles, deleteUploadedFile } = require('../utils/fileUpload');
 const cacheManager = require('../utils/cache');
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} not allowed`));
+    }
+  }
+});
 
 /**
  * GET /api/homework/classroom/:classroomId
@@ -258,12 +276,13 @@ router.delete(
 
 /**
  * POST /api/homework/:id/submit
- * Submit homework (student)
+ * Submit homework (student) with optional file attachments
  */
 router.post(
   '/:id/submit',
   requireAuth,
   requireRole(ROLES.STUDENT),
+  upload.array('files', 20), // Allow up to 20 files
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -276,6 +295,16 @@ router.post(
       return res.status(404).json({ error: 'Homework not found' });
     }
 
+    // Process uploaded files if any
+    let attachments = [];
+    if (req.files && req.files.length > 0) {
+      try {
+        attachments = processUploadedFiles(req.files, 'submissions');
+      } catch (error) {
+        return res.status(400).json({ error: error.message });
+      }
+    }
+
     // Find or create submission
     let submission = homework.submissions.find(s => s.student.toString() === req.user.id);
 
@@ -283,19 +312,24 @@ router.post(
       submission = {
         student: req.user.id,
         status: 'submitted',
-        submissionDate: new Date()
+        submissionDate: new Date(),
+        attachments: attachments
       };
       homework.submissions.push(submission);
     } else {
       submission.status = 'submitted';
       submission.submissionDate = new Date();
+      submission.attachments = attachments;
     }
 
     await homework.save();
+    await homework.populate('submissions.student', 'firstName lastName email studentId');
+    await homework.populate('submissions.gradedBy', 'firstName lastName');
 
     res.json({
       message: 'Homework submitted successfully',
-      homework
+      homework,
+      submission: homework.submissions.find(s => s.student.toString() === req.user.id)
     });
   })
 );
