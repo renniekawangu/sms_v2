@@ -88,7 +88,7 @@ const Messages = () => {
       // Fix: Use normalized ID comparison for unread messages
       const unreadMessages = (result.messages || []).filter(m => {
         const senderId = String(m.sender?.id || m.sender?._id || '')
-        const currentUserId = String(user?.id || user?._id || '')
+        const currentUserId = String(user?.user_id || user?.id || user?._id || '')
         return !m.isRead && senderId !== currentUserId
       })
       if (unreadMessages.length > 0) {
@@ -357,7 +357,7 @@ const Messages = () => {
                 {messages.map((msg, idx) => {
                   // Normalize IDs to handle both string and object comparisons
                   const senderId = String(msg.sender?.id || msg.sender?._id || '')
-                  const currentUserId = String(user?.id || user?._id || '')
+                  const currentUserId = String(user?.user_id || user?.id || user?._id || '')
                   const isCurrentUser = senderId === currentUserId && senderId !== ''
                   
                   const showDate = idx === 0 || formatDate(messages[idx - 1].createdAt) !== formatDate(msg.createdAt)
