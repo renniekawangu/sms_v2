@@ -54,6 +54,7 @@ const accountsMenuItems = [
   { label: 'Dashboard', icon: Grid, path: '/' },
   { label: 'Fees', icon: DollarSign, path: '/fees' },
   { label: 'Payments', icon: CreditCard, path: '/payments' },
+  { label: 'Financial Reports', icon: BarChart3, path: '/financial-reports' },
   { label: 'Expenses', icon: TrendingDown, path: '/expenses' },
   { label: 'Messages', icon: Mail, path: '/messages' },
   { label: 'Reports', icon: BarChart3, path: '/reports' },

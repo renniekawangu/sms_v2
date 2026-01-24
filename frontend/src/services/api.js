@@ -757,7 +757,7 @@ export const accountsApi = {
   },
 
   getPayments: async (filters = {}) => {
-    const params = new URLSearchParams(filters);
+    const params = filters instanceof URLSearchParams ? filters : new URLSearchParams(filters);
     return apiCall(`/accounts/payments?${params}`, {
       method: 'GET',
     });
@@ -794,6 +794,27 @@ export const accountsApi = {
   deleteExpense: async (expense_id) => {
     return apiCall(`/accounts/expenses/${expense_id}`, {
       method: 'DELETE',
+    });
+  },
+
+  // Financial Reports
+  getReportSummary: async (filters = {}) => {
+    const params = filters instanceof URLSearchParams ? filters : new URLSearchParams(filters);
+    return apiCall(`/accounts/reports/summary?${params}`, {
+      method: 'GET',
+    });
+  },
+
+  getReportOverdue: async () => {
+    return apiCall('/accounts/reports/overdue', {
+      method: 'GET',
+    });
+  },
+
+  getReportTrend: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiCall(`/accounts/reports/collection-trend?${params}`, {
+      method: 'GET',
     });
   },
 

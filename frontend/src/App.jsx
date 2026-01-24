@@ -25,6 +25,7 @@ import Parents from './pages/Parents'
 import Attendance from './pages/Attendance'
 import Fees from './pages/Fees'
 import Payments from './pages/Payments'
+import FinancialReports from './pages/FinancialReports'
 import Expenses from './pages/Expenses'
 import Issues from './pages/Issues'
 import Settings from './pages/Settings'
@@ -269,6 +270,18 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Payments />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Financial Reports - accessible to admin and accounts */}
+              <Route
+                path="/financial-reports"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FinancialReports />
                     </Layout>
                   </ProtectedRoute>
                 }

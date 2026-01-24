@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CreditCard, Plus, AlertCircle, Search, RefreshCw } from 'lucide-react'
+import { CreditCard, Plus, AlertCircle, Search, RefreshCw, Filter, Calendar } from 'lucide-react'
 import { accountsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
@@ -15,23 +15,40 @@ function Payments() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState({ total: 0, pages: 1, page: 1, limit: 50 })
+  const [summary, setSummary] = useState({})
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState({
+    method: '',
+    startDate: '',
+    endDate: '',
+    studentId: ''
+  })
   const { success, error: showError } = useToast()
 
   useEffect(() => {
     loadData()
-  }, [currentPage])
+  }, [currentPage, filters])
 
   const loadData = async () => {
     try {
       setLoading(true)
       setError(null)
+      const queryParams = new URLSearchParams()
+      queryParams.append('page', currentPage)
+      queryParams.append('limit', 50)
+      
+      if (filters.method) queryParams.append('method', filters.method)
+      if (filters.startDate) queryParams.append('startDate', filters.startDate)
+      if (filters.endDate) queryParams.append('endDate', filters.endDate)
+      if (filters.studentId) queryParams.append('studentId', filters.studentId)
+
       const [paymentsData, feesData] = await Promise.all([
-        accountsApi.getPayments({ page: currentPage, limit: 50 }),
+        accountsApi.getPayments(queryParams),
         accountsApi.getFees()
       ])
       setPayments(paymentsData.payments || [])
+      setSummary(paymentsData.summary || {})
       setPagination(paymentsData.pagination || { total: 0, pages: 1, page: 1, limit: 50 })
-      // Ensure fees is always an array - handle both direct array and {fees, pagination} response
       const feesArray = Array.isArray(feesData) 
         ? feesData 
         : (feesData?.fees || feesData?.data || [])
@@ -66,6 +83,16 @@ function Payments() {
       const errorMessage = err.message || 'Failed to record payment'
       showError(errorMessage)
     }
+  }
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+    setCurrentPage(1)
+  }
+
+  const clearFilters = () => {
+    setFilters({ method: '', startDate: '', endDate: '', studentId: '' })
+    setCurrentPage(1)
   }
 
   const getFeeInfo = (feeId) => {
@@ -147,6 +174,80 @@ function Payments() {
         <Plus size={18} />
         <span>Record Payment</span>
       </button>
+
+      {/* Payment Summary Card */}
+      {Object.keys(summary).length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {Object.entries(summary).map(([method, data]) => (
+            <div key={method} className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+              <p className="text-sm text-gray-600 capitalize font-medium">{method}</p>
+              <p className="text-xl font-bold text-text-dark mt-1">K{data.amount?.toLocaleString()}</p>
+              <p className="text-xs text-gray-500 mt-1">{data.count} payments</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filters Panel */}
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 text-primary-blue font-medium hover:text-primary-blue/80 transition-colors"
+        >
+          <Filter size={18} />
+          <span>Advanced Filters</span>
+        </button>
+
+        {showFilters && (
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-dark mb-2">Payment Method</label>
+              <select
+                value={filters.method}
+                onChange={(e) => handleFilterChange('method', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              >
+                <option value="">All Methods</option>
+                <option value="cash">Cash</option>
+                <option value="bank transfer">Bank Transfer</option>
+                <option value="mobile money">Mobile Money</option>
+                <option value="cheque">Cheque</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-dark mb-2">Start Date</label>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-dark mb-2">End Date</label>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              />
+            </div>
+
+            <div className="flex items-end">
+              {Object.values(filters).some(v => v) && (
+                <button
+                  onClick={clearFilters}
+                  className="w-full px-3 py-2 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">
         {payments.length > 0 && (

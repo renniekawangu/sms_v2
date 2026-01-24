@@ -27,9 +27,12 @@ function ProtectedRoute({ children, requiredRole, requiredPermission }) {
     return <Navigate to="/login" replace />
   }
 
-  // Check role-based access
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/" replace />
+  // Check role-based access (supports both single string and array of roles)
+  if (requiredRole) {
+    const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
+    if (!allowedRoles.includes(user?.role)) {
+      return <Navigate to="/" replace />
+    }
   }
 
   // Check permission-based access

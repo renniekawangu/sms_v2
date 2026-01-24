@@ -219,23 +219,46 @@ router.delete('/fees/:id', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandle
 // ============= Payments Management =============
 /**
  * GET /api/accounts/payments
- * Get all payments
+ * Get all payments with filters by method, date range, and status
  */
 router.get('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
-  const { page = 1, limit = 50 } = req.query;
+  const { page = 1, limit = 50, method, startDate, endDate, studentId } = req.query;
   const skip = (page - 1) * limit;
 
-  const payments = await Payment.find()
+  const filter = {};
+  if (method) filter.method = method;
+  if (studentId) filter.studentId = studentId;
+  
+  if (startDate || endDate) {
+    filter.paymentDate = {};
+    if (startDate) filter.paymentDate.$gte = new Date(startDate);
+    if (endDate) filter.paymentDate.$lte = new Date(endDate);
+  }
+
+  const payments = await Payment.find(filter)
     .populate('feeId')
     .skip(skip)
     .limit(parseInt(limit))
     .sort({ paymentDate: -1 })
     .lean();
 
-  const total = await Payment.countDocuments();
+  const total = await Payment.countDocuments(filter);
+
+  // Calculate payment summary
+  const summary = await Payment.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: '$method',
+        count: { $sum: 1 },
+        totalAmount: { $sum: '$amountPaid' }
+      }
+    }
+  ]);
 
   res.json({
     payments,
+    summary: Object.fromEntries(summary.map(s => [s._id || 'unknown', { count: s.count, amount: s.totalAmount }])),
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),
@@ -248,6 +271,7 @@ router.get('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(a
 /**
  * POST /api/accounts/payments
  * Create new payment (by accounts staff)
+ * Includes duplicate detection and audit trail
  */
 router.post('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
   const { feeId, amount, method = 'cash', paymentDate, notes } = req.body;
@@ -258,13 +282,30 @@ router.post('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(
   }
 
   // Validate amount
-  if (amount <= 0) {
-    return res.status(400).json({ error: 'Payment amount must be greater than 0' });
+  if (typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ error: 'Payment amount must be a positive number' });
   }
 
   // Validate fee ID
   if (!require('mongoose').Types.ObjectId.isValid(feeId)) {
     return res.status(400).json({ error: 'Invalid fee ID' });
+  }
+
+  // Check for duplicate payments (same amount, method, within last 10 minutes)
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+  const duplicateCheck = await Payment.findOne({
+    feeId,
+    amountPaid: amount,
+    method,
+    paymentDate: { $gte: tenMinutesAgo }
+  });
+
+  if (duplicateCheck) {
+    return res.status(409).json({ 
+      error: 'Possible duplicate payment detected',
+      details: 'A similar payment was recorded recently. Please verify before proceeding.',
+      existingPayment: duplicateCheck
+    });
   }
 
   // Update fee record
@@ -279,7 +320,7 @@ router.post('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(
     });
   }
 
-  // Record payment in fee's payments array
+  // Record payment in fee's payments array with audit info
   fee.amountPaid = Math.min((fee.amountPaid || 0) + amount, fee.amount);
   fee.payments = fee.payments || [];
   fee.payments.push({
@@ -287,7 +328,8 @@ router.post('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(
     date: paymentDate ? new Date(paymentDate) : new Date(),
     method,
     notes: notes || '',
-    paidBy: req.user.id
+    paidBy: req.user.id,
+    recordedAt: new Date()
   });
 
   // Update status
@@ -297,6 +339,16 @@ router.post('/payments', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(
   } else if (fee.amountPaid > 0) {
     fee.status = 'pending';
   }
+
+  // Add audit trail
+  fee.auditLog = fee.auditLog || [];
+  fee.auditLog.push({
+    action: 'payment_recorded',
+    amount,
+    method,
+    timestamp: new Date(),
+    userId: req.user.id
+  });
 
   await fee.save();
 
@@ -433,6 +485,130 @@ router.delete('/expenses/:id', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHa
   const expense = await Expense.findByIdAndDelete(req.params.id);
   if (!expense) return res.status(404).json({ error: 'Expense not found' });
   res.json({ message: 'Expense deleted' });
+}));
+
+// ============= Financial Reports & Analytics =============
+/**
+ * GET /api/accounts/reports/summary
+ * Get financial summary report by date range
+ */
+router.get('/reports/summary', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
+  const { startDate, endDate, academicYear } = req.query;
+
+  const filter = {};
+  if (academicYear) filter.academicYear = academicYear;
+
+  // Calculate totals
+  const fees = await Fee.find(filter).lean();
+  const totalFeeAmount = fees.reduce((sum, f) => sum + f.amount, 0);
+  const totalPaidAmount = fees.reduce((sum, f) => sum + (f.amountPaid || 0), 0);
+  const totalOutstanding = totalFeeAmount - totalPaidAmount;
+
+  // Get payments within date range
+  let paymentFilter = {};
+  if (startDate || endDate) {
+    paymentFilter.paymentDate = {};
+    if (startDate) paymentFilter.paymentDate.$gte = new Date(startDate);
+    if (endDate) paymentFilter.paymentDate.$lte = new Date(endDate);
+  }
+
+  const payments = await Payment.find(paymentFilter).lean();
+  const totalPayments = payments.reduce((sum, p) => sum + p.amountPaid, 0);
+  const paymentsByMethod = {};
+  payments.forEach(p => {
+    paymentsByMethod[p.method] = (paymentsByMethod[p.method] || 0) + p.amountPaid;
+  });
+
+  // Get expenses within date range
+  let expenseFilter = {};
+  if (startDate || endDate) {
+    expenseFilter.date = {};
+    if (startDate) expenseFilter.date.$gte = new Date(startDate);
+    if (endDate) expenseFilter.date.$lte = new Date(endDate);
+  }
+
+  const expenses = await Expense.find(expenseFilter).lean();
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+  const net = totalPayments - totalExpenses;
+
+  res.json({
+    summary: {
+      totalFees: totalFeeAmount,
+      totalPaid: totalPaidAmount,
+      totalOutstanding,
+      paidPercentage: totalFeeAmount > 0 ? ((totalPaidAmount / totalFeeAmount) * 100).toFixed(2) : 0,
+      totalPayments,
+      paymentsByMethod,
+      totalExpenses,
+      netCashFlow: net,
+      periodStart: startDate || 'All time',
+      periodEnd: endDate || 'All time'
+    },
+    feeBreakdown: {
+      paid: fees.filter(f => f.status === 'paid').length,
+      pending: fees.filter(f => f.status === 'pending').length,
+      unpaid: fees.filter(f => f.status === 'unpaid').length
+    }
+  });
+}));
+
+/**
+ * GET /api/accounts/reports/overdue
+ * Get overdue fees report
+ */
+router.get('/reports/overdue', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
+  const now = new Date();
+  const overdueFilter = {
+    status: { $in: ['unpaid', 'pending'] },
+    dueDate: { $lt: now }
+  };
+
+  const overdueFees = await Fee.find(overdueFilter)
+    .populate('studentId', 'firstName lastName studentId')
+    .sort({ dueDate: 1 })
+    .lean();
+
+  const totalOverdue = overdueFees.reduce((sum, f) => sum + Math.max(0, f.amount - (f.amountPaid || 0)), 0);
+  const overdueDays = overdueFees.map(f => ({
+    ...f,
+    daysOverdue: Math.floor((now - new Date(f.dueDate)) / (1000 * 60 * 60 * 24)),
+    outstandingAmount: Math.max(0, f.amount - (f.amountPaid || 0))
+  }));
+
+  res.json({
+    count: overdueFees.length,
+    totalOverdue,
+    fees: overdueDays
+  });
+}));
+
+/**
+ * GET /api/accounts/reports/collection-trend
+ * Get payment collection trend
+ */
+router.get('/reports/collection-trend', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(async (req, res) => {
+  const { months = 12 } = req.query;
+  
+  const trend = await Payment.aggregate([
+    {
+      $group: {
+        _id: {
+          year: { $year: '$paymentDate' },
+          month: { $month: '$paymentDate' }
+        },
+        totalAmount: { $sum: '$amountPaid' },
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { '_id.year': -1, '_id.month': -1 } },
+    { $limit: parseInt(months) }
+  ]);
+
+  res.json({
+    trend: trend.reverse(),
+    period: `Last ${months} months`
+  });
 }));
 
 module.exports = router;
