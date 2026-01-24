@@ -18,10 +18,24 @@ router.get('/inbox', requireAuth, asyncHandler(async (req, res) => {
   })
     .sort({ createdAt: -1 })
     .limit(50)
+    .lean()
+
+  // Convert ObjectIds to strings
+  const processedMessages = messages.map(msg => ({
+    ...msg,
+    sender: {
+      ...msg.sender,
+      id: msg.sender.id?.toString ? msg.sender.id.toString() : msg.sender.id
+    },
+    recipient: {
+      ...msg.recipient,
+      id: msg.recipient.id?.toString ? msg.recipient.id.toString() : msg.recipient.id
+    }
+  }))
 
   res.json({
     success: true,
-    messages
+    messages: processedMessages
   })
 }))
 
@@ -35,10 +49,24 @@ router.get('/sent', requireAuth, asyncHandler(async (req, res) => {
   })
     .sort({ createdAt: -1 })
     .limit(50)
+    .lean()
+
+  // Convert ObjectIds to strings
+  const processedMessages = messages.map(msg => ({
+    ...msg,
+    sender: {
+      ...msg.sender,
+      id: msg.sender.id?.toString ? msg.sender.id.toString() : msg.sender.id
+    },
+    recipient: {
+      ...msg.recipient,
+      id: msg.recipient.id?.toString ? msg.recipient.id.toString() : msg.recipient.id
+    }
+  }))
 
   res.json({
     success: true,
-    messages
+    messages: processedMessages
   })
 }))
 
@@ -49,11 +77,24 @@ router.get('/conversation/:userId', requireAuth, asyncHandler(async (req, res) =
       { 'sender.id': req.user.id, 'recipient.id': req.params.userId },
       { 'sender.id': req.params.userId, 'recipient.id': req.user.id }
     ]
-  }).sort({ createdAt: 1 })
+  }).sort({ createdAt: 1 }).lean()
+  
+  // Convert ObjectIds to strings for consistent frontend comparison
+  const processedMessages = messages.map(msg => ({
+    ...msg,
+    sender: {
+      ...msg.sender,
+      id: msg.sender.id?.toString ? msg.sender.id.toString() : msg.sender.id
+    },
+    recipient: {
+      ...msg.recipient,
+      id: msg.recipient.id?.toString ? msg.recipient.id.toString() : msg.recipient.id
+    }
+  }))
 
   res.json({
     success: true,
-    messages
+    messages: processedMessages
   })
 }))
 
@@ -153,10 +194,23 @@ router.post('/send', requireAuth, asyncHandler(async (req, res) => {
   console.log('[SEND MESSAGE] Saving message:', msg)
   await msg.save()
 
+  // Convert IDs to strings for consistent frontend comparison
+  const responseMsg = {
+    ...msg.toObject(),
+    sender: {
+      ...msg.sender,
+      id: msg.sender.id?.toString ? msg.sender.id.toString() : msg.sender.id
+    },
+    recipient: {
+      ...msg.recipient,
+      id: msg.recipient.id?.toString ? msg.recipient.id.toString() : msg.recipient.id
+    }
+  }
+
   res.json({
     success: true,
     message: 'Message sent successfully',
-    msg
+    msg: responseMsg
   })
 }))
 

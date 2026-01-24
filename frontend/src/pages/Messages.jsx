@@ -81,13 +81,16 @@ const Messages = () => {
     try {
       const result = await messagesApi.getConversation(conversation.id)
       const msgs = result.messages || []
-      console.log('Loaded messages:', msgs) // Debug log
-      console.log('Current user:', user) // Debug log
       setMessages(msgs)
       setSelectedConversation(conversation)
       setNewMessage('')
       
-      const unreadMessages = (result.messages || []).filter(m => !m.isRead && m.sender.id !== user.id)
+      // Fix: Use normalized ID comparison for unread messages
+      const unreadMessages = (result.messages || []).filter(m => {
+        const senderId = String(m.sender?.id || m.sender?._id || '')
+        const currentUserId = String(user?.id || user?._id || '')
+        return !m.isRead && senderId !== currentUserId
+      })
       if (unreadMessages.length > 0) {
         await Promise.all(unreadMessages.map(m => messagesApi.markAsRead(m._id)))
         await loadConversations()
@@ -353,9 +356,9 @@ const Messages = () => {
               <div className="space-y-4">
                 {messages.map((msg, idx) => {
                   // Normalize IDs to handle both string and object comparisons
-                  const senderId = msg.sender?.id || msg.sender?._id || msg.sender
-                  const currentUserId = user?.id || user?._id
-                  const isCurrentUser = String(senderId) === String(currentUserId)
+                  const senderId = String(msg.sender?.id || msg.sender?._id || '')
+                  const currentUserId = String(user?.id || user?._id || '')
+                  const isCurrentUser = senderId === currentUserId && senderId !== ''
                   
                   const showDate = idx === 0 || formatDate(messages[idx - 1].createdAt) !== formatDate(msg.createdAt)
                   const senderInitial = isCurrentUser 
