@@ -17,6 +17,8 @@ const Messages = () => {
   const [contacts, setContacts] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const messagesEndRef = useRef(null)
+  const selectedConversationRef = useRef(null)
+  const lastMessageIdRef = useRef(null)
 
   useEffect(() => {
     loadConversations()
@@ -24,6 +26,26 @@ const Messages = () => {
     const interval = setInterval(loadUnreadCount, 5000)
     return () => clearInterval(interval)
   }, [])
+
+  // Update ref when conversation changes
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation
+  }, [selectedConversation])
+
+  // Auto-refresh messages when a conversation is selected
+  useEffect(() => {
+    if (!selectedConversation) return
+    
+    // Load messages immediately
+    loadConversationMessages(selectedConversation)
+    
+    // Then set up polling every 3 seconds for real-time updates
+    const interval = setInterval(() => {
+      pollConversationMessages(selectedConversation.id)
+    }, 3000)
+    
+    return () => clearInterval(interval)
+  }, [selectedConversation?.id])
 
   useEffect(() => {
     scrollToBottom()
@@ -81,12 +103,18 @@ const Messages = () => {
     try {
       const result = await messagesApi.getConversation(conversation.id)
       const msgs = result.messages || []
+      
+      // Track last message ID for polling
+      if (msgs.length > 0) {
+        lastMessageIdRef.current = msgs[msgs.length - 1]._id
+      }
+      
       setMessages(msgs)
       setSelectedConversation(conversation)
       setNewMessage('')
       
       // Fix: Use normalized ID comparison for unread messages
-      const unreadMessages = (result.messages || []).filter(m => {
+      const unreadMessages = msgs.filter(m => {
         const senderId = String(m.sender?.id || m.sender?._id || '')
         const currentUserId = String(user?.user_id || user?.id || user?._id || '')
         return !m.isRead && senderId !== currentUserId
@@ -97,7 +125,36 @@ const Messages = () => {
         await loadUnreadCount()
       }
     } catch (err) {
-      error('Error loading conversation')
+      // Silently fail for polling - don't show error on every poll
+    }
+  }
+
+  const pollConversationMessages = async (conversationId) => {
+    try {
+      const result = await messagesApi.getConversation(conversationId)
+      const msgs = result.messages || []
+      
+      if (msgs.length === 0) return
+      
+      const lastMsgId = msgs[msgs.length - 1]._id
+      
+      // Only update if there are NEW messages (not if it's the same last message)
+      if (lastMessageIdRef.current !== lastMsgId) {
+        lastMessageIdRef.current = lastMsgId
+        setMessages(msgs)
+        
+        // Mark new messages as read
+        const unreadMessages = msgs.filter(m => {
+          const senderId = String(m.sender?.id || m.sender?._id || '')
+          const currentUserId = String(user?.user_id || user?.id || user?._id || '')
+          return !m.isRead && senderId !== currentUserId
+        })
+        if (unreadMessages.length > 0) {
+          await Promise.all(unreadMessages.map(m => messagesApi.markAsRead(m._id)))
+        }
+      }
+    } catch (err) {
+      // Silently fail for polling
     }
   }
 
