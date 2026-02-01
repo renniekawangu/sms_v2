@@ -127,7 +127,7 @@ router.get('/classrooms', requireAuth, requireRole(ROLES.TEACHER, ROLES.ADMIN, R
 router.get('/classroom/:classroomId/students', requireAuth, requireRole(ROLES.TEACHER, ROLES.ADMIN, ROLES.HEAD_TEACHER), async (req, res, next) => {
   try {
     // Admin and Head Teacher can access any classroom
-    if (req.user.role === 'admin' || req.user.role === 'head-teacher') {
+    if (req.user.role === ROLES.ADMIN || req.user.role === ROLES.HEAD_TEACHER) {
       const students = await Student.find({ classroomId: req.params.classroomId }).lean();
       return res.json({ success: true, data: students });
     }
