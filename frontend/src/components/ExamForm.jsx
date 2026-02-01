@@ -19,7 +19,7 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
   useEffect(() => {
     if (exam) {
       setFormData({
-        title: exam.title || '',
+        title: exam.name || '',
         academicYear: exam.academicYear || '',
         term: exam.term || '',
         subject: exam.subject || '',
@@ -50,15 +50,29 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
     setError('');
 
     try {
+      // Transform form data to match backend API
+      const payload = {
+        name: formData.title,
+        academicYear: formData.academicYear,
+        term: formData.term,
+        totalMarks: parseInt(formData.totalMarks),
+        passingMarks: parseInt(formData.passingMarks),
+        description: formData.description,
+      };
+
       if (exam?._id) {
-        await examApi.update(exam._id, formData);
+        await examApi.update(exam._id, payload);
       } else {
-        await examApi.create(formData);
+        await examApi.create(payload);
       }
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save exam');
+      // Handle both single error string and array of errors
+      const errorMsg = err.response?.data?.errors 
+        ? err.response.data.errors.join(', ')
+        : err.response?.data?.error || err.response?.data?.message || 'Failed to save exam';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -137,9 +151,9 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select term</option>
-                <option value="1">Term 1</option>
-                <option value="2">Term 2</option>
-                <option value="3">Term 3</option>
+                <option value="Term 1">Term 1</option>
+                <option value="Term 2">Term 2</option>
+                <option value="Term 3">Term 3</option>
               </select>
             </div>
           </div>

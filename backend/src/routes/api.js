@@ -770,18 +770,56 @@ router.get('/exams/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHE
 }));
 
 router.post('/exams', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const exam = new Exam(req.body);
+  const { name, examType, term, academicYear, classrooms, subjects, totalMarks, scheduledDate, description } = req.body;
+  
+  // Validation
+  if (!name || !term || !academicYear) {
+    return res.status(400).json({ error: 'Name, term, and academic year are required' });
+  }
+
+  const exam = new Exam({
+    name,
+    examType: examType || 'unit-test',
+    term,
+    academicYear,
+    classrooms: classrooms || [],
+    subjects: subjects || [],
+    totalMarks: totalMarks || 100,
+    scheduledDate,
+    description,
+    createdBy: req.user.id
+  });
+
   await exam.save();
-  res.status(201).json(exam);
+  res.status(201).json({
+    success: true,
+    message: 'Exam created successfully',
+    exam
+  });
 }));
 
 router.put('/exams/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
   if (!isValidObjectId(req.params.id)) {
     return res.status(400).json({ error: 'Invalid exam ID' });
   }
-  const exam = await Exam.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  
+  // Only allow updating specific fields
+  const allowedUpdates = ['name', 'description', 'totalMarks', 'passingMarks', 'scheduledDate'];
+  const updateData = {};
+  
+  allowedUpdates.forEach(field => {
+    if (field in req.body) {
+      updateData[field] = req.body[field];
+    }
+  });
+  
+  const exam = await Exam.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
   if (!exam) return res.status(404).json({ error: 'Exam not found' });
-  res.json(exam);
+  res.json({
+    success: true,
+    message: 'Exam updated successfully',
+    exam
+  });
 }));
 
 router.delete('/exams/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {

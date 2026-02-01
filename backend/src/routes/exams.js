@@ -9,6 +9,7 @@
  */
 
 const express = require('express');
+const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { requireAuth, requireRole } = require('../middleware/rbac');
 const { ROLES } = require('../config/rbac');
