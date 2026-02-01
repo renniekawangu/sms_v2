@@ -1,17 +1,16 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { ROLES, ROUTE_ACCESS } from '../config/rbac'
 
-// Authorization matrix from API contract
-const authorizationMatrix = {
-  admin: ['*'],
-  teacher: ['view:students', 'manage:attendance', 'manage:results', 'view:timetable'],
-  student: ['view:results', 'view:attendance', 'view:timetable', 'create:issues'],
-  accounts: ['manage:fees', 'manage:payments', 'manage:expenses', 'view:students']
-}
+/**
+ * ProtectedRoute Component
+ * Enforces authentication, role-based access, and permission-based access
+ * Prevents unauthorized access and redirects appropriately
+ */
+function ProtectedRoute({ children, requiredRole, requiredPermission, route }) {
+  const { isAuthenticated, loading, user, hasPermission } = useAuth()
 
-function ProtectedRoute({ children, requiredRole, requiredPermission }) {
-  const { isAuthenticated, loading, user } = useAuth()
-
+  // Show loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-background-light flex items-center justify-center">
@@ -23,23 +22,35 @@ function ProtectedRoute({ children, requiredRole, requiredPermission }) {
     )
   }
 
+  // Check authentication
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  // Check route access if route is provided
+  if (route) {
+    const allowedRoles = ROUTE_ACCESS[route]
+    if (allowedRoles && allowedRoles.length > 0) {
+      if (user?.role !== ROLES.ADMIN && !allowedRoles.includes(user?.role)) {
+        console.warn(`[ACCESS DENIED] User role "${user?.role}" cannot access route "${route}"`)
+        return <Navigate to="/" replace />
+      }
+    }
   }
 
   // Check role-based access (supports both single string and array of roles)
   if (requiredRole) {
     const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
-    if (!allowedRoles.includes(user?.role)) {
+    if (user?.role !== ROLES.ADMIN && !allowedRoles.includes(user?.role)) {
+      console.warn(`[ACCESS DENIED] User role "${user?.role}" is not in allowed roles: ${allowedRoles.join(', ')}`)
       return <Navigate to="/" replace />
     }
   }
 
   // Check permission-based access
-  if (requiredPermission && user?.role) {
-    const userPermissions = authorizationMatrix[user.role] || []
-    const hasPermission = userPermissions.includes('*') || userPermissions.includes(requiredPermission)
-    if (!hasPermission) {
+  if (requiredPermission) {
+    if (!hasPermission(requiredPermission)) {
+      console.warn(`[ACCESS DENIED] User does not have permission: "${requiredPermission}"`)
       return <Navigate to="/" replace />
     }
   }

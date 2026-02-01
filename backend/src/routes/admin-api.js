@@ -1,10 +1,11 @@
 /**
  * Admin API Routes for Frontend SPA
  * Provides JSON API endpoints for admin dashboard and management
+ * Enforces privilege escalation prevention and role-based access control
  */
 const express = require('express');
 const { asyncHandler } = require('../middleware/errorHandler');
-const { requireAuth, requireRole } = require('../middleware/rbac');
+const { requireAuth, requireRole, preventPrivilegeEscalation } = require('../middleware/rbac');
 const { ROLES } = require('../config/rbac');
 const { User } = require('../models/user');
 const { Student } = require('../models/student');
@@ -169,13 +170,21 @@ router.get('/users/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(asy
 
 /**
  * POST /api/admin/users
- * Create new user
+ * Create new user with privilege escalation prevention
  */
-router.post('/users', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.post('/users', requireAuth, requireRole(ROLES.ADMIN), preventPrivilegeEscalation, asyncHandler(async (req, res) => {
   const { email, password, role, name, phone, date_of_join } = req.body;
 
   if (!email || !password || !role) {
     return res.status(400).json({ error: 'Email, password, and role are required' });
+  }
+
+  // Prevent privilege escalation: admin cannot create users with roles they don't have
+  // (In this system, only admin can create users, so this is admin-only)
+  // But prevent creation of roles that don't exist in the system
+  const validRoles = [ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER, ROLES.STUDENT, ROLES.ACCOUNTS, ROLES.PARENT];
+  if (!validRoles.includes(role)) {
+    return res.status(400).json({ error: `Invalid role: ${role}. Allowed roles: ${validRoles.join(', ')}` });
   }
 
   const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -234,16 +243,24 @@ router.post('/users', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async 
 
 /**
  * PUT /api/admin/users/:id
- * Update user
+ * Update user with privilege escalation prevention
  */
-router.put('/users/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.put('/users/:id', requireAuth, requireRole(ROLES.ADMIN), preventPrivilegeEscalation, asyncHandler(async (req, res) => {
   const { email, role } = req.body;
   const user = await User.findById(req.params.id);
 
   if (!user) return res.status(404).json({ error: 'User not found' });
 
+  // Validate role if being changed
+  if (role) {
+    const validRoles = [ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER, ROLES.STUDENT, ROLES.ACCOUNTS, ROLES.PARENT];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: `Invalid role: ${role}. Allowed roles: ${validRoles.join(', ')}` });
+    }
+    user.role = role;
+  }
+
   if (email) user.email = email;
-  if (role) user.role = role;
 
   await user.save();
   await logAction({

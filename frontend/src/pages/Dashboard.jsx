@@ -3,7 +3,7 @@ import { useSettings } from '../contexts/SettingsContext'
 import { Link } from 'react-router-dom'
 import { GraduationCap, User, Users, School, FileText, Award, DollarSign, Calendar, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { studentsApi, teachersApi, classroomsApi, examsApi, feesApi, expensesApi, issuesApi, parentsApi, teacherApi } from '../services/api'
+import { studentsApi, teachersApi, classroomsApi, feesApi, expensesApi, issuesApi, parentsApi, teacherApi } from '../services/api'
 
 // Admin Dashboard
 function AdminDashboard() {
@@ -24,11 +24,10 @@ function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const [students, teachers, classrooms, exams, fees, expenses] = await Promise.all([
+      const [students, teachers, classrooms, fees, expenses] = await Promise.all([
         studentsApi.list(),
         teachersApi.list(),
         classroomsApi.list(),
-        examsApi.list(),
         feesApi.list(),
         expensesApi.list()
       ])
@@ -40,7 +39,6 @@ function AdminDashboard() {
         students: students.length,
         teachers: teachers.length,
         classrooms: classrooms.length,
-        exams: exams.length,
         totalFees,
         totalExpenses
       })
@@ -110,16 +108,6 @@ function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="/exams" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-text-muted mb-1">Exams</p>
-              <p className="text-3xl font-semibold text-text-dark">{stats.exams}</p>
-            </div>
-            <FileText className="text-primary-blue" size={40} />
-          </div>
-        </Link>
-
         <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
           <div className="flex items-center justify-between">
             <div>
@@ -171,6 +159,7 @@ function ParentDashboard() {
   const { user } = useAuth()
   const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     loadDashboard()
@@ -178,10 +167,13 @@ function ParentDashboard() {
 
   const loadDashboard = async () => {
     try {
+      setError(null)
       const data = await parentsApi.getDashboard()
+      console.log('Parent dashboard API response:', data)
       setDashboardData(data)
     } catch (error) {
       console.error('Error loading parent dashboard:', error)
+      setError(error.message || 'Failed to load parent dashboard')
     } finally {
       setLoading(false)
     }
@@ -193,6 +185,24 @@ function ParentDashboard() {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-text-muted">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Parent Dashboard</h1>
+          <p className="text-sm sm:text-base text-text-muted mt-1">Welcome back, {user?.name}</p>
+        </div>
+        <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+          <p className="text-red-600 font-medium">Error</p>
+          <p className="text-red-700 text-sm mt-1">{error}</p>
+          <button onClick={loadDashboard} className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm">
+            Retry
+          </button>
         </div>
       </div>
     )
@@ -341,6 +351,7 @@ function TeacherDashboard() {
   const { user } = useAuth()
   const [classrooms, setClassrooms] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     loadClassrooms()
@@ -348,10 +359,13 @@ function TeacherDashboard() {
 
   const loadClassrooms = async () => {
     try {
+      setError(null)
       const data = await teacherApi.getMyClassrooms()
-      setClassrooms(data.data || [])
+      console.log('Classrooms API response:', data)
+      setClassrooms(data.data || data || [])
     } catch (error) {
       console.error('Error loading classrooms:', error)
+      setError(error.message || 'Failed to load classrooms')
     } finally {
       setLoading(false)
     }
@@ -363,6 +377,24 @@ function TeacherDashboard() {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-text-muted">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Teacher Dashboard</h1>
+          <p className="text-sm sm:text-base text-text-muted mt-1">Welcome back, {user?.name}</p>
+        </div>
+        <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+          <p className="text-red-600 font-medium">Error</p>
+          <p className="text-red-700 text-sm mt-1">{error}</p>
+          <button onClick={loadClassrooms} className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm">
+            Retry
+          </button>
         </div>
       </div>
     )
@@ -570,6 +602,7 @@ function AccountsDashboard() {
     totalPayments: 0
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     loadStats()
@@ -577,6 +610,7 @@ function AccountsDashboard() {
 
   const loadStats = async () => {
     try {
+      setError(null)
       const [fees, expenses] = await Promise.all([
         feesApi.list(),
         expensesApi.list()
@@ -593,6 +627,7 @@ function AccountsDashboard() {
       })
     } catch (error) {
       console.error('Error loading stats:', error)
+      setError(error.message || 'Failed to load accounting data')
     } finally {
       setLoading(false)
     }
@@ -604,6 +639,24 @@ function AccountsDashboard() {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-text-muted">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Accounts Dashboard</h1>
+          <p className="text-sm sm:text-base text-text-muted mt-1">Financial overview</p>
+        </div>
+        <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+          <p className="text-red-600 font-medium">Error</p>
+          <p className="text-red-700 text-sm mt-1">{error}</p>
+          <button onClick={loadStats} className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm">
+            Retry
+          </button>
         </div>
       </div>
     )

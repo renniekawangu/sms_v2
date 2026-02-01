@@ -1,111 +1,205 @@
-/**
- * Exam Model
- * Manages exam scheduling and configuration
- */
 const mongoose = require('mongoose');
 
-const examSchema = new mongoose.Schema({
-  name: { 
-    type: String, 
-    required: true,
-    trim: true
+const examSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Exam name is required'],
+      trim: true,
+      maxlength: [100, 'Exam name cannot exceed 100 characters']
+    },
+
+    examType: {
+      type: String,
+      enum: ['unit-test', 'midterm', 'endterm', 'final', 'diagnostic', 'formative'],
+      default: 'unit-test'
+    },
+
+    description: {
+      type: String,
+      maxlength: [500, 'Description cannot exceed 500 characters']
+    },
+
+    term: {
+      type: String,
+      required: [true, 'Term is required'],
+      enum: ['Term 1', 'Term 2', 'Term 3'],
+      trim: true
+    },
+
+    academicYear: {
+      type: String,
+      required: [true, 'Academic year is required'],
+      trim: true
+    },
+
+    classrooms: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Classroom'
+      }
+    ],
+
+    subjects: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Subject'
+      }
+    ],
+
+    totalMarks: {
+      type: Number,
+      default: 100,
+      min: [1, 'Total marks must be at least 1'],
+      max: [1000, 'Total marks cannot exceed 1000']
+    },
+
+    scheduledDate: {
+      type: Date,
+      validate: {
+        validator: function(value) {
+          if (!value) return true;
+          return value > new Date();
+        },
+        message: 'Scheduled date must be in the future'
+      }
+    },
+
+    status: {
+      type: String,
+      enum: ['draft', 'published', 'closed', 'cancelled'],
+      default: 'draft'
+    },
+
+    publishedDate: {
+      type: Date,
+      validate: {
+        validator: function(value) {
+          if (!value) return true;
+          return value <= new Date();
+        },
+        message: 'Published date cannot be in the future'
+      }
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Created by user is required']
+    },
+
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+
+    passingMarks: {
+      type: Number,
+      default: 40,
+      min: 0,
+      max: 100
+    },
+
+    gradeScale: {
+      type: Map,
+      of: String,
+      default: new Map([
+        ['A', '80-100'],
+        ['B', '60-79'],
+        ['C', '40-59'],
+        ['D', '20-39'],
+        ['F', '0-19']
+      ])
+    },
+
+    remarks: {
+      type: String,
+      maxlength: [500, 'Remarks cannot exceed 500 characters']
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      select: false
+    }
   },
-  examType: { 
-    type: String, 
-    enum: ['midterm', 'final', 'quiz', 'test', 'practical', 'assignment'], 
-    required: true,
-    default: 'test'
-  },
-  subject: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Subject', 
-    required: true 
-  },
-  classroom: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Classroom' 
-  },
-  date: { 
-    type: Date, 
-    required: true 
-  },
-  startTime: { 
-    type: String, // Format: "HH:MM" e.g., "09:00"
-    trim: true
-  },
-  endTime: { 
-    type: String, // Format: "HH:MM" e.g., "11:00"
-    trim: true
-  },
-  duration: { 
-    type: Number, // in minutes
-    min: 0
-  },
-  totalMarks: { 
-    type: Number, 
-    required: true,
-    min: 0
-  },
-  passingMarks: { 
-    type: Number,
-    min: 0
-  },
-  academicYear: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'SchoolSettings.academicYears' 
-  },
-  term: { 
-    type: String,
-    enum: ['Term 1', 'Term 2', 'Term 3', 'Semester 1', 'Semester 2'],
-    trim: true
-  },
-  status: { 
-    type: String, 
-    enum: ['scheduled', 'ongoing', 'completed', 'cancelled', 'postponed'], 
-    default: 'scheduled' 
-  },
-  room: {
-    type: String,
-    trim: true
-  },
-  instructions: {
-    type: String,
-    trim: true
-  },
-  supervisor: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Staff'
-  },
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
-  },
-  updatedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  {
+    timestamps: true,
+    collection: 'exams'
   }
-}, { 
-  timestamps: true 
+);
+
+// Indexes
+examSchema.index({ academicYear: 1, term: 1, status: 1 });
+examSchema.index({ createdBy: 1, createdAt: -1 });
+examSchema.index({ classrooms: 1 });
+examSchema.index({ 'academicYear': 1, 'term': 1, '_id': 1 });
+
+// Pre-save: Validate exam is not being updated if it's closed
+examSchema.pre('save', async function(next) {
+  if (!this.isNew && this.status === 'closed') {
+    const original = await mongoose.model('Exam').findById(this._id);
+    if (original && original.status === 'closed') {
+      throw new Error('Cannot modify a closed exam');
+    }
+  }
+  next();
 });
 
-// Indexes for performance
-examSchema.index({ date: 1, status: 1 });
-examSchema.index({ subject: 1, classroom: 1 });
-examSchema.index({ academicYear: 1, term: 1 });
+// Method: Get total results entered for this exam
+examSchema.methods.getResultsCount = async function() {
+  const ExamResult = require('./examResult');
+  return await ExamResult.countDocuments({ exam: this._id });
+};
 
-// Virtual for checking if exam is upcoming
-examSchema.virtual('isUpcoming').get(function() {
-  return this.date > new Date() && this.status === 'scheduled';
-});
+// Method: Get pending results for this exam
+examSchema.methods.getPendingResults = async function() {
+  const ExamResult = require('./examResult');
+  return await ExamResult.find({
+    exam: this._id,
+    status: { $in: ['draft', 'submitted'] }
+  });
+};
 
-// Virtual for checking if exam is past
-examSchema.virtual('isPast').get(function() {
-  return this.date < new Date();
-});
+// Method: Publish exam
+examSchema.methods.publish = async function() {
+  if (this.status !== 'draft') {
+    throw new Error('Only draft exams can be published');
+  }
+  this.status = 'published';
+  this.publishedDate = new Date();
+  return await this.save();
+};
 
-// Ensure virtuals are included in JSON/Object serialization
-examSchema.set('toJSON', { virtuals: true });
-examSchema.set('toObject', { virtuals: true });
+// Method: Close exam (no more results can be entered)
+examSchema.methods.close = async function() {
+  if (this.status === 'closed') {
+    throw new Error('Exam is already closed');
+  }
+  this.status = 'closed';
+  return await this.save();
+};
+
+// Static: Calculate grade from marks
+examSchema.statics.calculateGrade = function(marks, maxMarks = 100) {
+  if (marks === undefined || marks === null) return null;
+  const percentage = (marks / maxMarks) * 100;
+  
+  if (percentage >= 80) return 'A';
+  if (percentage >= 60) return 'B';
+  if (percentage >= 40) return 'C';
+  if (percentage >= 20) return 'D';
+  return 'F';
+};
+
+// Static: Get all active exams for academic year
+examSchema.statics.getActiveExams = async function(academicYear) {
+  return await this.find({
+    academicYear,
+    status: { $in: ['draft', 'published'] },
+    isDeleted: false
+  }).sort({ createdAt: -1 });
+};
 
 const Exam = mongoose.model('Exam', examSchema);
 

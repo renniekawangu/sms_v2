@@ -108,6 +108,28 @@ function Children() {
     }
   }
 
+  const getGradeColor = (grade) => {
+    if (!grade) return 'text-gray-500'
+    const gradeStr = String(grade).toUpperCase()
+    if (gradeStr.startsWith('A')) return 'text-green-600'
+    if (gradeStr.startsWith('B')) return 'text-blue-600'
+    if (gradeStr.startsWith('C')) return 'text-yellow-600'
+    if (gradeStr.startsWith('D')) return 'text-orange-600'
+    if (gradeStr.startsWith('E') || gradeStr.startsWith('F')) return 'text-red-600'
+    return 'text-gray-500'
+  }
+
+  const getGradeBgColor = (grade) => {
+    if (!grade) return 'bg-gray-50'
+    const gradeStr = String(grade).toUpperCase()
+    if (gradeStr.startsWith('A')) return 'bg-green-50'
+    if (gradeStr.startsWith('B')) return 'bg-blue-50'
+    if (gradeStr.startsWith('C')) return 'bg-yellow-50'
+    if (gradeStr.startsWith('D')) return 'bg-orange-50'
+    if (gradeStr.startsWith('E') || gradeStr.startsWith('F')) return 'bg-red-50'
+    return 'bg-gray-50'
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -230,22 +252,37 @@ function Children() {
                       <h4 className="font-semibold text-text-dark">Academic Performance</h4>
                     </div>
                     {details.grades.length > 0 ? (
-                      <div className="space-y-2">
-                        {details.grades.slice(0, 3).map((grade, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-sm">
-                            <span className="text-text-muted">{grade.subject || 'Subject'}</span>
-                            <span className="font-semibold text-text-dark">{grade.grade || 'N/A'}</span>
-                          </div>
-                        ))}
-                        {details.grades.length > 3 && (
-                          <p className="text-xs text-primary-blue font-medium mt-2">
-                            +{details.grades.length - 3} more grades
+                      <div className="space-y-3">
+                        {/* Top 3 Subjects Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {details.grades.slice(0, 2).map((grade, idx) => (
+                            <div key={idx} className={`${getGradeBgColor(grade.grade)} border border-gray-200 rounded-lg p-3 transition-all hover:shadow-sm`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-text-muted font-medium truncate">{grade.subject || 'Subject'}</p>
+                                  <p className="text-lg font-bold mt-1">
+                                    <span className={getGradeColor(grade.grade)}>
+                                      {grade.grade || 'N/A'}
+                                    </span>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* View All Grades Link */}
+                        {details.grades.length > 2 && (
+                          <p className="text-xs text-primary-blue font-medium">
+                            +{details.grades.length - 2} more subject{details.grades.length - 2 === 1 ? '' : 's'}
                           </p>
                         )}
-                        <div className="mt-3 pt-3 border-t border-gray-200">
+
+                        {/* Average Summary */}
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-text-dark">Average</span>
-                            <span className="font-bold text-primary-blue">
+                            <span className="text-sm font-medium text-text-dark">Overall Average</span>
+                            <span className={`text-2xl font-bold ${getGradeColor(calculateAverageGrade(details.grades))}`}>
                               {calculateAverageGrade(details.grades)}
                             </span>
                           </div>

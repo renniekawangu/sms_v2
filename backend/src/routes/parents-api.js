@@ -185,15 +185,13 @@ router.get('/children/:student_id/grades', requireAuth, requireRole('parent', RO
     return res.status(403).json({ error: 'Access denied' });
   }
 
-  // Get exam results instead of Grade records
-  const ExamResult = require('../models/examResult');
-  const results = await ExamResult.find({ student: req.params.student_id })
-    .populate('exam', 'name examType')
-    .populate('subjectResults.subject', 'name')
+  // Get grades for the student
+  const { Grade } = require('../models/grades');
+  const grades = await Grade.find({ studentId: req.params.student_id })
     .sort({ createdAt: -1 })
     .lean();
   
-  res.json(results);
+  res.json(grades);
 }));
 
 /**

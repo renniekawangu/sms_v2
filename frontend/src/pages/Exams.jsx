@@ -1,230 +1,235 @@
-import { useState, useEffect, useMemo } from 'react'
-import { FileText, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
-import { examsApi } from '../services/api'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Edit, Trash2, Eye, AlertCircle, Loader } from 'lucide-react'
+import { examApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
-import Modal from '../components/Modal'
+import { useAuth } from '../contexts/AuthContext'
+import { ROLES } from '../config/rbac'
 import ExamForm from '../components/ExamForm'
 
 function Exams() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { error: showError, success: showSuccess } = useToast()
+  
   const [exams, setExams] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingExam, setEditingExam] = useState(null)
-  const { success, error: showError } = useToast()
+  const [filter, setFilter] = useState({
+    academicYear: '',
+    term: '',
+    status: ''
+  })
+  const [showForm, setShowForm] = useState(false)
+  const [selectedExam, setSelectedExam] = useState(null)
 
   useEffect(() => {
     loadExams()
-  }, [])
+  }, [filter])
 
   const loadExams = async () => {
     try {
       setLoading(true)
-      setError(null)
-      const data = await examsApi.list()
-      setExams(data)
+      const query = Object.fromEntries(
+        Object.entries(filter).filter(([, v]) => v)
+      )
+      const data = await examApi.list(query)
+      const examsList = Array.isArray(data) 
+        ? data 
+        : data?.exams || []
+      setExams(examsList)
     } catch (err) {
-      const errorMessage = err.message || 'Failed to load exams'
-      setError(errorMessage)
-      showError(errorMessage)
+      showError(err.message || 'Failed to load exams')
+      console.error('Load error:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleCreate = () => {
-    setEditingExam(null)
-    setIsModalOpen(true)
-  }
-
-  const handleEdit = (exam) => {
-    setEditingExam(exam)
-    setIsModalOpen(true)
-  }
-
-  const handleSubmit = async (formData) => {
+  const handlePublish = async (examId) => {
     try {
-      if (editingExam) {
-        await examsApi.update(editingExam._id || editingExam.exam_id, formData)
-        success('Exam updated successfully')
-      } else {
-        await examsApi.create(formData)
-        success('Exam created successfully')
-      }
-      setIsModalOpen(false)
-      setEditingExam(null)
-      await loadExams()
+      await examApi.publish(examId)
+      showSuccess('Exam published successfully')
+      loadExams()
     } catch (err) {
-      const errorMessage = err.message || (editingExam ? 'Failed to update exam' : 'Failed to create exam')
-      showError(errorMessage)
+      showError(err.message || 'Failed to publish exam')
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (examId) => {
     if (window.confirm('Are you sure you want to delete this exam?')) {
       try {
-        await examsApi.delete(id)
-        success('Exam deleted successfully')
-        await loadExams()
+        await examApi.delete(examId)
+        showSuccess('Exam deleted successfully')
+        loadExams()
       } catch (err) {
-        const errorMessage = err.message || 'Failed to delete exam'
-        showError(errorMessage)
+        showError(err.message || 'Failed to delete exam')
       }
     }
   }
 
-  const filteredExams = useMemo(() => {
-    if (!searchQuery.trim()) return exams
-    const query = searchQuery.toLowerCase()
-    return exams.filter((exam) => {
-      return (
-        exam.name?.toLowerCase().includes(query) ||
-        exam.exam_id?.toString().includes(query)
-      )
-    })
-  }, [exams, searchQuery])
-
-  const getExamTypeName = (type) => {
-    const types = { 1: 'Midterm', 2: 'Final', 3: 'Quiz', 4: 'Assignment' }
-    return types[type] || `Type ${type}`
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'draft': return 'bg-gray-100 text-gray-700'
+      case 'published': return 'bg-green-100 text-green-700'
+      case 'closed': return 'bg-red-100 text-red-700'
+      default: return 'bg-gray-100 text-gray-700'
+    }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-text-muted">Loading exams...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error && exams.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-text-dark font-medium mb-2">Error loading exams</p>
-          <p className="text-text-muted mb-4">{error}</p>
-          <button
-            onClick={loadExams}
-            className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-blue/90 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
+        <Loader className="animate-spin" size={40} />
       </div>
     )
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+    <div className="p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Exams</h1>
-          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all exams</p>
+          <h1 className="text-2xl font-semibold text-text-dark">Exams</h1>
+          <p className="text-sm text-text-muted mt-1">Manage school exams and grading</p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
-        >
-          <Plus size={18} className="sm:size-5" />
-          <span>Add Exam</span>
-        </button>
+        {(user.role === ROLES.HEAD_TEACHER || user.role === ROLES.ADMIN) && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-opacity-90"
+          >
+            <Plus size={20} />
+            New Exam
+          </button>
+        )}
       </div>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
-        <div className="mb-4 sm:mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
-            <input
-              type="text"
-              placeholder="Search exams..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
-            />
-          </div>
+      {/* Filters */}
+      <div className="bg-card-white rounded-lg shadow-sm p-4 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-text-dark mb-1">Academic Year</label>
+          <input
+            type="text"
+            placeholder="e.g., 2024-2025"
+            value={filter.academicYear}
+            onChange={(e) => setFilter({ ...filter, academicYear: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+          />
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-text-dark">ID</th>
-                <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-text-dark">Name</th>
-                <th className="hidden md:table-cell text-left py-3 px-4 text-xs sm:text-sm font-semibold text-text-dark">Date</th>
-                <th className="hidden lg:table-cell text-left py-3 px-4 text-xs sm:text-sm font-semibold text-text-dark">Type</th>
-                <th className="text-left py-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold text-text-dark">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredExams.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="py-8 text-center text-text-muted">
-                    No exams found
-                  </td>
-                </tr>
-              ) : (
-                filteredExams.map((exam) => (
-                  <tr key={exam._id || exam.exam_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 text-sm text-text-dark">{exam.exam_id}</td>
-                    <td className="py-3 px-4 text-sm text-text-dark font-medium">{exam.name}</td>
-                    <td className="py-3 px-4 text-sm text-text-muted">
-                      {exam.date ? (exam.date.includes('T') ? exam.date.split('T')[0] : exam.date) : '-'}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-text-muted">{getExamTypeName(exam.type)}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => handleEdit(exam)}
-                          className="text-primary-blue hover:text-primary-blue/80 text-sm font-medium flex items-center gap-1"
-                        >
-                          <Edit size={16} />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(exam._id || exam.exam_id)}
-                          className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
-                        >
-                          <Trash2 size={16} />
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div>
+          <label className="block text-sm font-medium text-text-dark mb-1">Term</label>
+          <select
+            value={filter.term}
+            onChange={(e) => setFilter({ ...filter, term: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+          >
+            <option value="">All Terms</option>
+            <option value="Term 1">Term 1</option>
+            <option value="Term 2">Term 2</option>
+            <option value="Term 3">Term 3</option>
+          </select>
         </div>
-
-        <div className="mt-6">
-          <p className="text-sm text-text-muted">
-            Showing {filteredExams.length} of {exams.length} exams
-          </p>
+        <div>
+          <label className="block text-sm font-medium text-text-dark mb-1">Status</label>
+          <select
+            value={filter.status}
+            onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+          >
+            <option value="">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="closed">Closed</option>
+          </select>
         </div>
       </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false)
-          setEditingExam(null)
-        }}
-        title={editingExam ? 'Edit Exam' : 'Add New Exam'}
-      >
+      {/* Exams List */}
+      {exams.length === 0 ? (
+        <div className="bg-card-white rounded-lg shadow-sm p-12 text-center">
+          <AlertCircle size={48} className="mx-auto text-text-muted mb-4" />
+          <p className="text-text-muted text-lg">No exams found</p>
+          <p className="text-sm text-text-muted mt-2">Create a new exam to get started</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {exams.map(exam => (
+            <div key={exam._id} className="bg-card-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-semibold text-text-dark">{exam.name}</h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(exam.status)}`}>
+                      {exam.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3 text-sm">
+                    <div>
+                      <p className="text-text-muted">Type</p>
+                      <p className="font-medium text-text-dark capitalize">{exam.examType}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-muted">Term</p>
+                      <p className="font-medium text-text-dark">{exam.term}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-muted">Academic Year</p>
+                      <p className="font-medium text-text-dark">{exam.academicYear}</p>
+                    </div>
+                    <div>
+                      <p className="text-text-muted">Total Marks</p>
+                      <p className="font-medium text-text-dark">{exam.totalMarks}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 ml-4">
+                  {exam.status === 'draft' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setSelectedExam(exam)
+                          setShowForm(true)
+                        }}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <Edit size={18} className="text-primary-blue" />
+                      </button>
+                      <button
+                        onClick={() => handlePublish(exam._id)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Publish"
+                      >
+                        <Eye size={18} className="text-green-600" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(exam._id)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={18} className="text-red-600" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showForm && (
         <ExamForm
-          exam={editingExam}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setIsModalOpen(false)
-            setEditingExam(null)
+          isOpen={showForm}
+          exam={selectedExam}
+          onClose={() => {
+            setShowForm(false)
+            setSelectedExam(null)
+          }}
+          onSuccess={() => {
+            setSelectedExam(null)
+            loadExams()
           }}
         />
-      </Modal>
+      )}
     </div>
   )
 }

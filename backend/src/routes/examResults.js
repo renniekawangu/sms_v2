@@ -1,587 +1,589 @@
-const express = require('express')
-const router = express.Router()
-const ExamResult = require('../models/examResult')
-const { Exam } = require('../models/exam')
-const { Student } = require('../models/student')
-const { Subject } = require('../models/subjects')
-const { Classroom } = require('../models/classroom')
-const { requireAuth, requireRole } = require('../middleware/rbac')
+/**
+ * Exam Results Routes
+ * Entry: POST/PUT/DELETE results for teachers
+ * Approval: GET pending, POST approve/publish for head-teachers
+ * Viewing: GET results for parents/students/admins
+ */
 
-// Debug: Get all exam results (no filtering)
-router.get(
-  '/results/debug/all',
-  requireAuth,
-  async (req, res) => {
-    try {
-      const allResults = await ExamResult.find({})
-        .populate('exam', 'name')
-        .populate('student', 'name')
-        .populate('classroom', 'grade section')
-        .lean()
-        .limit(50)
+const express = require('express');
+const { asyncHandler } = require('../middleware/errorHandler');
+const { requireAuth, requireRole } = require('../middleware/rbac');
+const { ROLES } = require('../config/rbac');
+const { ExamResult } = require('../models/examResult');
+const { Exam } = require('../models/exam');
+const { Student } = require('../models/student');
+const { Staff } = require('../models/staff');
+const { Classroom } = require('../models/classroom');
+const { validateObjectId } = require('../utils/validation');
+const logger = require('../utils/logger');
 
-      console.log(`Total results in DB: ${allResults.length}`)
-      allResults.forEach((r, i) => {
-        console.log(`[${i}] Student: ${r.student?.name}, Exam: ${r.exam?.name}, Year: ${r.academicYear}, Term: ${r.term}`)
-      })
+const router = express.Router();
 
-      res.json({
-        success: true,
-        total: allResults.length,
-        results: allResults
-      })
-    } catch (err) {
-      res.status(500).json({ error: err.message })
-    }
-  }
-)
+// ==================== ENTRY ROUTES (Teacher) ====================
 
-// Get all exam results (with filtering)
-router.get(
-  '/results',
-  requireAuth,
-  requireRole('admin', 'head-teacher', 'teacher'),
-  async (req, res) => {
-    try {
-      const { academicYear, term, examId, studentId, classroomId, status, examType } = req.query
-      
-      let filter = {}
-      if (academicYear) filter.academicYear = academicYear
-      if (term) filter.term = term
-      if (examId) filter.exam = examId
-      if (studentId) filter.student = studentId
-      if (classroomId) filter.classroom = classroomId
-      if (status) filter.status = status
-
-      // If examType is provided, first find exams with that type, then filter results
-      if (examType) {
-        const exams = await Exam.find({ examType }).select('_id')
-        const examIds = exams.map(e => e._id)
-        filter.exam = { $in: examIds }
-      }
-
-      console.log('GET /results query:', { academicYear, term, examId, studentId, classroomId, status, examType })
-      console.log('Filter object:', filter)
-
-      const results = await ExamResult.find(filter)
-        .populate('exam', 'name date totalMarks examType')
-        .populate('student', 'firstName lastName email')
-        .populate('classroom', 'grade section')
-        .populate('subjectResults.subject', 'name code')
-        .sort({ createdAt: -1 })
-        .limit(100)
-
-      console.log(`Found ${results.length} results with filter:`, filter)
-      if (results.length > 0) {
-        console.log('First result after populate:', JSON.stringify({
-          _id: results[0]._id,
-          exam: results[0].exam,
-          student: results[0].student,
-          classroom: results[0].classroom,
-          totalScore: results[0].totalScore
-        }, null, 2))
-      }
-
-      res.json({
-        success: true,
-        count: results.length,
-        results
-      })
-    } catch (err) {
-      console.error('Error fetching exam results:', err)
-      res.status(500).json({ error: 'Failed to fetch exam results' })
-    }
-  }
-)
-
-// Get single exam result
-router.get('/results/:id', requireAuth, async (req, res) => {
-  try {
-    const result = await ExamResult.findById(req.params.id)
-      .populate('exam')
-      .populate('student', 'firstName lastName email')
-      .populate('classroom')
-      .populate('subjectResults.subject')
-      .populate('submittedBy', 'firstName lastName email')
-      .populate('approvedBy', 'firstName lastName email')
-
-    if (!result) {
-      return res.status(404).json({ error: 'Result not found' })
-    }
-
-    res.json(result)
-  } catch (err) {
-    console.error('Error fetching exam result:', err)
-    res.status(500).json({ error: 'Failed to fetch exam result' })
-  }
-})
-
-// Get student's results
-router.get(
-  '/results/student/:studentId',
-  requireAuth,
-  async (req, res) => {
-    try {
-      const { academicYear, term } = req.query
-      
-      let filter = { student: req.params.studentId }
-      if (academicYear) filter.academicYear = academicYear
-      if (term) filter.term = term
-
-      const results = await ExamResult.find(filter)
-        .populate('exam', 'name date')
-        .populate('subjectResults.subject', 'name code')
-        .sort({ academicYear: -1, term: -1 })
-
-      res.json({
-        success: true,
-        results
-      })
-    } catch (err) {
-      console.error('Error fetching student results:', err)
-      res.status(500).json({ error: 'Failed to fetch results' })
-    }
-  }
-)
-
-// Get classroom results for an exam
-router.get(
-  '/results/exam/:examId/classroom/:classroomId',
-  requireAuth,
-  async (req, res) => {
-    try {
-      const results = await ExamResult.find({
-        exam: req.params.examId,
-        classroom: req.params.classroomId
-      })
-        .populate('student', 'name email')
-        .populate('subjectResults.subject', 'name')
-        .sort({ 'student.name': 1 })
-
-      // Calculate statistics
-      const stats = {
-        totalStudents: results.length,
-        passedCount: results.filter(r => r.overallGrade !== 'F').length,
-        failedCount: results.filter(r => r.overallGrade === 'F').length,
-        classAverage: results.length > 0 
-          ? (results.reduce((sum, r) => sum + r.percentage, 0) / results.length).toFixed(2)
-          : 0,
-        highestScore: Math.max(...results.map(r => r.totalScore)),
-        lowestScore: Math.min(...results.map(r => r.totalScore))
-      }
-
-      res.json({
-        success: true,
-        results,
-        statistics: stats
-      })
-    } catch (err) {
-      console.error('Error fetching classroom exam results:', err)
-      res.status(500).json({ error: 'Failed to fetch results' })
-    }
-  }
-)
-
-// Create/submit exam result
+/**
+ * POST /api/results
+ * Create a single exam result (Teacher)
+ */
 router.post(
-  '/results',
+  '/',
   requireAuth,
-  requireRole('admin', 'teacher', 'head-teacher'),
-  async (req, res) => {
-    try {
-      const {
-        exam,
-        student,
-        classroom,
-        academicYear,
-        term,
-        subjectResults,
-        totalScore,
-        totalMaxMarks
-      } = req.body
+  requireRole(ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    const { exam, student, classroom, subject, score, maxMarks, remarks } = req.body;
 
-      // Validate required fields
-      if (!exam || !student || !classroom || !subjectResults || !totalScore) {
-        return res.status(400).json({ 
-          error: 'Missing required fields: exam, student, classroom, subjectResults, totalScore' 
-        })
-      }
-
-      // Check for duplicate
-      let existingResult = await ExamResult.findOne({
-        exam,
-        student,
-        classroom
-      })
-
-      if (existingResult) {
-        // Update existing
-        existingResult.subjectResults = subjectResults
-        existingResult.totalScore = totalScore
-        existingResult.totalMaxMarks = totalMaxMarks || 100
-        existingResult.academicYear = academicYear
-        existingResult.term = term
-        existingResult.status = 'draft'
-        existingResult.updatedAt = new Date()
-
-        await existingResult.save()
-
-        // Populate before returning
-        const populatedResult = await ExamResult.findById(existingResult._id)
-          .populate('exam', 'name')
-          .populate('student', 'firstName lastName')
-          .populate('classroom', 'grade section')
-          .populate('subjectResults.subject', 'name')
-
-        return res.json({
-          success: true,
-          message: 'Result updated successfully',
-          result: populatedResult
-        })
-      }
-
-      // Create new result
-      const newResult = new ExamResult({
-        exam,
-        student,
-        classroom,
-        academicYear,
-        term,
-        subjectResults,
-        totalScore,
-        totalMaxMarks: totalMaxMarks || 100,
-        status: 'draft'
-      })
-
-      await newResult.save()
-
-      const populatedResult = await ExamResult.findById(newResult._id)
-        .populate('exam', 'name')
-        .populate('student', 'firstName lastName')
-        .populate('classroom', 'grade section')
-        .populate('subjectResults.subject', 'name')
-
-      res.status(201).json({
-        success: true,
-        message: 'Result created successfully',
-        result: populatedResult
-      })
-    } catch (err) {
-      console.error('Error creating exam result:', err)
-      res.status(500).json({ error: err.message || 'Failed to create result' })
+    // Validation
+    if (!exam || !student || !classroom || !subject || score === undefined) {
+      return res.status(400).json({
+        error: 'Exam, student, classroom, subject, and score are required'
+      });
     }
-  }
-)
 
-// Batch submit results
-router.post(
-  '/results/batch',
-  requireAuth,
-  requireRole('admin', 'teacher', 'head-teacher'),
-  async (req, res) => {
-    try {
-      const { examId, classroomId, academicYear, term, results } = req.body
+    if (score < 0 || score > (maxMarks || 100)) {
+      return res.status(400).json({
+        error: `Score must be between 0 and ${maxMarks || 100}`
+      });
+    }
 
-      console.log('Batch create request:', { examId, classroomId, academicYear, term, resultsCount: results?.length })
-
-      if (!examId || !classroomId || !results || !Array.isArray(results)) {
-        return res.status(400).json({
-          error: 'Missing required fields: examId, classroomId, results (array)'
-        })
+    // Verify teacher has access to this classroom (if teacher role)
+    if (req.user.role === ROLES.TEACHER) {
+      const Staff = require('../models/staff');
+      const staff = await Staff.findOne({ user: req.user.id });
+      
+      if (!staff) {
+        return res.status(403).json({ error: 'Staff record not found' });
       }
 
-      const createdResults = []
-      const updatedResults = []
-      const errors = []
+      const Classroom = require('../models/classroom');
+      const classroom_obj = await Classroom.findById(classroom);
+      
+      if (!classroom_obj || !classroom_obj.classTeacher?.equals(staff._id)) {
+        return res.status(403).json({
+          error: 'You do not have permission to enter results for this classroom'
+        });
+      }
+    }
 
-      for (let i = 0; i < results.length; i++) {
-        try {
-          const resultData = results[i]
-          
-          // Check if result already exists for this student+exam combination
-          const existingResult = await ExamResult.findOne({
-            student: resultData.studentId,
-            exam: examId,
-            classroom: classroomId
-          })
+    // Check if result already exists
+    let result = await ExamResult.findOne({
+      exam,
+      student,
+      subject,
+      classroom,
+      isDeleted: false
+    });
 
-          console.log(`Checking student ${resultData.studentId}: ${existingResult ? 'EXISTS' : 'NEW'}`)
+    if (result) {
+      return res.status(400).json({
+        error: 'Result already exists for this student-subject combination'
+      });
+    }
 
-          if (existingResult) {
-            // Update existing result
-            existingResult.subjectResults = resultData.subjectResults
-            existingResult.totalScore = resultData.totalScore
-            existingResult.totalMaxMarks = resultData.totalMaxMarks || 100
-            existingResult.academicYear = academicYear || new Date().getFullYear().toString()
-            existingResult.term = term || 'term1'
-            await existingResult.save()
-            updatedResults.push(existingResult)
-            console.log(`Updated result for student: ${resultData.studentId}`)
-          } else {
-            // Create new result
-            const newResult = new ExamResult({
-              exam: examId,
-              student: resultData.studentId,
-              classroom: classroomId,
-              academicYear: academicYear || new Date().getFullYear().toString(),
-              term: term || 'term1',
-              subjectResults: resultData.subjectResults,
-              totalScore: resultData.totalScore,
-              totalMaxMarks: resultData.totalMaxMarks || 100,
-              status: 'draft',
-              submittedBy: req.user.id
-            })
+    // Create new result
+    result = new ExamResult({
+      exam,
+      student,
+      classroom,
+      subject,
+      score,
+      maxMarks: maxMarks || 100,
+      remarks,
+      submittedBy: req.user.id,
+      status: 'draft'
+    });
 
-            await newResult.save()
-            createdResults.push(newResult)
-            console.log(`Created result for student: ${resultData.studentId}`)
-          }
-        } catch (itemErr) {
-          console.error(`Error saving result for student ${results[i].studentId}:`, itemErr.message)
+    await result.save();
+    await result.populate('exam', 'name');
+    await result.populate('student', 'studentId name');
+    await result.populate('subject', 'name code');
+
+    logger.info(`Result created (draft): ${result._id}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Result created successfully',
+      result
+    });
+  })
+);
+
+/**
+ * POST /api/results/batch
+ * Bulk create results (Teacher bulk entry for classroom)
+ */
+router.post(
+  '/batch',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    const { exam, classroom, subject, results, maxMarks = 100 } = req.body;
+
+    // Validation
+    if (!exam || !classroom || !subject || !results || !Array.isArray(results)) {
+      return res.status(400).json({
+        error: 'Exam, classroom, subject, and results array are required'
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(400).json({
+        error: 'At least one result must be provided'
+      });
+    }
+
+    // Verify teacher has access
+    if (req.user.role === ROLES.TEACHER) {
+      const Staff = require('../models/staff');
+      const staff = await Staff.findOne({ user: req.user.id });
+      
+      if (!staff) {
+        return res.status(403).json({ error: 'Staff record not found' });
+      }
+
+      const Classroom = require('../models/classroom');
+      const classroom_obj = await Classroom.findById(classroom);
+      
+      if (!classroom_obj || !classroom_obj.classTeacher?.equals(staff._id)) {
+        return res.status(403).json({
+          error: 'You do not have permission to enter results for this classroom'
+        });
+      }
+    }
+
+    const createdResults = [];
+    const errors = [];
+
+    for (let i = 0; i < results.length; i++) {
+      const { student, score, remarks } = results[i];
+
+      try {
+        // Validation
+        if (!student) {
+          errors.push({ index: i, error: 'Student ID is required' });
+          continue;
+        }
+
+        if (score === undefined || score === null) {
+          errors.push({ index: i, error: 'Score is required' });
+          continue;
+        }
+
+        if (score < 0 || score > maxMarks) {
           errors.push({
             index: i,
-            studentId: results[i].studentId,
-            error: itemErr.message
-          })
+            error: `Score must be between 0 and ${maxMarks}`
+          });
+          continue;
         }
-      }
 
-      const totalProcessed = createdResults.length + updatedResults.length
-      console.log(`Batch complete: ${createdResults.length} created, ${updatedResults.length} updated, ${errors.length} errors`)
-      
-      // Populate all results before returning
-      const allResultIds = [...createdResults, ...updatedResults].map(r => r._id)
-      console.log('Populating results:', allResultIds)
-      
-      const populatedResults = await ExamResult.find({
-        _id: { $in: allResultIds }
-      })
-        .populate('exam', 'name date totalMarks')
-        .populate('student', 'firstName lastName email')
-        .populate('classroom', 'grade section')
-        .populate('subjectResults.subject', 'name code')
-      
-      console.log(`Populated ${populatedResults.length} results`)
-      
-      res.json({
-        success: true,
-        message: `${totalProcessed} results processed (${createdResults.length} created, ${updatedResults.length} updated)`,
-        createdCount: createdResults.length,
-        updatedCount: updatedResults.length,
-        errorCount: errors.length,
-        results: populatedResults,
-        errors: errors.length > 0 ? errors : undefined
-      })
-    } catch (err) {
-      console.error('Error batch creating results:', err)
-      res.status(500).json({ error: 'Failed to batch create results', details: err.message })
-    }
-  }
-)
+        // Check if result already exists
+        const existing = await ExamResult.findOne({
+          exam,
+          student,
+          subject,
+          classroom,
+          isDeleted: false
+        });
 
-// Update exam result
-router.put(
-  '/results/:id',
-  requireAuth,
-  requireRole('admin', 'teacher', 'head-teacher'),
-  async (req, res) => {
-    try {
-      const { subjectResults, totalScore, totalMaxMarks, remarks } = req.body
-
-      const result = await ExamResult.findById(req.params.id)
-      if (!result) {
-        return res.status(404).json({ error: 'Result not found' })
-      }
-
-      if (subjectResults) result.subjectResults = subjectResults
-      if (totalScore !== undefined) result.totalScore = totalScore
-      if (totalMaxMarks) result.totalMaxMarks = totalMaxMarks
-      if (remarks) result.remarks = remarks
-      result.updatedAt = new Date()
-
-      await result.save()
-
-      const updatedResult = await ExamResult.findById(result._id)
-        .populate('exam', 'name')
-        .populate('student', 'name')
-        .populate('subjectResults.subject', 'name')
-
-      res.json({
-        success: true,
-        message: 'Result updated successfully',
-        result: updatedResult
-      })
-    } catch (err) {
-      console.error('Error updating exam result:', err)
-      res.status(500).json({ error: 'Failed to update result' })
-    }
-  }
-)
-
-// Submit result (change status from draft to submitted)
-router.post(
-  '/results/:id/submit',
-  requireAuth,
-  requireRole('admin', 'teacher', 'head-teacher'),
-  async (req, res) => {
-    try {
-      const result = await ExamResult.findById(req.params.id)
-      if (!result) {
-        return res.status(404).json({ error: 'Result not found' })
-      }
-
-      result.status = 'submitted'
-      result.submittedBy = req.user.id
-      result.submittedAt = new Date()
-
-      await result.save()
-
-      res.json({
-        success: true,
-        message: 'Result submitted successfully',
-        result
-      })
-    } catch (err) {
-      console.error('Error submitting result:', err)
-      res.status(500).json({ error: 'Failed to submit result' })
-    }
-  }
-)
-
-// Approve result (admin only)
-router.post(
-  '/results/:id/approve',
-  requireAuth,
-  requireRole('admin', 'head-teacher'),
-  async (req, res) => {
-    try {
-      const result = await ExamResult.findById(req.params.id)
-      if (!result) {
-        return res.status(404).json({ error: 'Result not found' })
-      }
-
-      result.status = 'approved'
-      result.approvedBy = req.user.id
-      result.approvedAt = new Date()
-
-      await result.save()
-
-      res.json({
-        success: true,
-        message: 'Result approved successfully',
-        result
-      })
-    } catch (err) {
-      console.error('Error approving result:', err)
-      res.status(500).json({ error: 'Failed to approve result' })
-    }
-  }
-)
-
-// Publish result (make visible to students)
-router.post(
-  '/results/:id/publish',
-  requireAuth,
-  requireRole('admin', 'head-teacher'),
-  async (req, res) => {
-    try {
-      const result = await ExamResult.findByIdAndUpdate(
-        req.params.id,
-        { status: 'published' },
-        { new: true }
-      )
-
-      if (!result) {
-        return res.status(404).json({ error: 'Result not found' })
-      }
-
-      res.json({
-        success: true,
-        message: 'Result published successfully',
-        result
-      })
-    } catch (err) {
-      console.error('Error publishing result:', err)
-      res.status(500).json({ error: 'Failed to publish result' })
-    }
-  }
-)
-
-// Delete exam result
-router.delete(
-  '/results/:id',
-  requireAuth,
-  requireRole('admin', 'teacher'),
-  async (req, res) => {
-    try {
-      const result = await ExamResult.findByIdAndDelete(req.params.id)
-
-      if (!result) {
-        return res.status(404).json({ error: 'Result not found' })
-      }
-
-      res.json({
-        success: true,
-        message: 'Result deleted successfully'
-      })
-    } catch (err) {
-      console.error('Error deleting result:', err)
-      res.status(500).json({ error: 'Failed to delete result' })
-    }
-  }
-)
-
-// Get exam statistics
-router.get(
-  '/results/stats/exam/:examId',
-  requireAuth,
-  async (req, res) => {
-    try {
-      const { classroomId, term } = req.query
-
-      let filter = { exam: req.params.examId }
-      if (classroomId) filter.classroom = classroomId
-      if (term) filter.term = term
-
-      const results = await ExamResult.find(filter)
-
-      if (results.length === 0) {
-        return res.json({
-          success: true,
-          statistics: {
-            totalResults: 0,
-            averageScore: 0,
-            highestScore: 0,
-            lowestScore: 0,
-            gradeDistribution: {}
+        if (existing) {
+          // Update existing result if in draft/submitted state
+          if (['draft', 'submitted'].includes(existing.status)) {
+            existing.score = score;
+            existing.remarks = remarks;
+            existing.maxMarks = maxMarks;
+            await existing.save();
+            createdResults.push(existing);
+          } else {
+            errors.push({
+              index: i,
+              error: `Result already exists with status: ${existing.status}`
+            });
           }
-        })
-      }
-
-      const scores = results.map(r => r.totalScore)
-      const gradeDistribution = {}
-
-      results.forEach(r => {
-        gradeDistribution[r.overallGrade] = (gradeDistribution[r.overallGrade] || 0) + 1
-      })
-
-      res.json({
-        success: true,
-        statistics: {
-          totalResults: results.length,
-          averageScore: (scores.reduce((a, b) => a + b) / scores.length).toFixed(2),
-          highestScore: Math.max(...scores),
-          lowestScore: Math.min(...scores),
-          passCount: results.filter(r => r.overallGrade !== 'F').length,
-          failCount: results.filter(r => r.overallGrade === 'F').length,
-          gradeDistribution
+          continue;
         }
-      })
-    } catch (err) {
-      console.error('Error fetching exam statistics:', err)
-      res.status(500).json({ error: 'Failed to fetch statistics' })
-    }
-  }
-)
 
-module.exports = router
+        // Create new result
+        const result = new ExamResult({
+          exam,
+          student,
+          classroom,
+          subject,
+          score,
+          maxMarks,
+          remarks: remarks || '',
+          submittedBy: req.user.id,
+          status: 'draft'
+        });
+
+        await result.save();
+        createdResults.push(result);
+      } catch (err) {
+        errors.push({
+          index: i,
+          error: err.message
+        });
+        logger.error(`Batch result error at index ${i}:`, err);
+      }
+    }
+
+    logger.info(`Batch results created: ${createdResults.length} total, ${errors.length} errors`);
+
+    res.status(201).json({
+      success: true,
+      message: `Batch results processed: ${createdResults.length} created, ${errors.length} errors`,
+      created: createdResults.length,
+      errors,
+      results: createdResults
+    });
+  })
+);
+
+/**
+ * GET /api/results/classroom/:classroomId/exam/:examId
+ * Get all results for a classroom exam
+ */
+router.get(
+  '/classroom/:classroomId/exam/:examId',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.classroomId);
+    validateObjectId(req.params.examId);
+
+    // Teacher can view their assigned classrooms (or all for now)
+    if (req.user.role === ROLES.TEACHER) {
+      // For now, allow teachers to view all classrooms
+      // TODO: Restrict to teacher's assigned classrooms once Staff records are properly set up
+    }
+
+    const results = await ExamResult.getClassroomExamResults(
+      req.params.examId,
+      req.params.classroomId
+    );
+
+    res.json({
+      success: true,
+      count: results.length,
+      results
+    });
+  })
+);
+
+/**
+ * PUT /api/results/:id
+ * Update a result (only if draft or submitted)
+ */
+router.put(
+  '/:id',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.id);
+
+    const result = await ExamResult.findById(req.params.id);
+    if (!result || result.isDeleted) {
+      return res.status(404).json({ error: 'Result not found' });
+    }
+
+    if (!['draft', 'submitted'].includes(result.status)) {
+      return res.status(400).json({
+        error: `Cannot update result with status: ${result.status}`
+      });
+    }
+
+    // Teacher can only update own submissions
+    if (req.user.role === ROLES.TEACHER && !result.submittedBy.equals(req.user.id)) {
+      return res.status(403).json({
+        error: 'You can only update your own results'
+      });
+    }
+
+    const updates = req.body;
+    const allowedUpdates = ['score', 'maxMarks', 'remarks'];
+
+    Object.keys(updates).forEach(key => {
+      if (allowedUpdates.includes(key)) {
+        result[key] = updates[key];
+      }
+    });
+
+    await result.save();
+    logger.info(`Result updated: ${result._id}`);
+
+    res.json({
+      success: true,
+      message: 'Result updated successfully',
+      result
+    });
+  })
+);
+
+/**
+ * DELETE /api/results/:id
+ * Delete a result (only if draft)
+ */
+router.delete(
+  '/:id',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.id);
+
+    const result = await ExamResult.findById(req.params.id);
+    if (!result || result.isDeleted) {
+      return res.status(404).json({ error: 'Result not found' });
+    }
+
+    if (result.status !== 'draft') {
+      return res.status(400).json({
+        error: 'Only draft results can be deleted'
+      });
+    }
+
+    // Teacher can only delete own results
+    if (req.user.role === ROLES.TEACHER && !result.submittedBy.equals(req.user.id)) {
+      return res.status(403).json({
+        error: 'You can only delete your own results'
+      });
+    }
+
+    result.isDeleted = true;
+    await result.save();
+    logger.info(`Result deleted: ${result._id}`);
+
+    res.json({
+      success: true,
+      message: 'Result deleted successfully'
+    });
+  })
+);
+
+/**
+ * POST /api/results/:id/submit
+ * Submit result for approval
+ */
+router.post(
+  '/:id/submit',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.id);
+
+    const result = await ExamResult.findById(req.params.id);
+    if (!result || result.isDeleted) {
+      return res.status(404).json({ error: 'Result not found' });
+    }
+
+    if (result.status !== 'draft') {
+      return res.status(400).json({
+        error: 'Only draft results can be submitted'
+      });
+    }
+
+    // Teacher can only submit own results
+    if (req.user.role === ROLES.TEACHER && !result.submittedBy.equals(req.user.id)) {
+      return res.status(403).json({
+        error: 'You can only submit your own results'
+      });
+    }
+
+    await result.submit(req.user.id);
+    logger.info(`Result submitted: ${result._id}`);
+
+    res.json({
+      success: true,
+      message: 'Result submitted successfully',
+      result
+    });
+  })
+);
+
+// ==================== APPROVAL ROUTES (Head-Teacher/Admin) ====================
+
+/**
+ * GET /api/results/pending
+ * Get all pending results for approval
+ */
+router.get(
+  '/pending',
+  requireAuth,
+  requireRole(ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    const { classroom, exam, status } = req.query;
+
+    const filters = {};
+    if (classroom) filters.classroom = classroom;
+    if (exam) filters.exam = exam;
+
+    const results = await ExamResult.getPendingResults(filters);
+
+    res.json({
+      success: true,
+      count: results.length,
+      results
+    });
+  })
+);
+
+/**
+ * POST /api/results/:id/approve
+ * Approve a submitted result
+ */
+router.post(
+  '/:id/approve',
+  requireAuth,
+  requireRole(ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.id);
+
+    const result = await ExamResult.findById(req.params.id);
+    if (!result || result.isDeleted) {
+      return res.status(404).json({ error: 'Result not found' });
+    }
+
+    if (result.status !== 'submitted') {
+      return res.status(400).json({
+        error: 'Only submitted results can be approved'
+      });
+    }
+
+    await result.approve(req.user.id);
+    logger.info(`Result approved: ${result._id}`);
+
+    res.json({
+      success: true,
+      message: 'Result approved successfully',
+      result
+    });
+  })
+);
+
+/**
+ * POST /api/results/:id/publish
+ * Publish an approved result (make visible to parents)
+ */
+router.post(
+  '/:id/publish',
+  requireAuth,
+  requireRole(ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.id);
+
+    const result = await ExamResult.findById(req.params.id);
+    if (!result || result.isDeleted) {
+      return res.status(404).json({ error: 'Result not found' });
+    }
+
+    if (result.status !== 'approved') {
+      return res.status(400).json({
+        error: 'Only approved results can be published'
+      });
+    }
+
+    await result.publish(req.user.id);
+    logger.info(`Result published: ${result._id}`);
+
+    res.json({
+      success: true,
+      message: 'Result published successfully',
+      result
+    });
+  })
+);
+
+/**
+ * POST /api/results/:id/reject
+ * Reject a submitted or approved result
+ */
+router.post(
+  '/:id/reject',
+  requireAuth,
+  requireRole(ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.id);
+
+    const { reason } = req.body;
+    const result = await ExamResult.findById(req.params.id);
+
+    if (!result || result.isDeleted) {
+      return res.status(404).json({ error: 'Result not found' });
+    }
+
+    if (!['submitted', 'approved'].includes(result.status)) {
+      return res.status(400).json({
+        error: 'Only submitted or approved results can be rejected'
+      });
+    }
+
+    await result.reject(req.user.id, reason);
+    logger.info(`Result rejected: ${result._id}`);
+
+    res.json({
+      success: true,
+      message: 'Result rejected successfully',
+      result
+    });
+  })
+);
+
+// ==================== VIEWING ROUTES ====================
+
+/**
+ * GET /api/results/student/:studentId
+ * Get all published results for a student
+ */
+router.get(
+  '/student/:studentId',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.studentId);
+
+    // Parents can only view their own children
+    if (req.user.role === ROLES.PARENT) {
+      const Parent = require('../models/parent');
+      const parent = await Parent.findOne({ email: req.user.email });
+
+      if (!parent || !parent.students.some(s => s.equals(req.params.studentId))) {
+        return res.status(403).json({
+          error: 'You do not have permission to view these results'
+        });
+      }
+    }
+
+    const { academicYear } = req.query;
+    const results = await ExamResult.getStudentResults(req.params.studentId, {
+      academicYear
+    });
+
+    res.json({
+      success: true,
+      count: results.length,
+      results
+    });
+  })
+);
+
+/**
+ * GET /api/results/exam/:examId/statistics
+ * Get statistics for an exam
+ */
+router.get(
+  '/exam/:examId/statistics',
+  requireAuth,
+  requireRole(ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    validateObjectId(req.params.examId);
+
+    const { classroomId } = req.query;
+    const stats = await ExamResult.getExamStatistics(
+      req.params.examId,
+      classroomId
+    );
+
+    res.json({
+      success: true,
+      statistics: stats[0] || {}
+    });
+  })
+);
+
+module.exports = router;

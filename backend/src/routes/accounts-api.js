@@ -13,6 +13,8 @@ const { Expense } = require('../models/expense');
 const { getCurrentAcademicYear, getFeeStructure } = require('../models/school-settings');
 const { validateRequiredFields, validateEnum, sanitizeString, validateObjectId } = require('../utils/validation');
 const cacheManager = require('../utils/cache');
+const ReceiptGenerator = require('../services/receiptGenerator');
+const { Student } = require('../models/student');
 
 const router = express.Router();
 
@@ -608,6 +610,156 @@ router.get('/reports/collection-trend', requireAuth, requireRole(ROLES.ACCOUNTS)
   res.json({
     trend: trend.reverse(),
     period: `Last ${months} months`
+  });
+}));
+
+// ============= Receipt Generation =============
+/**
+ * GET /api/accounts/receipts/:paymentId
+ * Generate and download receipt for a specific payment
+ */
+router.get('/receipts/:paymentId', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
+  if (!validateObjectId(req.params.paymentId)) {
+    return res.status(400).json({ error: 'Invalid payment ID' });
+  }
+
+  const payment = await Payment.findById(req.params.paymentId);
+  if (!payment) {
+    return res.status(404).json({ error: 'Payment not found' });
+  }
+
+  // Get fee and student information
+  const fee = payment.feeId ? await Fee.findById(payment.feeId) : null;
+  const student = payment.studentId ? await Student.findById(payment.studentId) : null;
+
+  if (!student) {
+    return res.status(404).json({ error: 'Student information not found' });
+  }
+
+  // Get school settings
+  const schoolSettings = await getCurrentAcademicYear();
+
+  // Generate receipt PDF
+  const doc = ReceiptGenerator.generatePaymentReceipt(
+    {
+      receiptNumber: payment.receiptNumber || `RCP-${payment._id}`,
+      amountPaid: payment.amountPaid,
+      paymentDate: payment.paymentDate,
+      method: payment.method,
+      paymentStatus: payment.paymentStatus || 'verified',
+      notes: payment.notes
+    },
+    student,
+    fee,
+    schoolSettings
+  );
+
+  // Send as downloadable PDF
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="receipt-${payment._id}.pdf"`);
+  doc.pipe(res);
+}));
+
+/**
+ * POST /api/accounts/receipts/batch
+ * Generate batch receipt for multiple payments
+ */
+router.post('/receipts/batch', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const { paymentIds } = req.body;
+
+  if (!Array.isArray(paymentIds) || paymentIds.length === 0) {
+    return res.status(400).json({ error: 'paymentIds array is required' });
+  }
+
+  // Validate all IDs
+  const validIds = paymentIds.filter(id => validateObjectId(id));
+  if (validIds.length === 0) {
+    return res.status(400).json({ error: 'No valid payment IDs provided' });
+  }
+
+  // Fetch payments
+  const payments = await Payment.find({ _id: { $in: validIds } })
+    .populate('studentId', 'firstName lastName studentId')
+    .populate('feeId', 'type amount');
+
+  if (payments.length === 0) {
+    return res.status(404).json({ error: 'No payments found' });
+  }
+
+  // Format data for receipt
+  const paymentsData = payments.map(p => ({
+    studentName: p.studentId ? `${p.studentId.firstName} ${p.studentId.lastName}` : 'Unknown',
+    feeType: p.feeId?.type || 'General Fee',
+    method: p.method,
+    amountPaid: p.amountPaid,
+    paymentStatus: p.paymentStatus || 'verified'
+  }));
+
+  // Get school settings
+  const schoolSettings = await getCurrentAcademicYear();
+
+  // Generate batch receipt PDF
+  const doc = ReceiptGenerator.generateBatchReceipt(paymentsData, schoolSettings);
+
+  // Send as downloadable PDF
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="batch-receipt-${Date.now()}.pdf"`);
+  doc.pipe(res);
+}));
+
+/**
+ * GET /api/accounts/receipts
+ * Get receipt history with filters
+ */
+router.get('/receipts', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, studentId, method, startDate, endDate } = req.query;
+  const skip = (page - 1) * limit;
+
+  const filter = {};
+  if (studentId && validateObjectId(studentId)) {
+    filter.studentId = studentId;
+  }
+  if (method) {
+    filter.method = method;
+  }
+  if (startDate || endDate) {
+    filter.paymentDate = {};
+    if (startDate) filter.paymentDate.$gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filter.paymentDate.$lte = end;
+    }
+  }
+
+  const receipts = await Payment.find(filter)
+    .populate('studentId', 'firstName lastName studentId')
+    .populate('feeId', 'type amount')
+    .sort({ paymentDate: -1 })
+    .skip(skip)
+    .limit(parseInt(limit))
+    .lean();
+
+  const total = await Payment.countDocuments(filter);
+
+  res.json({
+    receipts: receipts.map(r => ({
+      _id: r._id,
+      receiptNumber: r.receiptNumber || `RCP-${r._id}`,
+      studentName: r.studentId ? `${r.studentId.firstName} ${r.studentId.lastName}` : 'Unknown',
+      studentId: r.studentId?._id,
+      feeType: r.feeId?.type || 'General Fee',
+      amount: r.amountPaid,
+      method: r.method,
+      paymentDate: r.paymentDate,
+      status: r.paymentStatus
+    })),
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / limit)
+    }
   });
 }));
 

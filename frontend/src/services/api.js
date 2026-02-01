@@ -370,68 +370,6 @@ export const timetableApi = {
   },
 };
 
-// Exams API - NOTE: Backend endpoints not yet implemented
-export const examsApi = {
-  list: async () => {
-    return apiCall('/exams');
-  },
-
-  get: async (exam_id) => {
-    return apiCall(`/exams/${exam_id}`);
-  },
-
-  create: async (data) => {
-    return apiCall('/exams', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  update: async (exam_id, data) => {
-    return apiCall(`/exams/${exam_id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  delete: async (exam_id) => {
-    return apiCall(`/exams/${exam_id}`, {
-      method: 'DELETE',
-    });
-  },
-};
-
-// Results API - NOTE: Backend endpoints not yet implemented  
-export const resultsApi = {
-  list: async () => {
-    return apiCall('/results');
-  },
-
-  getByStudent: async (student_id) => {
-    return apiCall(`/results/student/${student_id}`);
-  },
-
-  create: async (data) => {
-    return apiCall('/results', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  update: async (result_id, data) => {
-    return apiCall(`/results/${result_id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  delete: async (result_id) => {
-    return apiCall(`/results/${result_id}`, {
-      method: 'DELETE',
-    });
-  },
-};
-
 // Attendance API
 export const attendanceApi = {
   list: async () => {
@@ -1136,81 +1074,6 @@ export const parentsApi = {
   },
 };
 
-// Exam Results API
-export const examResultsApi = {
-  list: async (params = {}) => {
-    const query = new URLSearchParams(params).toString()
-    return apiCall(`/results${query ? '?' + query : ''}`)
-  },
-
-  getById: async (id) => {
-    return apiCall(`/results/${id}`)
-  },
-
-  getStudentResults: async (studentId, academicYear, term) => {
-    const query = new URLSearchParams()
-    if (academicYear) query.append('academicYear', academicYear)
-    if (term) query.append('term', term)
-    return apiCall(`/results/student/${studentId}${query.toString() ? '?' + query.toString() : ''}`)
-  },
-
-  getClassroomExamResults: async (examId, classroomId) => {
-    return apiCall(`/results/exam/${examId}/classroom/${classroomId}`)
-  },
-
-  create: async (resultData) => {
-    return apiCall('/results', {
-      method: 'POST',
-      body: JSON.stringify(resultData),
-    })
-  },
-
-  createBatch: async (examId, classroomId, results, academicYear, term) => {
-    return apiCall('/results/batch', {
-      method: 'POST',
-      body: JSON.stringify({ examId, classroomId, results, academicYear, term }),
-    })
-  },
-
-  update: async (id, updateData) => {
-    return apiCall(`/results/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
-    })
-  },
-
-  submit: async (id) => {
-    return apiCall(`/results/${id}/submit`, {
-      method: 'POST',
-    })
-  },
-
-  approve: async (id) => {
-    return apiCall(`/results/${id}/approve`, {
-      method: 'POST',
-    })
-  },
-
-  publish: async (id) => {
-    return apiCall(`/results/${id}/publish`, {
-      method: 'POST',
-    })
-  },
-
-  delete: async (id) => {
-    return apiCall(`/results/${id}`, {
-      method: 'DELETE',
-    })
-  },
-
-  getExamStatistics: async (examId, classroomId, term) => {
-    const query = new URLSearchParams()
-    if (classroomId) query.append('classroomId', classroomId)
-    if (term) query.append('term', term)
-    return apiCall(`/results/stats/exam/${examId}${query.toString() ? '?' + query.toString() : ''}`)
-  }
-}
-
 // Classroom API
 export const classroomApi = {
   list: async (params = {}) => {
@@ -1271,6 +1134,18 @@ export const examApi = {
   delete: async (id) => {
     return apiCall(`/exams/${id}`, {
       method: 'DELETE',
+    })
+  },
+
+  publish: async (id) => {
+    return apiCall(`/exams/${id}/publish`, {
+      method: 'POST',
+    })
+  },
+
+  close: async (id) => {
+    return apiCall(`/exams/${id}/close`, {
+      method: 'POST',
     })
   }
 }
@@ -1400,5 +1275,90 @@ export const homeworkApi = {
       throw new Error('Failed to download submission attachment')
     }
     return await response.blob()
+  }
+}
+// ============= NEW EXAM & RESULTS API =============
+
+
+// Results API
+export const resultApi = {
+  // Entry operations
+  create: async (data) => {
+    return apiCall('/results', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  createBatch: async (exam, classroom, subject, results, maxMarks = 100) => {
+    return apiCall('/results/batch', {
+      method: 'POST',
+      body: JSON.stringify({
+        exam,
+        classroom,
+        subject,
+        results,
+        maxMarks
+      }),
+    })
+  },
+
+  getClassroomExamResults: async (classroomId, examId) => {
+    return apiCall(`/results/classroom/${classroomId}/exam/${examId}`)
+  },
+
+  update: async (id, data) => {
+    return apiCall(`/results/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id) => {
+    return apiCall(`/results/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  submit: async (id) => {
+    return apiCall(`/results/${id}/submit`, {
+      method: 'POST',
+    })
+  },
+
+  // Approval operations
+  getPending: async (filters = {}) => {
+    const query = new URLSearchParams(filters).toString()
+    return apiCall(`/results/pending${query ? '?' + query : ''}`)
+  },
+
+  approve: async (id) => {
+    return apiCall(`/results/${id}/approve`, {
+      method: 'POST',
+    })
+  },
+
+  publish: async (id) => {
+    return apiCall(`/results/${id}/publish`, {
+      method: 'POST',
+    })
+  },
+
+  reject: async (id, reason = '') => {
+    return apiCall(`/results/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    })
+  },
+
+  // Viewing operations
+  getByStudent: async (studentId, filters = {}) => {
+    const query = new URLSearchParams(filters).toString()
+    return apiCall(`/results/student/${studentId}${query ? '?' + query : ''}`)
+  },
+
+  getExamStatistics: async (examId, filters = {}) => {
+    const query = new URLSearchParams(filters).toString()
+    return apiCall(`/results/exam/${examId}/statistics${query ? '?' + query : ''}`)
   }
 }

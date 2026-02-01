@@ -5,94 +5,61 @@ import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { teacherApi } from '../services/api'
+import { ROLES, ROUTE_ACCESS } from '../config/rbac'
 
-// Admin menu items
-const adminMenuItems = [
-  { label: 'Dashboard', icon: Grid, path: '/' },
-  { label: 'Admin Panel', icon: Lock, path: '/admin' },
-  { label: 'Users & Roles', icon: Users, path: '/roles' },
-  { label: 'Users', icon: UserCog, path: '/users' },
-  { label: 'Students', icon: GraduationCap, path: '/students' },
-  { label: 'Parents', icon: Users, path: '/parents' },
-  { label: 'Teachers', icon: User, path: '/teachers' },
-  { label: 'Staffs', icon: UserCog, path: '/staffs' },
-  { label: 'Classrooms', icon: School, path: '/classrooms' },
-  { label: 'Subjects', icon: BookOpen, path: '/subjects' },
-  { label: 'Timetable', icon: Calendar, path: '/timetable' },
-  { label: 'Exams', icon: FileText, path: '/exams' },
-  { label: 'Results', icon: Award, path: '/results' },
-  { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
-  { label: 'Fees', icon: DollarSign, path: '/fees' },
-  { label: 'Payments', icon: CreditCard, path: '/payments' },
-  { label: 'Expenses', icon: TrendingDown, path: '/expenses' },
-  { label: 'Issues', icon: AlertCircle, path: '/issues' },
-  { label: 'Messages', icon: Mail, path: '/messages' },
-  { label: 'Reports', icon: BarChart3, path: '/reports' },
-  { label: 'Settings', icon: Settings, path: '/settings' }
-]
+/**
+ * Role-based menu items definition
+ * Only shows items that the user's role can access
+ * Based on ROUTE_ACCESS from rbac.js config
+ */
+const allMenuItems = {
+  dashboard: { label: 'Dashboard', icon: Grid, path: '/', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.STUDENT, ROLES.ACCOUNTS, ROLES.PARENT] },
+  adminPanel: { label: 'Admin Panel', icon: Lock, path: '/admin', roles: [ROLES.ADMIN] },
+  roles: { label: 'Users & Roles', icon: Users, path: '/roles', roles: [ROLES.ADMIN] },
+  users: { label: 'Users', icon: UserCog, path: '/users', roles: [ROLES.ADMIN] },
+  students: { label: 'Students', icon: GraduationCap, path: '/students', roles: [ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER, ROLES.ACCOUNTS] },
+  parents: { label: 'Parents', icon: Users, path: '/parents', roles: [ROLES.ADMIN] },
+  teachers: { label: 'Teachers', icon: User, path: '/teachers', roles: [ROLES.ADMIN, ROLES.HEAD_TEACHER] },
+  staffs: { label: 'Staffs', icon: UserCog, path: '/staffs', roles: [ROLES.ADMIN, ROLES.HEAD_TEACHER] },
+  classrooms: { label: 'Classrooms', icon: School, path: '/classrooms', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER] },
+  subjects: { label: 'Subjects', icon: BookOpen, path: '/subjects', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER] },
+  timetable: { label: 'Timetable', icon: Calendar, path: '/timetable', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.STUDENT] },
+  exams: { label: 'Exams', icon: FileText, path: '/exams', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.HEAD_TEACHER] },
+  results: { label: 'Results', icon: Award, path: '/results', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER] },
+  resultsApproval: { label: 'Results Approval', icon: CheckCircle, path: '/results-approval', roles: [ROLES.ADMIN, ROLES.HEAD_TEACHER] },
+  attendance: { label: 'Attendance', icon: CheckCircle, path: '/attendance', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER] },
+  fees: { label: 'Fees', icon: DollarSign, path: '/fees', roles: [ROLES.ADMIN, ROLES.ACCOUNTS, ROLES.HEAD_TEACHER] },
+  payments: { label: 'Payments', icon: CreditCard, path: '/payments', roles: [ROLES.ADMIN, ROLES.ACCOUNTS, ROLES.HEAD_TEACHER] },
+  financialReports: { label: 'Financial Reports', icon: BarChart3, path: '/financial-reports', roles: [ROLES.ADMIN, ROLES.ACCOUNTS, ROLES.HEAD_TEACHER] },
+  expenses: { label: 'Expenses', icon: TrendingDown, path: '/expenses', roles: [ROLES.ADMIN, ROLES.ACCOUNTS] },
+  issues: { label: 'Issues', icon: AlertCircle, path: '/issues', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT, ROLES.HEAD_TEACHER, ROLES.ACCOUNTS] },
+  messages: { label: 'Messages', icon: Mail, path: '/messages', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT, ROLES.HEAD_TEACHER, ROLES.ACCOUNTS] },
+  reports: { label: 'Reports', icon: BarChart3, path: '/reports', roles: [ROLES.ADMIN, ROLES.HEAD_TEACHER] },
+  settings: { label: 'Settings', icon: Settings, path: '/settings', roles: [ROLES.ADMIN] },
+  children: { label: 'My Children', icon: Users, path: '/children', roles: [ROLES.PARENT, ROLES.ADMIN] }
+}
 
-// Teacher menu items
-const teacherMenuItems = [
-  { label: 'Dashboard', icon: Grid, path: '/' },
-  { label: 'My Classrooms', icon: School, path: '/classrooms' },
-  { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
-  { label: 'Results', icon: Award, path: '/results' },
-  { label: 'Messages', icon: Mail, path: '/messages' },
-  { label: 'Reports', icon: BarChart3, path: '/reports' }
-]
-
-// Student menu items
-const studentMenuItems = [
-  { label: 'Dashboard', icon: Grid, path: '/' },
-  { label: 'Subjects', icon: BookOpen, path: '/subjects' },
-  { label: 'Results', icon: Award, path: '/results' },
-  { label: 'Messages', icon: Mail, path: '/messages' },
-]
-
-// Accounts menu items
-const accountsMenuItems = [
-  { label: 'Dashboard', icon: Grid, path: '/' },
-  { label: 'Fees', icon: DollarSign, path: '/fees' },
-  { label: 'Payments', icon: CreditCard, path: '/payments' },
-  { label: 'Financial Reports', icon: BarChart3, path: '/financial-reports' },
-  { label: 'Expenses', icon: TrendingDown, path: '/expenses' },
-  { label: 'Messages', icon: Mail, path: '/messages' },
-  { label: 'Reports', icon: BarChart3, path: '/reports' },
-]
-
-// Head Teacher menu items
-const headTeacherMenuItems = [
-  { label: 'Dashboard', icon: Grid, path: '/' },
-  { label: 'Students', icon: GraduationCap, path: '/students' },
-  { label: 'Teachers', icon: User, path: '/teachers' },
-  { label: 'Classrooms', icon: School, path: '/classrooms' },
-  { label: 'Subjects', icon: BookOpen, path: '/subjects' },
-  { label: 'Timetable', icon: Calendar, path: '/timetable' },
-  { label: 'Exams', icon: FileText, path: '/exams' },
-  { label: 'Results', icon: Award, path: '/results' },
-  { label: 'Attendance', icon: CheckCircle, path: '/attendance' },
-  { label: 'Messages', icon: Mail, path: '/messages' },
-  { label: 'Reports', icon: BarChart3, path: '/reports' }
-]
-
-// Parent menu items
-const parentMenuItems = [
-  { label: 'Dashboard', icon: Grid, path: '/' },
-  { label: 'My Children', icon: Users, path: '/children' },
-  { label: 'Messages', icon: Mail, path: '/messages' },
-]
+/**
+ * Get menu items filtered by user role
+ * Only returns items accessible to the user's role
+ */
+function getMenuItemsForRole(role) {
+  return Object.values(allMenuItems).filter(item => 
+    item.roles.includes(role) || role === ROLES.ADMIN // Admin can see all items
+  )
+}
 
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const { user, logout } = useAuth()
   const { success } = useToast()
   const navigate = useNavigate()
-  const userRole = user?.role || 'admin'
+  const userRole = user?.role || ROLES.ADMIN
   const [teacherClassroomId, setTeacherClassroomId] = useState(null)
 
   // Fetch teacher's classroom on component mount
   useEffect(() => {
-    if (userRole === 'teacher') {
+    if (userRole === ROLES.TEACHER) {
       const fetchTeacherClassroom = async () => {
         try {
           const classrooms = await teacherApi.getMyClassrooms()
@@ -118,21 +85,9 @@ function Sidebar({ isOpen, onClose }) {
     }
   }
 
-  // Get menu items based on role
-  let menuItems = []
-  if (userRole === 'admin') {
-    menuItems = adminMenuItems
-  } else if (userRole === 'teacher') {
-    menuItems = teacherMenuItems
-  } else if (userRole === 'student') {
-    menuItems = studentMenuItems
-  } else if (userRole === 'accounts') {
-    menuItems = accountsMenuItems
-  } else if (userRole === 'head-teacher') {
-    menuItems = headTeacherMenuItems
-  } else if (userRole === 'parent') {
-    menuItems = parentMenuItems
-  }
+  // Get menu items based on user role
+  // Only show items that the user's role has access to
+  const menuItems = getMenuItemsForRole(userRole)
 
   const handleLinkClick = () => {
     if (onClose) onClose()
@@ -140,7 +95,7 @@ function Sidebar({ isOpen, onClose }) {
 
   // Helper function to get the correct path for menu items
   const getMenuItemPath = (item) => {
-    if (userRole === 'teacher' && item.label === 'My Classrooms' && teacherClassroomId) {
+    if (userRole === ROLES.TEACHER && item.label === 'Classrooms' && teacherClassroomId) {
       return `/classrooms/${teacherClassroomId}`
     }
     return item.path

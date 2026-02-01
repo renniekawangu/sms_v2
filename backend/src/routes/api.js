@@ -17,15 +17,15 @@ const { Fee } = require('../models/fees');
 const { Classroom } = require('../models/classroom');
 const { Payment } = require('../models/payment');
 const { Expense } = require('../models/expense');
-const { Exam } = require('../models/exam');
 const { Issue } = require('../models/issue');
 const { Parent } = require('../models/parent');
 const { getNextSequence } = require('../models/counter');
+const { Exam } = require('../models/exam');
+const { ExamResult } = require('../models/examResult');
 const mongoose = require('mongoose');
 const messageRoutes = require('./message-api');
 const reportRoutes = require('./reports-api');
 const timetableRoutes = require('./timetable-api');
-const examResultsRoutes = require('./examResults');
 
 const router = express.Router();
 
@@ -797,12 +797,10 @@ router.delete('/exams/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEA
 
 // ============= Grades/Results API =============
 // ============= Exam Results API (NEW - See examResults.js) =============
-// Note: /results endpoints are now handled by examResults routes
 
 // Old Grade endpoints (DEPRECATED - kept for backwards compatibility with old student grade system)
 // ============= OLD RESULTS/GRADES ENDPOINTS (DEPRECATED) =============
-// These have been replaced by the new Exam Results system in examResults.js
-// The new system uses MongoDB ExamResult model instead of the legacy Grade model
+// The legacy Grade model system has been deprecated
 // Kept commented for reference but not actively used
 
 /* DEPRECATED
@@ -1084,7 +1082,12 @@ router.use('/reports', reportRoutes);
 // ============= Timetable Management API =============
 router.use('/timetable', timetableRoutes);
 
-// ============= Exam Results API =============
-router.use('/', examResultsRoutes);
+// ============= Exam Management API =============
+const examsRoutes = require('./exams');
+router.use('/exams', examsRoutes);
+
+// ============= Results Management API =============
+const examResultsRoutes = require('./examResults');
+router.use('/results', examResultsRoutes);
 
 module.exports = router;

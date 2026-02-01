@@ -341,37 +341,6 @@ export const timetableApi = {
   }
 }
 
-// Exams API
-export const examsApi = {
-  list: async () => {
-    await delay()
-    return mockData.exams
-  },
-
-  create: async (data) => {
-    await delay()
-    const newId = Math.max(...mockData.exams.map(e => e.exam_id), 0) + 1
-    const newExam = { exam_id: newId, ...data }
-    mockData.exams.push(newExam)
-    return newExam
-  }
-}
-
-// Results API
-export const resultsApi = {
-  getByStudent: async (student_id) => {
-    await delay()
-    return mockData.results.filter(r => r.student_id === student_id)
-  },
-
-  create: async (data) => {
-    await delay()
-    const newResult = { ...data }
-    mockData.results.push(newResult)
-    return newResult
-  }
-}
-
 // Attendance API
 export const attendanceApi = {
   getByUser: async (user_id) => {

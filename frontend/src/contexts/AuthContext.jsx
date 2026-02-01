@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authApi } from '../services/api'
-import { DEFAULT_ROLE_PERMISSIONS, ROLES } from '../config/permissions'
+import { ROLE_PERMISSIONS, ROLES, hasPermission, canAccessRoute, requiresSelfAccessOnly } from '../config/rbac'
 
 const AuthContext = createContext(null)
 
@@ -17,8 +17,8 @@ export function AuthProvider({ children }) {
         const userData = JSON.parse(savedUser)
         setUser(userData)
         
-        // Load permissions based on role
-        const rolePermissions = DEFAULT_ROLE_PERMISSIONS[userData.role] || []
+        // Load permissions based on role using RBAC config
+        const rolePermissions = ROLE_PERMISSIONS[userData.role] || []
         setPermissions(rolePermissions)
       } catch (e) {
         localStorage.removeItem('user')
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
   /**
    * Check if user has a specific permission
    */
-  const hasPermission = useCallback((permission) => {
+  const hasPermissionCheck = useCallback((permission) => {
     if (!user) return false
     if (user.role === ROLES.ADMIN) return true // Admin has all permissions
     return permissions.includes(permission)
@@ -40,15 +40,30 @@ export function AuthProvider({ children }) {
    * Check if user has any of the provided permissions
    */
   const hasAnyPermission = useCallback((permissionList) => {
-    return permissionList.some(permission => hasPermission(permission))
-  }, [hasPermission])
+    return permissionList.some(permission => hasPermissionCheck(permission))
+  }, [hasPermissionCheck])
 
   /**
    * Check if user has all of the provided permissions
    */
   const hasAllPermissions = useCallback((permissionList) => {
-    return permissionList.every(permission => hasPermission(permission))
-  }, [hasPermission])
+    return permissionList.every(permission => hasPermissionCheck(permission))
+  }, [hasPermissionCheck])
+
+  /**
+   * Check if user can access a route
+   */
+  const canAccess = useCallback((route) => {
+    if (!user) return false
+    return canAccessRoute(user.role, route)
+  }, [user])
+
+  /**
+   * Check if a permission requires self-access only
+   */
+  const isSelfAccessOnly = useCallback((permission) => {
+    return requiresSelfAccessOnly(permission)
+  }, [])
 
   const login = async (email, password) => {
     try {
@@ -66,8 +81,8 @@ export function AuthProvider({ children }) {
       setUser(userData)
       localStorage.setItem('user', JSON.stringify(userData))
       
-      // Load permissions based on role
-      const rolePermissions = DEFAULT_ROLE_PERMISSIONS[userData.role] || []
+      // Load permissions based on role using RBAC config
+      const rolePermissions = ROLE_PERMISSIONS[userData.role] || []
       setPermissions(rolePermissions)
       
       return { success: true }
@@ -95,9 +110,11 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     loading,
     permissions,
-    hasPermission,
+    hasPermission: hasPermissionCheck,
     hasAnyPermission,
-    hasAllPermissions
+    hasAllPermissions,
+    canAccess,
+    isSelfAccessOnly
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

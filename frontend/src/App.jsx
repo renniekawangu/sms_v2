@@ -4,6 +4,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { SettingsProvider } from './contexts/SettingsContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import ProtectedRoute from './components/ProtectedRoute'
+import RoleBasedDashboard from './components/RoleBasedDashboard'
 import Layout from './components/Layout'
 import './index-responsive.css'
 import Login from './pages/Login'
@@ -17,8 +18,6 @@ import Classrooms from './pages/Classrooms'
 import ViewClassroom from './pages/ViewClassroom'
 import Subjects from './pages/Subjects'
 import Timetable from './pages/Timetable'
-import Exams from './pages/Exams'
-import Results from './pages/Results'
 import Children from './pages/Children'
 import ChildDetail from './pages/ChildDetail'
 import Parents from './pages/Parents'
@@ -32,8 +31,11 @@ import Settings from './pages/Settings'
 import UsersManagement from './pages/UsersManagement'
 import Messages from './pages/Messages'
 import Reports from './pages/Reports'
+import Exams from './pages/Exams'
+import Results from './pages/Results'
+import ResultsApproval from './pages/ResultsApproval'
 import { PermissionGate } from './components/PermissionGate'
-import { PERMISSIONS } from './config/permissions'
+import { ROLES, PERMISSIONS } from './config/rbac'
 
 function App() {
   return (
@@ -45,9 +47,19 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
           
-              {/* Dashboard */}
+              {/* Dashboard - Routes to role-based dashboards */}
               <Route
                 path="/"
+                element={
+                  <ProtectedRoute>
+                    <RoleBasedDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dashboard fallback for direct access */}
+              <Route
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <Layout>
@@ -57,11 +69,11 @@ function App() {
                 }
               />
 
-              {/* Admin Panel - accessible to admin only */}
+              {/* Admin Panel - ADMIN ONLY */}
               <Route
                 path="/admin"
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole={ROLES.ADMIN} route="/admin">
                     <Layout>
                       <AdminPanel />
                     </Layout>
@@ -69,13 +81,13 @@ function App() {
                 }
               />
 
-              {/* Role Management - accessible to admin only */}
+              {/* Role Management - ADMIN ONLY */}
               <Route
                 path="/roles"
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole={ROLES.ADMIN} route="/roles">
                     <Layout>
-                      <PermissionGate permission={PERMISSIONS.ROLES_VIEW}>
+                      <PermissionGate permission={PERMISSIONS.ROLE_ASSIGN}>
                         <RoleManagement />
                       </PermissionGate>
                     </Layout>
@@ -83,23 +95,25 @@ function App() {
                 }
               />
 
-              {/* Users Management - accessible to admin only */}
+              {/* Users Management - ADMIN ONLY */}
               <Route
                 path="/users"
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole={ROLES.ADMIN} route="/users">
                     <Layout>
-                      <UsersManagement />
+                      <PermissionGate permission={PERMISSIONS.USER_CREATE}>
+                        <UsersManagement />
+                      </PermissionGate>
                     </Layout>
                   </ProtectedRoute>
                 }
               />
 
-              {/* Students - accessible to admin and accounts */}
+              {/* Students - Accessible to multiple roles */}
               <Route
                 path="/students"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute route="/students">
                     <Layout>
                       <Students />
                     </Layout>
@@ -107,11 +121,11 @@ function App() {
                 }
               />
 
-              {/* Parents - accessible to admin */}
+              {/* Parents - ADMIN ONLY */}
               <Route
                 path="/parents"
                 element={
-                  <ProtectedRoute requiredRole="admin">
+                  <ProtectedRoute requiredRole={ROLES.ADMIN} route="/parents">
                     <Layout>
                       <Parents />
                     </Layout>
@@ -119,11 +133,11 @@ function App() {
                 }
               />
 
-              {/* Teachers - accessible to admin */}
+              {/* Teachers - HEAD TEACHER & ADMIN */}
               <Route
                 path="/teachers"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/teachers">
                     <Layout>
                       <Teachers />
                     </Layout>
@@ -131,11 +145,11 @@ function App() {
                 }
               />
 
-              {/* Staffs - accessible to admin and head-teacher */}
+              {/* Staffs - HEAD TEACHER & ADMIN */}
               <Route
                 path="/staffs"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/staffs">
                     <Layout>
                       <Staffs />
                     </Layout>
@@ -143,11 +157,11 @@ function App() {
                 }
               />
 
-              {/* Classrooms - accessible to all authenticated users */}
+              {/* Classrooms - TEACHER, HEAD_TEACHER & ADMIN */}
               <Route
                 path="/classrooms"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/classrooms">
                     <Layout>
                       <Classrooms />
                     </Layout>
@@ -155,23 +169,23 @@ function App() {
                 }
               />
 
-                {/* View Classroom - accessible to all authenticated users */}
-                <Route
-                  path="/classrooms/:id"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <ViewClassroom />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
+              {/* View Classroom - TEACHER, HEAD_TEACHER & ADMIN */}
+              <Route
+                path="/classrooms/:id"
+                element={
+                  <ProtectedRoute requiredRole={[ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN]}>
+                    <Layout>
+                      <ViewClassroom />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
 
-              {/* Subjects - accessible to all authenticated users */}
+              {/* Subjects - TEACHER, HEAD_TEACHER & ADMIN */}
               <Route
                 path="/subjects"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/subjects">
                     <Layout>
                       <Subjects />
                     </Layout>
@@ -179,11 +193,11 @@ function App() {
                 }
               />
 
-              {/* Timetable - accessible to all authenticated users */}
+              {/* Timetable - All authenticated users */}
               <Route
                 path="/timetable"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute route="/timetable">
                     <Layout>
                       <Timetable />
                     </Layout>
@@ -191,35 +205,11 @@ function App() {
                 }
               />
 
-              {/* Exams - accessible to admin */}
-              <Route
-                path="/exams"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Exams />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Results - accessible to all authenticated users */}
-              <Route
-                path="/results"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Results />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Children - accessible to parents */}
+              {/* Children - PARENT & ADMIN ONLY */}
               <Route
                 path="/children"
                 element={
-                  <ProtectedRoute requiredRole="parent">
+                  <ProtectedRoute requiredRole={[ROLES.PARENT, ROLES.ADMIN]} route="/children">
                     <Layout>
                       <Children />
                     </Layout>
@@ -227,11 +217,11 @@ function App() {
                 }
               />
 
-              {/* Child Detail - accessible to parents */}
+              {/* Child Detail - PARENT & ADMIN ONLY (self-access enforced on backend) */}
               <Route
                 path="/children/:id"
                 element={
-                  <ProtectedRoute requiredRole="parent">
+                  <ProtectedRoute requiredRole={[ROLES.PARENT, ROLES.ADMIN]}>
                     <Layout>
                       <ChildDetail />
                     </Layout>
@@ -239,11 +229,11 @@ function App() {
                 }
               />
 
-              {/* Attendance - accessible to all authenticated users */}
+              {/* Attendance - TEACHER, HEAD_TEACHER & ADMIN */}
               <Route
                 path="/attendance"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/attendance">
                     <Layout>
                       <Attendance />
                     </Layout>
@@ -251,11 +241,47 @@ function App() {
                 }
               />
 
-              {/* Fees - accessible to admin and accounts */}
+              {/* Exams - TEACHER, HEAD_TEACHER & ADMIN */}
+              <Route
+                path="/exams"
+                element={
+                  <ProtectedRoute requiredRole={[ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/exams">
+                    <Layout>
+                      <Exams />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Results - TEACHER, HEAD_TEACHER & ADMIN */}
+              <Route
+                path="/results"
+                element={
+                  <ProtectedRoute requiredRole={[ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/results">
+                    <Layout>
+                      <Results />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Results Approval - HEAD_TEACHER & ADMIN */}
+              <Route
+                path="/results-approval"
+                element={
+                  <ProtectedRoute requiredRole={[ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/results-approval">
+                    <Layout>
+                      <ResultsApproval />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Fees - ACCOUNTS, HEAD_TEACHER & ADMIN */}
               <Route
                 path="/fees"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.ACCOUNTS, ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/fees">
                     <Layout>
                       <Fees />
                     </Layout>
@@ -263,11 +289,11 @@ function App() {
                 }
               />
 
-              {/* Payments - accessible to admin and accounts */}
+              {/* Payments - ACCOUNTS, HEAD_TEACHER & ADMIN */}
               <Route
                 path="/payments"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.ACCOUNTS, ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/payments">
                     <Layout>
                       <Payments />
                     </Layout>
@@ -275,11 +301,11 @@ function App() {
                 }
               />
 
-              {/* Financial Reports - accessible to admin and accounts */}
+              {/* Financial Reports - ACCOUNTS, HEAD_TEACHER & ADMIN */}
               <Route
                 path="/financial-reports"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.ACCOUNTS, ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/financial-reports">
                     <Layout>
                       <FinancialReports />
                     </Layout>
@@ -287,11 +313,11 @@ function App() {
                 }
               />
 
-              {/* Expenses - accessible to admin and accounts */}
+              {/* Expenses - ACCOUNTS & ADMIN */}
               <Route
                 path="/expenses"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.ACCOUNTS, ROLES.ADMIN]} route="/expenses">
                     <Layout>
                       <Expenses />
                     </Layout>
@@ -299,11 +325,11 @@ function App() {
                 }
               />
 
-              {/* Issues - accessible to all authenticated users */}
+              {/* Issues - All authenticated users can view/create */}
               <Route
                 path="/issues"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute route="/issues">
                     <Layout>
                       <Issues />
                     </Layout>
@@ -311,11 +337,11 @@ function App() {
                 }
               />
 
-              {/* Messages - accessible to all authenticated users */}
+              {/* Messages - All authenticated users */}
               <Route
                 path="/messages"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute route="/messages">
                     <Layout>
                       <Messages />
                     </Layout>
@@ -323,11 +349,11 @@ function App() {
                 }
               />
 
-              {/* Reports - accessible to all authenticated users */}
+              {/* Reports - HEAD_TEACHER & ADMIN */}
               <Route
                 path="/reports"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={[ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/reports">
                     <Layout>
                       <Reports />
                     </Layout>
@@ -335,13 +361,13 @@ function App() {
                 }
               />
 
-              {/* Settings - accessible to admin */}
+              {/* Settings - ADMIN ONLY */}
               <Route
                 path="/settings"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRole={ROLES.ADMIN} route="/settings">
                     <Layout>
-                      <PermissionGate permission={PERMISSIONS.SETTINGS_VIEW}>
+                      <PermissionGate permission={PERMISSIONS.SYSTEM_SETTINGS_UPDATE}>
                         <Settings />
                       </PermissionGate>
                     </Layout>
@@ -349,6 +375,7 @@ function App() {
                 }
               />
 
+              {/* Catch-all - redirect to home */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             </Router>

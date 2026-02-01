@@ -1,150 +1,251 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import { examApi } from '../services/api';
 
-function ExamForm({ exam, onSubmit, onCancel }) {
+export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
   const [formData, setFormData] = useState({
-    name: '',
-    date: new Date().toISOString().split('T')[0],
-    type: 1,
-  })
-  const [errors, setErrors] = useState({})
+    title: '',
+    academicYear: '',
+    term: '',
+    subject: '',
+    totalMarks: 100,
+    passingMarks: 40,
+    examDate: '',
+    description: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (exam) {
       setFormData({
-        name: exam.name || '',
-        date: exam.date ? (exam.date.includes('T') ? exam.date.split('T')[0] : exam.date) : new Date().toISOString().split('T')[0],
-        type: exam.type || 1,
-      })
+        title: exam.title || '',
+        academicYear: exam.academicYear || '',
+        term: exam.term || '',
+        subject: exam.subject || '',
+        totalMarks: exam.totalMarks || 100,
+        passingMarks: exam.passingMarks || 40,
+        examDate: exam.examDate?.split('T')[0] || '',
+        description: exam.description || '',
+      });
     } else {
-      setFormData({
-        name: '',
-        date: new Date().toISOString().split('T')[0],
-        type: 1,
-      })
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+      setFormData(prev => ({
+        ...prev,
+        academicYear: `${currentYear}-${nextYear}`,
+      }));
     }
-  }, [exam])
-
-  const validate = () => {
-    const newErrors = {}
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Exam name is required'
-    }
-
-    if (!formData.date) {
-      newErrors.date = 'Exam date is required'
-    }
-
-    if (!formData.type || formData.type < 1) {
-      newErrors.type = 'Exam type is required'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (validate()) {
-      // Convert date to ISO string for backend
-      onSubmit({
-        ...formData,
-        date: formData.date ? new Date(formData.date).toISOString() : formData.date
-      })
-    }
-  }
+    setError('');
+  }, [exam, isOpen]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: name === 'type' ? parseInt(value) : value }))
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }))
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      if (exam?._id) {
+        await examApi.update(exam._id, formData);
+      } else {
+        await examApi.create(formData);
+      }
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save exam');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-text-dark mb-2">
-          Exam Name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-            errors.name
-              ? 'border-red-300 focus:ring-red-500'
-              : 'border-gray-200 focus:ring-primary-blue'
-          }`}
-          placeholder="Enter exam name"
-        />
-        {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="date" className="block text-sm font-medium text-text-dark mb-2">
-            Exam Date <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            id="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.date
-                ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-200 focus:ring-primary-blue'
-            }`}
-          />
-          {errors.date && <p className="mt-1 text-sm text-red-500">{errors.date}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="type" className="block text-sm font-medium text-text-dark mb-2">
-            Exam Type <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="type"
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              errors.type
-                ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-200 focus:ring-primary-blue'
-            }`}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b">
+          <h2 className="text-xl font-bold text-gray-800">
+            {exam ? 'Edit Exam' : 'Create New Exam'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+            disabled={loading}
           >
-            <option value={1}>Midterm</option>
-            <option value={2}>Final</option>
-            <option value={3}>Quiz</option>
-            <option value={4}>Assignment</option>
-          </select>
-          {errors.type && <p className="mt-1 text-sm text-red-500">{errors.type}</p>}
+            <X size={24} />
+          </button>
         </div>
-      </div>
 
-      <div className="flex items-center gap-3 pt-4">
-        <button
-          type="submit"
-          className="flex-1 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors font-medium"
-        >
-          {exam ? 'Update Exam' : 'Add Exam'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 border border-gray-200 text-text-dark px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-        >
-          Cancel
-        </button>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Exam Title *
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., Mathematics Mid-Term"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Academic Year */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Academic Year *
+              </label>
+              <input
+                type="text"
+                name="academicYear"
+                value={formData.academicYear}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="2025-2026"
+              />
+            </div>
+
+            {/* Term */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Term *
+              </label>
+              <select
+                name="term"
+                value={formData.term}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select term</option>
+                <option value="1">Term 1</option>
+                <option value="2">Term 2</option>
+                <option value="3">Term 3</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Subject */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Subject *
+              </label>
+              <input
+                type="text"
+                name="subject"
+                value={formData.subject}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Mathematics"
+              />
+            </div>
+
+            {/* Exam Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Exam Date *
+              </label>
+              <input
+                type="date"
+                name="examDate"
+                value={formData.examDate}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Total Marks */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Total Marks *
+              </label>
+              <input
+                type="number"
+                name="totalMarks"
+                value={formData.totalMarks}
+                onChange={handleChange}
+                required
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Passing Marks */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Passing Marks *
+              </label>
+              <input
+                type="number"
+                name="passingMarks"
+                value={formData.passingMarks}
+                onChange={handleChange}
+                required
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows="2"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Add exam description..."
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {loading ? 'Saving...' : exam ? 'Update Exam' : 'Create Exam'}
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
-  )
+    </div>
+  );
 }
-
-export default ExamForm

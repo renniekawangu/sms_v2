@@ -169,6 +169,28 @@ function ChildDetail() {
     return gradeMap[grade] || 0
   }
 
+  const getGradeColor = (grade) => {
+    if (!grade) return 'text-gray-500'
+    const gradeStr = String(grade).toUpperCase()
+    if (gradeStr.startsWith('A')) return 'text-green-600'
+    if (gradeStr.startsWith('B')) return 'text-blue-600'
+    if (gradeStr.startsWith('C')) return 'text-yellow-600'
+    if (gradeStr.startsWith('D')) return 'text-orange-600'
+    if (gradeStr.startsWith('E') || gradeStr.startsWith('F')) return 'text-red-600'
+    return 'text-gray-500'
+  }
+
+  const getGradeBgColor = (grade) => {
+    if (!grade) return 'bg-gray-50'
+    const gradeStr = String(grade).toUpperCase()
+    if (gradeStr.startsWith('A')) return 'bg-green-50 border-green-200'
+    if (gradeStr.startsWith('B')) return 'bg-blue-50 border-blue-200'
+    if (gradeStr.startsWith('C')) return 'bg-yellow-50 border-yellow-200'
+    if (gradeStr.startsWith('D')) return 'bg-orange-50 border-orange-200'
+    if (gradeStr.startsWith('E') || gradeStr.startsWith('F')) return 'bg-red-50 border-red-200'
+    return 'bg-gray-50'
+  }
+
   const calculateFeesStatus = () => {
     // Use summary data from the backend which is already calculated
     if (fees && fees.summary) {
@@ -361,25 +383,35 @@ function ChildDetail() {
               {activeTab === 'overview' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Grades Summary */}
-                    <div>
+                  <div>
                       <h3 className="font-semibold text-text-dark mb-4 flex items-center gap-2">
                         <BookOpen size={20} className="text-primary-blue" />
-                        Recent Grades
+                        Recent Exams
                       </h3>
                       {grades.length > 0 ? (
-                        <div className="space-y-2">
-                          {grades.slice(0, 5).map((grade, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                              <span className="text-text-muted">{grade.subject}</span>
-                              <span className="font-semibold text-text-dark">{grade.grade}</span>
+                        <div className="space-y-3">
+                          <div className="overflow-x-auto">
+                            <div className="flex gap-2 pb-2 min-w-max lg:min-w-full lg:flex-wrap">
+                              {grades.slice(0, 4).map((result, idx) => (
+                                <div key={idx} className={`flex-shrink-0 lg:flex-shrink min-w-max lg:min-w-0 lg:flex-1 ${getGradeBgColor(result.overallGrade)} border-2 rounded-lg p-3 text-center hover:shadow-md transition`}>
+                                  <p className="text-xs font-semibold text-text-muted truncate mb-1">
+                                    {result.exam?.name || 'Exam'}
+                                  </p>
+                                  <p className={`text-2xl font-bold ${getGradeColor(result.overallGrade)}`}>
+                                    {result.overallGrade || 'N/A'}
+                                  </p>
+                                  <p className="text-xs text-text-muted mt-1">{result.percentage}%</p>
+                                </div>
+                              ))}
+                              {grades.length > 4 && (
+                                <div className="flex-shrink-0 lg:flex-shrink min-w-max lg:min-w-0 lg:flex-1 bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-blue-300 rounded-lg p-3 text-center">
+                                  <p className="text-xs font-semibold text-blue-600 mb-1">Average</p>
+                                  <p className="text-2xl font-bold text-primary-blue">{avgGrade}%</p>
+                                  <p className="text-xs text-blue-600 mt-1">+{grades.length - 4} more</p>
+                                </div>
+                              )}
                             </div>
-                          ))}
-                          {grades.length > 5 && (
-                            <p className="text-sm text-primary-blue font-medium pt-2">
-                              +{grades.length - 5} more grades
-                            </p>
-                          )}
+                          </div>
                         </div>
                       ) : (
                         <p className="text-text-muted">No grades available yet</p>
@@ -459,53 +491,97 @@ function ChildDetail() {
                     Academic Performance
                   </h3>
                   {grades.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-6">
+                      {/* Exam Results */}
                       {grades.map((result, idx) => (
-                        <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex-1">
-                              <p className="font-semibold text-text-dark">
-                                {result.exam?.name || 'Exam'} - {result.exam?.examType || 'Regular'}
-                              </p>
-                              <p className="text-xs text-text-muted">
-                                {result.term && result.term.charAt(0).toUpperCase() + result.term.slice(1)} • {result.academicYear}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-3xl font-bold text-primary-blue">{result.overallGrade || 'NA'}</p>
-                              <p className="text-sm text-text-muted">{result.percentage}%</p>
+                        <div key={idx} className={`${getGradeBgColor(result.overallGrade)} border-2 rounded-xl overflow-hidden hover:shadow-lg transition`}>
+                          {/* Exam Header */}
+                          <div className="bg-gradient-to-r from-primary-blue/20 to-transparent p-4 border-b-2 border-white border-opacity-50">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-bold text-lg text-text-dark">
+                                  {result.exam?.name || 'Exam'}
+                                </h4>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  <span className="text-xs font-medium text-text-muted">
+                                    {result.exam?.examType || 'Regular'}
+                                  </span>
+                                  {result.term && (
+                                    <span className="text-xs font-medium text-text-muted">
+                                      {result.term.charAt(0).toUpperCase() + result.term.slice(1)}
+                                    </span>
+                                  )}
+                                  <span className="text-xs font-medium text-text-muted">
+                                    {result.academicYear}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-4xl font-bold ${getGradeColor(result.overallGrade)}`}>
+                                  {result.overallGrade || 'N/A'}
+                                </p>
+                                <p className="text-sm font-semibold text-text-muted mt-1">{result.percentage}%</p>
+                              </div>
                             </div>
                           </div>
-                          
-                          {/* Subject-wise results */}
+
+                          {/* Subject Results Table */}
                           {result.subjectResults && result.subjectResults.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-gray-200">
-                              <p className="text-xs font-semibold text-text-muted mb-2">Subject Scores:</p>
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {result.subjectResults.map((sr, sidx) => (
-                                  <div key={sidx} className="bg-gray-50 p-2 rounded text-sm">
-                                    <p className="text-xs text-text-muted truncate">
-                                      {sr.subject?.name || 'Subject'}
-                                    </p>
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-primary-blue">
-                                        {sr.score}/{sr.maxMarks}
-                                      </span>
-                                      <span className="text-xs font-medium text-text-dark">
-                                        {sr.grade}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
+                            <div className="p-4">
+                              <div className="overflow-x-auto">
+                                <table className="w-full">
+                                  <thead>
+                                    <tr className="border-b-2 border-white border-opacity-60">
+                                      <th className="text-left py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">S/N</th>
+                                      <th className="text-left py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">Course Code</th>
+                                      <th className="text-left py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">Course Name</th>
+                                      <th className="text-center py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">Score</th>
+                                      <th className="text-right py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">Grade</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {result.subjectResults.map((sr, sidx) => (
+                                      <tr key={sidx} className="border-b border-white border-opacity-40 hover:bg-white hover:bg-opacity-40 transition">
+                                        <td className="py-3 px-4 text-sm font-semibold text-text-dark">
+                                          {sidx + 1}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-text-muted font-medium">
+                                          {sr.subject?.code || 'N/A'}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm font-semibold text-text-dark">
+                                          {sr.subject?.name || 'Subject'}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-center">
+                                          <span className="inline-block px-3 py-1 rounded-lg bg-white bg-opacity-60 font-bold text-primary-blue">
+                                            {sr.score}/{sr.maxMarks}
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-4 text-right">
+                                          <span className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${getGradeBgColor(sr.grade)} ${getGradeColor(sr.grade)}`}>
+                                            {sr.grade}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
                               </div>
                             </div>
                           )}
                         </div>
                       ))}
-                      <div className="mt-4 pt-4 border-t border-gray-200">
+
+                      {/* Overall Average Summary */}
+                      <div className="bg-gradient-to-r from-primary-blue to-blue-600 rounded-xl p-5 text-white">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-text-dark">Average Performance</p>
-                          <p className="text-2xl font-bold text-primary-blue">{avgGrade}%</p>
+                          <div>
+                            <p className="text-sm font-semibold text-blue-100">Overall Performance</p>
+                            <p className="text-blue-50 mt-1">Final Score Across All Exams</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-5xl font-bold">{avgGrade}%</p>
+                            <p className="text-xs text-blue-100 mt-1">Average</p>
+                          </div>
                         </div>
                       </div>
                     </div>
