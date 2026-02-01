@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { examApi } from '../services/api';
-import { subjectApi } from '../services/api';
+import { examApi, subjectsApi } from '../services/api';
 
 export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
   const [formData, setFormData] = useState({
@@ -26,7 +25,7 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
         setDataLoading(true);
         
         // Fetch subjects
-        const subjectsRes = await subjectApi.list();
+        const subjectsRes = await subjectsApi.list();
         setSubjects(subjectsRes || []);
         
         // Generate available academic years (current and next 2 years)
