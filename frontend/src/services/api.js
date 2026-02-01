@@ -1303,6 +1303,13 @@ export const resultApi = {
     })
   },
 
+  initializeResults: async (data) => {
+    return apiCall('/results/initialize', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
   getClassroomExamResults: async (classroomId, examId) => {
     return apiCall(`/results/classroom/${classroomId}/exam/${examId}`)
   },

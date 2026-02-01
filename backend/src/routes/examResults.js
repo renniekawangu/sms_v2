@@ -108,9 +108,111 @@ router.post(
 );
 
 /**
- * POST /api/results/batch
- * Bulk create results (Teacher bulk entry for classroom)
+ * POST /api/results/initialize
+ * Initialize draft results for all students in a classroom for an exam
+ * Creates empty draft results so teachers can enter grades
  */
+router.post(
+  '/initialize',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    const { exam: examId, classroom: classroomId } = req.body;
+
+    // Validation
+    if (!examId || !classroomId) {
+      return res.status(400).json({
+        error: 'Exam and classroom IDs are required'
+      });
+    }
+
+    // Verify teacher has access
+    if (req.user.role === ROLES.TEACHER) {
+      const staff = await Staff.findOne({ user: req.user.id });
+      
+      if (!staff) {
+        return res.status(403).json({ error: 'Staff record not found' });
+      }
+
+      const classroom_obj = await Classroom.findById(classroomId);
+      
+      if (!classroom_obj || !classroom_obj.classTeacher?.equals(staff._id)) {
+        return res.status(403).json({
+          error: 'You do not have permission to initialize results for this classroom'
+        });
+      }
+    }
+
+    try {
+      // Get exam
+      const exam = await Exam.findById(examId);
+      if (!exam) {
+        return res.status(404).json({ error: 'Exam not found' });
+      }
+
+      // Get all students in classroom
+      const students = await Student.find({ classroom: classroomId, isDeleted: false });
+      if (students.length === 0) {
+        return res.status(400).json({ error: 'No students found in this classroom' });
+      }
+
+      // Get exam subjects
+      const subjects = exam.subjects || [];
+      if (subjects.length === 0) {
+        return res.status(400).json({ error: 'Exam has no subjects assigned' });
+      }
+
+      let createdCount = 0;
+      let existingCount = 0;
+
+      // Create results for each student-subject combination
+      for (const student of students) {
+        for (const subjectId of subjects) {
+          // Check if result already exists
+          const existing = await ExamResult.findOne({
+            exam: examId,
+            student: student._id,
+            classroom: classroomId,
+            subject: subjectId,
+            isDeleted: false
+          });
+
+          if (!existing) {
+            // Create draft result with default values
+            const result = new ExamResult({
+              exam: examId,
+              student: student._id,
+              classroom: classroomId,
+              subject: subjectId,
+              score: 0,
+              maxMarks: 100,
+              grade: 'F',
+              submittedBy: req.user.id,
+              status: 'draft'
+            });
+
+            await result.save();
+            createdCount++;
+          } else {
+            existingCount++;
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Initialized results: ${createdCount} created, ${existingCount} already exist`,
+        created: createdCount,
+        existing: existingCount
+      });
+    } catch (err) {
+      logger.error('Error initializing results:', err);
+      res.status(500).json({ error: 'Failed to initialize results' });
+    }
+  })
+);
+
+/**
 router.post(
   '/batch',
   requireAuth,
