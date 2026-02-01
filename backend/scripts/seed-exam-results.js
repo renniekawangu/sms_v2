@@ -129,12 +129,8 @@ async function seedExamResults() {
               grade,
               remarks,
               submittedBy: admin._id,
-              status: 'published',
-              submittedAt: new Date(),
-              approvedBy: admin._id,
-              approvedAt: new Date(),
-              publishedBy: admin._id,
-              publishedAt: new Date()
+              status: 'draft',
+              submittedAt: new Date()
             });
 
             await result.save();
