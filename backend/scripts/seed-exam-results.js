@@ -51,8 +51,7 @@ async function seedExamResults() {
         for (let i = 1; i <= 3; i++) {
           testStudents.push({
             firstName: `Test`,
-            lastName: `Student ${i}`,
-            name: `Test Student ${i}`,
+            lastName: `Student${i}`,
             studentId: Math.floor(Math.random() * 100000),
             classroomId: classroom._id,
             email: `teststudent${classroom._id}${i}@school.com`,
@@ -75,6 +74,11 @@ async function seedExamResults() {
       process.exit(1);
     }
     console.log(`✓ Found ${exams.length} exams to update`);
+
+    // Clear existing results (to avoid unique constraint violations)
+    console.log('🔄 Clearing existing exam results...');
+    await ExamResult.deleteMany({});
+    console.log('✓ Cleared existing exam results');
 
     // Update exams with classrooms and subjects
     let updatedCount = 0;

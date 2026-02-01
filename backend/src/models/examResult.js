@@ -216,14 +216,31 @@ examResultSchema.methods.reject = async function(userId, reason = '') {
 
 // Static: Get results for classroom exam
 examResultSchema.statics.getClassroomExamResults = async function(examId, classroomId) {
-  return await this.find({
+  const results = await this.find({
     exam: examId,
     classroom: classroomId,
     isDeleted: false
   })
-    .populate('student', 'studentId name email')
-    .populate('subject', 'name code')
+    .populate({
+      path: 'student',
+      select: 'studentId firstName lastName email',
+      options: { lean: false }
+    })
+    .populate({
+      path: 'subject',
+      select: 'name code'
+    })
     .sort({ student: 1 });
+  
+  // Convert to plain objects and ensure student name is computed
+  return results.map(result => {
+    const resultObj = result.toObject({ virtuals: true });
+    // Explicitly compute name if not present
+    if (resultObj.student && !resultObj.student.name) {
+      resultObj.student.name = `${resultObj.student.firstName || ''} ${resultObj.student.lastName || ''}`.trim();
+    }
+    return resultObj;
+  });
 };
 
 // Static: Get pending results for approval
