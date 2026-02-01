@@ -292,9 +292,7 @@ router.get('/children/:student_id/homework', requireAuth, requireRole('parent', 
   const { student_id } = req.params;
   const { academicYear } = req.query;
 
-  if (!validateObjectId(student_id)) {
-    return res.status(400).json({ error: 'Invalid student ID' });
-  }
+  validateObjectId(student_id);
 
   // Get student with classroom info
   const student = await Student.findById(student_id).populate('classroomId').lean();
@@ -341,9 +339,7 @@ router.get('/children/:student_id/homework', requireAuth, requireRole('parent', 
 router.get('/homework/:homework_id', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
   const { homework_id } = req.params;
 
-  if (!validateObjectId(homework_id)) {
-    return res.status(400).json({ error: 'Invalid homework ID' });
-  }
+  validateObjectId(homework_id);
 
   const homework = await Homework.findById(homework_id)
     .populate('teacher', 'firstName lastName email')
@@ -837,9 +833,7 @@ router.post('/children/:student_id/payments', requireAuth, requireRole('parent',
 
   // If fee_id is provided, update that specific fee
   if (fee_id) {
-    if (!validateObjectId(fee_id)) {
-      return res.status(400).json({ error: 'Invalid fee ID' });
-    }
+    validateObjectId(fee_id);
 
     const fee = await Fee.findById(fee_id);
     if (!fee) {

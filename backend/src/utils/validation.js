@@ -57,10 +57,15 @@ function sanitizeString(str) {
 }
 
 /**
- * Validate ObjectId format
+ * Validate ObjectId format - throws error if invalid
  */
 function validateObjectId(id) {
-  return /^[0-9a-fA-F]{24}$/.test(id);
+  if (!id || typeof id !== 'string' || !/^[0-9a-fA-F]{24}$/.test(id)) {
+    const error = new Error(`Invalid ObjectId format: ${id}`);
+    error.status = 400;
+    throw error;
+  }
+  return true;
 }
 
 module.exports = {

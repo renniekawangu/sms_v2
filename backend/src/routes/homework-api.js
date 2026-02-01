@@ -47,9 +47,7 @@ router.get(
       const { academicYear } = req.query;
 
       // Validate classroomId
-      if (!validateObjectId(classroomId)) {
-        return res.status(400).json({ error: 'Invalid classroom ID' });
-      }
+      validateObjectId(classroomId);
 
       // Get current academic year if not specified
       let currentYear = academicYear;
@@ -107,9 +105,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid homework ID' });
-    }
+    validateObjectId(id);
 
     const homework = await Homework.findById(id)
       .populate('teacher', 'firstName lastName email')
@@ -144,9 +140,7 @@ router.post(
     }
 
     // Validate classroomId
-    if (!validateObjectId(classroomId)) {
-      return res.status(400).json({ error: 'Invalid classroom ID' });
-    }
+    validateObjectId(classroomId);
 
     // Validate due date format
     const dueDateObj = new Date(dueDate);
@@ -203,9 +197,7 @@ router.put(
     const { id } = req.params;
     const { title, description, subject, dueDate, status, term } = req.body;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid homework ID' });
-    }
+    validateObjectId(id);
 
     const homework = await Homework.findById(id);
     if (!homework) {
@@ -264,9 +256,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid homework ID' });
-    }
+    validateObjectId(id);
 
     const homework = await Homework.findById(id);
     if (!homework) {
@@ -300,9 +290,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid homework ID' });
-    }
+    validateObjectId(id);
 
     const homework = await Homework.findById(id);
     if (!homework) {
@@ -360,9 +348,8 @@ router.post(
     const { id } = req.params;
     const { studentId, grade, feedback } = req.body;
 
-    if (!validateObjectId(id) || !validateObjectId(studentId)) {
-      return res.status(400).json({ error: 'Invalid ID format' });
-    }
+    validateObjectId(id);
+    validateObjectId(studentId);
 
     const homework = await Homework.findById(id);
     if (!homework) {
@@ -411,9 +398,7 @@ router.post(
     }
 
     // Validate classroomId
-    if (!validateObjectId(classroomId)) {
-      return res.status(400).json({ error: 'Invalid classroom ID' });
-    }
+    validateObjectId(classroomId);
 
     // Validate due date format
     const dueDateObj = new Date(dueDate);
@@ -482,9 +467,7 @@ router.put(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid homework ID' });
-    }
+    validateObjectId(id);
 
     const homework = await Homework.findById(id);
     if (!homework) {
@@ -536,9 +519,7 @@ router.get(
     const fs = require('fs');
     const path = require('path');
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid homework ID' });
-    }
+    validateObjectId(id);
 
     const homework = await Homework.findById(id)
       .populate('classroomId', 'className grade section')
@@ -672,9 +653,8 @@ router.get(
     const fs = require('fs');
     const path = require('path');
 
-    if (!validateObjectId(id) || !validateObjectId(studentId)) {
-      return res.status(400).json({ error: 'Invalid homework or student ID' });
-    }
+    validateObjectId(id);
+    validateObjectId(studentId);
 
     const homework = await Homework.findById(id)
       .populate('classroomId', 'className grade section')

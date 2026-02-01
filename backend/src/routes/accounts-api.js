@@ -152,9 +152,7 @@ router.post('/fees', requireAuth, requireRole(ROLES.ACCOUNTS), asyncHandler(asyn
   }
 
   // Validate studentId is a valid ObjectId
-  if (!validateObjectId(studentId)) {
-    return res.status(400).json({ error: 'Invalid studentId format' });
-  }
+  validateObjectId(studentId);
 
   // Validate amount is a positive number
   if (typeof amount !== 'number' || amount <= 0) {
@@ -619,9 +617,7 @@ router.get('/reports/collection-trend', requireAuth, requireRole(ROLES.ACCOUNTS)
  * Generate and download receipt for a specific payment
  */
 router.get('/receipts/:paymentId', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.ADMIN, ROLES.HEAD_TEACHER), asyncHandler(async (req, res) => {
-  if (!validateObjectId(req.params.paymentId)) {
-    return res.status(400).json({ error: 'Invalid payment ID' });
-  }
+  validateObjectId(req.params.paymentId);
 
   const payment = await Payment.findById(req.params.paymentId);
   if (!payment) {
@@ -672,10 +668,7 @@ router.post('/receipts/batch', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.AD
   }
 
   // Validate all IDs
-  const validIds = paymentIds.filter(id => validateObjectId(id));
-  if (validIds.length === 0) {
-    return res.status(400).json({ error: 'No valid payment IDs provided' });
-  }
+  paymentIds.forEach(id => validateObjectId(id));
 
   // Fetch payments
   const payments = await Payment.find({ _id: { $in: validIds } })
@@ -716,7 +709,8 @@ router.get('/receipts', requireAuth, requireRole(ROLES.ACCOUNTS, ROLES.ADMIN), a
   const skip = (page - 1) * limit;
 
   const filter = {};
-  if (studentId && validateObjectId(studentId)) {
+  if (studentId) {
+    validateObjectId(studentId);
     filter.studentId = studentId;
   }
   if (method) {
