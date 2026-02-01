@@ -146,7 +146,7 @@ function Results() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue disabled:bg-gray-100"
             >
               <option value="">{!selectedClassroom ? 'Select classroom first' : 'Select Exam'}</option>
-              {exams && exams.length > 0 && exams.filter(exam => exam.status === 'published').map(exam => (
+              {exams && exams.length > 0 && exams.filter(exam => exam.status !== 'closed' && exam.status !== 'cancelled').map(exam => (
                 <option key={exam._id || exam.id} value={exam._id || exam.id}>
                   {exam.name || exam.title} - {exam.term}
                 </option>
