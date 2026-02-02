@@ -33,7 +33,7 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
         const years = [];
         for (let i = 0; i < 3; i++) {
           const year = currentYear + i;
-          years.push(`${year}-${year + 1}`);
+          years.push(`${year}`);
         }
         setAcademicYears(years);
         
@@ -53,7 +53,7 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
           // Set default academic year for new exams
           setFormData(prev => ({
             ...prev,
-            academicYear: `${currentYear}-${currentYear + 1}`,
+            academicYear: `${currentYear}`,
           }));
         }
       } catch (err) {

@@ -29,7 +29,7 @@ function Exams() {
     const years = []
     for (let i = 0; i < 3; i++) {
       const year = currentYear + i
-      years.push(`${year}-${year + 1}`)
+      years.push(`${year}`)
     }
     setAcademicYears(years)
     loadExams()
