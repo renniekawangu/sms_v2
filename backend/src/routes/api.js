@@ -756,8 +756,25 @@ router.delete('/attendance/record/:id', requireAuth, requireRole(ROLES.ADMIN, RO
 
 // ============= Exams API =============
 router.get('/exams', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {
-  const exams = await Exam.find();
-  res.json(exams);
+  const { academicYear, term, status, examType } = req.query;
+  const query = { isDeleted: false };
+
+  if (academicYear) query.academicYear = academicYear;
+  if (term) query.term = term;
+  if (status) query.status = status;
+  if (examType) query.examType = examType;
+
+  const exams = await Exam.find(query)
+    .populate('classrooms', 'name level')
+    .populate('subjects', 'name code')
+    .populate('createdBy', 'name email')
+    .sort({ createdAt: -1 });
+
+  res.json({
+    success: true,
+    count: exams.length,
+    exams
+  });
 }));
 
 router.get('/exams/:id', requireAuth, requireRole(ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.TEACHER), asyncHandler(async (req, res) => {

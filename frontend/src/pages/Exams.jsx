@@ -41,10 +41,19 @@ function Exams() {
       const query = Object.fromEntries(
         Object.entries(filter).filter(([, v]) => v)
       )
+      console.log('Sending filter query:', query)
       const data = await examApi.list(query)
-      const examsList = Array.isArray(data) 
-        ? data 
-        : data?.exams || []
+      console.log('Exams response:', data)
+      
+      // Handle different response formats
+      let examsList = []
+      if (Array.isArray(data)) {
+        examsList = data
+      } else if (data?.exams && Array.isArray(data.exams)) {
+        examsList = data.exams
+      }
+      
+      console.log('Exams list:', examsList)
       setExams(examsList)
     } catch (err) {
       showError(err.message || 'Failed to load exams')
