@@ -14,6 +14,7 @@ function Exams() {
   
   const [exams, setExams] = useState([])
   const [loading, setLoading] = useState(true)
+  const [academicYears, setAcademicYears] = useState([])
   const [filter, setFilter] = useState({
     academicYear: '',
     term: '',
@@ -23,6 +24,14 @@ function Exams() {
   const [selectedExam, setSelectedExam] = useState(null)
 
   useEffect(() => {
+    // Generate available academic years (current and next 2 years)
+    const currentYear = new Date().getFullYear()
+    const years = []
+    for (let i = 0; i < 3; i++) {
+      const year = currentYear + i
+      years.push(`${year}-${year + 1}`)
+    }
+    setAcademicYears(years)
     loadExams()
   }, [filter])
 
@@ -106,13 +115,16 @@ function Exams() {
       <div className="bg-card-white rounded-lg shadow-sm p-4 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-text-dark mb-1">Academic Year</label>
-          <input
-            type="text"
-            placeholder="e.g., 2024-2025"
+          <select
             value={filter.academicYear}
             onChange={(e) => setFilter({ ...filter, academicYear: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
-          />
+          >
+            <option value="">All Years</option>
+            {academicYears.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-text-dark mb-1">Term</label>
