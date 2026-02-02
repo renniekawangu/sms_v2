@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Edit, Trash2, Eye, AlertCircle, Loader } from 'lucide-react'
+import { Plus, Edit, Trash2, CheckCircle, AlertCircle, Loader } from 'lucide-react'
 import { examApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -181,7 +181,7 @@ function Exams() {
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">
-                  {exam.status === 'draft' && (
+                  {exam.status === 'draft' && (user.role === ROLES.HEAD_TEACHER || user.role === ROLES.ADMIN) && (
                     <>
                       <button
                         onClick={() => {
@@ -198,7 +198,7 @@ function Exams() {
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         title="Publish"
                       >
-                        <Eye size={18} className="text-green-600" />
+                        <CheckCircle size={18} className="text-green-600" />
                       </button>
                       <button
                         onClick={() => handleDelete(exam._id)}
