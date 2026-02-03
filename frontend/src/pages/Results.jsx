@@ -266,7 +266,7 @@ function Results() {
         results={results}
         onSuccess={() => {
           showSuccess('Grades saved successfully')
-          loadResults()
+          handleLoadResults()
         }}
       />
     </div>
