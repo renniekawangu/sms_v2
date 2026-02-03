@@ -32,7 +32,9 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
         
         // Fetch classrooms
         const classroomsRes = await classroomApi.list();
-        setClassrooms(classroomsRes.classrooms || classroomsRes || []);
+        // classroomApi returns an array directly
+        const classroomsArray = Array.isArray(classroomsRes) ? classroomsRes : (classroomsRes.classrooms || []);
+        setClassrooms(classroomsArray);
         
         // Generate available academic years (current and next 2 years)
         const currentYear = new Date().getFullYear();
@@ -279,7 +281,7 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
                 >
                   {classrooms.map(classroom => (
                     <option key={classroom._id} value={classroom._id}>
-                      {classroom.name} - {classroom.level}
+                      {classroom.grade} - {classroom.section}
                     </option>
                   ))}
                 </select>

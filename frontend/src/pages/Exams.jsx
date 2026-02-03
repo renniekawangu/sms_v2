@@ -18,7 +18,8 @@ function Exams() {
   const [filter, setFilter] = useState({
     academicYear: '',
     term: '',
-    status: ''
+    status: '',
+    examType: ''
   })
   const [showForm, setShowForm] = useState(false)
   const [selectedExam, setSelectedExam] = useState(null)
@@ -121,7 +122,7 @@ function Exams() {
       </div>
 
       {/* Filters */}
-      <div className="bg-card-white rounded-lg shadow-sm p-4 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="bg-card-white rounded-lg shadow-sm p-4 mb-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
           <label className="block text-sm font-medium text-text-dark mb-1">Academic Year</label>
           <select
@@ -146,6 +147,22 @@ function Exams() {
             <option value="Term 1">Term 1</option>
             <option value="Term 2">Term 2</option>
             <option value="Term 3">Term 3</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-text-dark mb-1">Exam Type</label>
+          <select
+            value={filter.examType}
+            onChange={(e) => setFilter({ ...filter, examType: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+          >
+            <option value="">All Types</option>
+            <option value="unit-test">Unit Test</option>
+            <option value="midterm">Midterm</option>
+            <option value="endterm">Endterm</option>
+            <option value="final">Final</option>
+            <option value="diagnostic">Diagnostic</option>
+            <option value="formative">Formative</option>
           </select>
         </div>
         <div>
