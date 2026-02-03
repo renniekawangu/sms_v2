@@ -285,6 +285,51 @@ router.get('/children/:student_id/fees', requireAuth, requireRole('parent', ROLE
 }));
 
 /**
+ * GET /api/parents/children/:student_id/results
+ * Get published exam results for a child
+ */
+router.get('/children/:student_id/results', requireAuth, requireRole('parent', ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  
+  let parent = null;
+  if (user.parentId) {
+    parent = await Parent.findById(user.parentId).lean();
+  } else {
+    parent = await Parent.findOne({ email: user.email }).lean();
+  }
+
+  if (!parent) {
+    return res.status(403).json({ error: 'Parent not found' });
+  }
+
+  const childIsLinked = parent.students.some(s => s.toString() === req.params.student_id);
+  
+  if (!childIsLinked) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const { ExamResult } = require('../models/examResult');
+  
+  // Get published results for this student
+  const results = await ExamResult.find({
+    student: req.params.student_id,
+    status: 'published',
+    isDeleted: false
+  })
+    .populate({
+      path: 'exam',
+      select: 'name examType term academicYear totalMarks'
+    })
+    .populate({
+      path: 'subject',
+      select: 'name code'
+    })
+    .sort({ createdAt: -1 });
+
+  res.json(results);
+}));
+
+/**
  * GET /api/parents/children/:student_id/homework
  * Get homework for a student's classroom
  */

@@ -141,30 +141,33 @@ examResultSchema.pre('save', async function(next) {
   if (!this.isNew) {
     const original = await mongoose.model('ExamResult').findById(this._id);
     if (original) {
-      const validTransitions = {
-        'draft': ['submitted', 'deleted'],
-        'submitted': ['approved', 'rejected', 'draft'],
-        'approved': ['published', 'rejected'],
-        'published': [],
-        'rejected': ['draft']
-      };
+      // Validate status transitions only if status is being changed
+      if (this.isModified('status')) {
+        const validTransitions = {
+          'draft': ['submitted', 'deleted'],
+          'submitted': ['approved', 'rejected', 'draft'],
+          'approved': ['published', 'rejected'],
+          'published': [],
+          'rejected': ['draft']
+        };
 
-      const currentStatus = original.status;
-      const newStatus = this.status;
+        const currentStatus = original.status;
+        const newStatus = this.status;
 
-      if (!validTransitions[currentStatus]?.includes(newStatus)) {
-        throw new Error(`Cannot transition from ${currentStatus} to ${newStatus}`);
-      }
+        if (!validTransitions[currentStatus]?.includes(newStatus)) {
+          throw new Error(`Cannot transition from ${currentStatus} to ${newStatus}`);
+        }
 
-      // Set timestamps for status changes
-      if (newStatus === 'submitted' && !this.submittedAt) {
-        this.submittedAt = new Date();
-      }
-      if (newStatus === 'approved' && !this.approvedAt) {
-        this.approvedAt = new Date();
-      }
-      if (newStatus === 'published' && !this.publishedAt) {
-        this.publishedAt = new Date();
+        // Set timestamps for status changes
+        if (newStatus === 'submitted' && !this.submittedAt) {
+          this.submittedAt = new Date();
+        }
+        if (newStatus === 'approved' && !this.approvedAt) {
+          this.approvedAt = new Date();
+        }
+        if (newStatus === 'published' && !this.publishedAt) {
+          this.publishedAt = new Date();
+        }
       }
     }
   }

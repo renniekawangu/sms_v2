@@ -979,6 +979,12 @@ export const parentsApi = {
     });
   },
 
+  getChildResults: async (student_id) => {
+    return apiCall(`/parents/children/${student_id}/results`, {
+      method: 'GET',
+    });
+  },
+
   getChildHomework: async (student_id, academicYear) => {
     const query = new URLSearchParams();
     if (academicYear) query.append('academicYear', academicYear);

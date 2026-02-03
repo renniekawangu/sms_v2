@@ -17,6 +17,8 @@ function ChildDetail() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState(null)
+  const [selectedTerm, setSelectedTerm] = useState(null)
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [paymentLoading, setPaymentLoading] = useState(false)
@@ -39,7 +41,7 @@ function ChildDetail() {
   const loadChildData = async () => {
     try {
       setLoading(true)
-      const [gradesData, attendanceData, feesData] = await Promise.all([
+      const [gradesData, attendanceData, feesData, resultsData] = await Promise.all([
         parentsApi.getChildGrades(id).catch((err) => {
           console.error('Error loading grades:', err)
           return []
@@ -51,14 +53,19 @@ function ChildDetail() {
         parentsApi.getChildFees(id).catch((err) => {
           console.error('Error loading fees:', err)
           return []
+        }),
+        parentsApi.getChildResults(id).catch((err) => {
+          console.error('Error loading results:', err)
+          return []
         })
       ])
 
       console.log('Grades:', gradesData)
       console.log('Attendance:', attendanceData)
       console.log('Fees:', feesData)
+      console.log('Results:', resultsData)
 
-      setGrades(gradesData || [])
+      setGrades(resultsData || [])
       setAttendance(attendanceData || [])
       setFees(feesData || [])
 
@@ -488,107 +495,142 @@ function ChildDetail() {
                 <div>
                   <h3 className="font-semibold text-text-dark mb-4 flex items-center gap-2">
                     <BookOpen size={20} className="text-primary-blue" />
-                    Academic Performance
+                    Exam Results
                   </h3>
+                  
                   {grades.length > 0 ? (
-                    <div className="space-y-6">
-                      {/* Exam Results */}
-                      {grades.map((result, idx) => (
-                        <div key={idx} className={`${getGradeBgColor(result.overallGrade)} border-2 rounded-xl overflow-hidden hover:shadow-lg transition`}>
-                          {/* Exam Header */}
-                          <div className="bg-gradient-to-r from-primary-blue/20 to-transparent p-4 border-b-2 border-white border-opacity-50">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h4 className="font-bold text-lg text-text-dark">
-                                  {result.exam?.name || 'Exam'}
-                                </h4>
-                                <div className="flex flex-wrap gap-2 mt-1">
-                                  <span className="text-xs font-medium text-text-muted">
-                                    {result.exam?.examType || 'Regular'}
-                                  </span>
-                                  {result.term && (
-                                    <span className="text-xs font-medium text-text-muted">
-                                      {result.term.charAt(0).toUpperCase() + result.term.slice(1)}
-                                    </span>
-                                  )}
-                                  <span className="text-xs font-medium text-text-muted">
-                                    {result.academicYear}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className={`text-4xl font-bold ${getGradeColor(result.overallGrade)}`}>
-                                  {result.overallGrade || 'N/A'}
-                                </p>
-                                <p className="text-sm font-semibold text-text-muted mt-1">{result.percentage}%</p>
-                              </div>
+                    <div>
+                      {/* Academic Year Tabs */}
+                      <div className="mb-4 border-b border-gray-200 overflow-x-auto">
+                        <div className="flex gap-1">
+                          {Array.from(new Set(grades.map(g => g.exam?.academicYear))).sort().reverse().map(year => (
+                            <button
+                              key={year}
+                              onClick={() => {
+                                setSelectedAcademicYear(year);
+                                setSelectedTerm(null);
+                              }}
+                              className={`px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition ${
+                                selectedAcademicYear === year
+                                  ? 'text-primary-blue border-primary-blue'
+                                  : 'text-text-muted border-transparent hover:text-text-dark'
+                              }`}
+                            >
+                              {year}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Set default academic year on first load */}
+                      {!selectedAcademicYear && grades.length > 0 && (
+                        (() => {
+                          const defaultYear = Array.from(new Set(grades.map(g => g.exam?.academicYear))).sort().reverse()[0];
+                          setSelectedAcademicYear(defaultYear);
+                          return null;
+                        })()
+                      )}
+
+                      {selectedAcademicYear && (
+                        <div>
+                          {/* Term Tabs */}
+                          <div className="mb-4 border-b border-gray-200 overflow-x-auto bg-gray-50 p-2 rounded-lg">
+                            <div className="flex gap-2">
+                              {Array.from(new Set(
+                                grades
+                                  .filter(g => g.exam?.academicYear === selectedAcademicYear)
+                                  .map(g => g.exam?.term)
+                              )).sort().map(term => (
+                                <button
+                                  key={term}
+                                  onClick={() => setSelectedTerm(term)}
+                                  className={`px-4 py-2 font-medium text-sm whitespace-nowrap rounded-lg transition ${
+                                    selectedTerm === term
+                                      ? 'text-white bg-primary-blue'
+                                      : 'text-text-muted bg-white border border-gray-200 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {term}
+                                </button>
+                              ))}
                             </div>
                           </div>
 
-                          {/* Subject Results Table */}
-                          {result.subjectResults && result.subjectResults.length > 0 && (
-                            <div className="p-4">
-                              <div className="overflow-x-auto">
-                                <table className="w-full">
-                                  <thead>
-                                    <tr className="border-b-2 border-white border-opacity-60">
-                                      <th className="text-left py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">S/N</th>
-                                      <th className="text-left py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">Course Code</th>
-                                      <th className="text-left py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">Course Name</th>
-                                      <th className="text-center py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">Score</th>
-                                      <th className="text-right py-3 px-4 text-xs font-bold text-text-muted uppercase tracking-wide">Grade</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {result.subjectResults.map((sr, sidx) => (
-                                      <tr key={sidx} className="border-b border-white border-opacity-40 hover:bg-white hover:bg-opacity-40 transition">
-                                        <td className="py-3 px-4 text-sm font-semibold text-text-dark">
-                                          {sidx + 1}
-                                        </td>
-                                        <td className="py-3 px-4 text-sm text-text-muted font-medium">
-                                          {sr.subject?.code || 'N/A'}
-                                        </td>
-                                        <td className="py-3 px-4 text-sm font-semibold text-text-dark">
-                                          {sr.subject?.name || 'Subject'}
-                                        </td>
-                                        <td className="py-3 px-4 text-sm text-center">
-                                          <span className="inline-block px-3 py-1 rounded-lg bg-white bg-opacity-60 font-bold text-primary-blue">
-                                            {sr.score}/{sr.maxMarks}
-                                          </span>
-                                        </td>
-                                        <td className="py-3 px-4 text-right">
-                                          <span className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${getGradeBgColor(sr.grade)} ${getGradeColor(sr.grade)}`}>
-                                            {sr.grade}
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
+                          {/* Set default term on year change */}
+                          {selectedAcademicYear && !selectedTerm && (
+                            (() => {
+                              const defaultTerm = Array.from(new Set(
+                                grades
+                                  .filter(g => g.exam?.academicYear === selectedAcademicYear)
+                                  .map(g => g.exam?.term)
+                              )).sort()[0];
+                              setSelectedTerm(defaultTerm);
+                              return null;
+                            })()
+                          )}
+
+                          {selectedTerm && (
+                            <div className="overflow-x-auto">
+                              <table className="w-full">
+                                <thead className="bg-gray-50 border-b">
+                                  <tr>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-text-dark">Exam</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-text-dark">Subject</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-text-dark">Score</th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-text-dark">Percentage</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-text-dark">Grade</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-text-dark">Comment</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {grades
+                                    .filter(g => g.exam?.academicYear === selectedAcademicYear && g.exam?.term === selectedTerm)
+                                    .map((result, idx) => {
+                                      const percentage = result.exam?.totalMarks ? Math.round((result.score / result.exam.totalMarks) * 100) : 0;
+                                      const gradeColor = percentage >= 80 ? 'text-green-600 bg-green-50' : percentage >= 60 ? 'text-blue-600 bg-blue-50' : percentage >= 40 ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50';
+                                      
+                                      return (
+                                        <tr key={idx} className="border-b hover:bg-gray-50 transition-colors">
+                                          <td className="px-4 py-3 text-sm text-text-dark font-medium">
+                                            <div>
+                                              <p>{result.exam?.name}</p>
+                                              <p className="text-xs text-text-muted">
+                                                {result.exam?.examType}
+                                              </p>
+                                            </div>
+                                          </td>
+                                          <td className="px-4 py-3 text-sm text-text-dark">
+                                            {result.subject?.name}
+                                            {result.subject?.code && <span className="text-text-muted ml-1">({result.subject.code})</span>}
+                                          </td>
+                                          <td className="px-4 py-3 text-sm font-medium text-text-dark">
+                                            {result.score}/{result.exam?.totalMarks || 100}
+                                          </td>
+                                          <td className="px-4 py-3 text-sm font-medium text-center">
+                                            <span className={`inline-block px-3 py-1 rounded-full font-semibold ${gradeColor}`}>
+                                              {percentage}%
+                                            </span>
+                                          </td>
+                                          <td className="px-4 py-3 text-sm font-medium text-text-dark">
+                                            {percentage >= 80 ? 'A' : percentage >= 60 ? 'B' : percentage >= 40 ? 'C' : 'D'}
+                                          </td>
+                                          <td className="px-4 py-3 text-sm text-text-muted">
+                                            {result.remarks || '-'}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                </tbody>
+                              </table>
                             </div>
                           )}
                         </div>
-                      ))}
-
-                      {/* Overall Average Summary */}
-                      <div className="bg-gradient-to-r from-primary-blue to-blue-600 rounded-xl p-5 text-white">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-blue-100">Overall Performance</p>
-                            <p className="text-blue-50 mt-1">Final Score Across All Exams</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-5xl font-bold">{avgGrade}%</p>
-                            <p className="text-xs text-blue-100 mt-1">Average</p>
-                          </div>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="text-center py-8">
+                      <BookOpen size={40} className="mx-auto text-gray-300 mb-3" />
                       <p className="text-text-muted">No exam results available yet</p>
-                      <p className="text-xs text-text-muted mt-1">Results will appear once exams are conducted and graded</p>
                     </div>
                   )}
                 </div>
