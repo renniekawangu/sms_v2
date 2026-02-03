@@ -152,7 +152,7 @@ router.post(
       }
 
       // Get all students in classroom
-      const students = await Student.find({ classroom: classroomId, isDeleted: false });
+      const students = await Student.find({ classroomId: classroomId, isDeleted: false });
       if (students.length === 0) {
         return res.status(400).json({ error: 'No students found in this classroom' });
       }
