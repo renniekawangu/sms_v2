@@ -48,16 +48,16 @@ router.post(
     // Verify teacher has access to this classroom (if teacher role)
     if (req.user.role === ROLES.TEACHER) {
       const Staff = require('../models/staff');
-      const staff = await Staff.findOne({ user: req.user.id });
+      const staff = await Staff.findOne({ userId: req.user.id });
       
       if (!staff) {
         return res.status(403).json({ error: 'Staff record not found' });
       }
 
-      const Classroom = require('../models/classroom');
-      const classroom_obj = await Classroom.findById(classroom);
+      // Check if teacher is assigned to this classroom
+      const hasAccess = staff.classroomIds && staff.classroomIds.some(id => id.toString() === classroom);
       
-      if (!classroom_obj || !classroom_obj.classTeacher?.equals(staff._id)) {
+      if (!hasAccess) {
         return res.status(403).json({
           error: 'You do not have permission to enter results for this classroom'
         });
@@ -126,17 +126,18 @@ router.post(
       });
     }
 
-    // Verify teacher has access
+    // Verify teacher has access (admins and head teachers have full access)
     if (req.user.role === ROLES.TEACHER) {
-      const staff = await Staff.findOne({ user: req.user.id });
+      const staff = await Staff.findOne({ userId: req.user.id });
       
       if (!staff) {
         return res.status(403).json({ error: 'Staff record not found' });
       }
 
-      const classroom_obj = await Classroom.findById(classroomId);
+      // Check if teacher is assigned to this classroom
+      const hasAccess = staff.classroomIds && staff.classroomIds.some(id => id.toString() === classroomId);
       
-      if (!classroom_obj || !classroom_obj.classTeacher?.equals(staff._id)) {
+      if (!hasAccess) {
         return res.status(403).json({
           error: 'You do not have permission to initialize results for this classroom'
         });
@@ -236,16 +237,16 @@ router.post(
     // Verify teacher has access
     if (req.user.role === ROLES.TEACHER) {
       const Staff = require('../models/staff');
-      const staff = await Staff.findOne({ user: req.user.id });
+      const staff = await Staff.findOne({ userId: req.user.id });
       
       if (!staff) {
         return res.status(403).json({ error: 'Staff record not found' });
       }
 
-      const Classroom = require('../models/classroom');
-      const classroom_obj = await Classroom.findById(classroom);
+      // Check if teacher is assigned to this classroom
+      const hasAccess = staff.classroomIds && staff.classroomIds.some(id => id.toString() === classroom);
       
-      if (!classroom_obj || !classroom_obj.classTeacher?.equals(staff._id)) {
+      if (!hasAccess) {
         return res.status(403).json({
           error: 'You do not have permission to enter results for this classroom'
         });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { examApi, subjectsApi } from '../services/api';
+import { examApi, subjectsApi, classroomApi } from '../services/api';
 
 export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
   const [formData, setFormData] = useState({
@@ -9,11 +9,13 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
     term: '',
     examType: 'unit-test',
     subjects: [],
+    classrooms: [],
     totalMarks: 100,
     passingMarks: 40,
     description: '',
   });
   const [subjects, setSubjects] = useState([]);
+  const [classrooms, setClassrooms] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,6 +29,10 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
         // Fetch subjects
         const subjectsRes = await subjectsApi.list();
         setSubjects(subjectsRes || []);
+        
+        // Fetch classrooms
+        const classroomsRes = await classroomApi.list();
+        setClassrooms(classroomsRes.classrooms || classroomsRes || []);
         
         // Generate available academic years (current and next 2 years)
         const currentYear = new Date().getFullYear();
@@ -45,6 +51,7 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
             term: exam.term || '',
             examType: exam.examType || 'unit-test',
             subjects: exam.subjects?.map(s => s._id || s) || [],
+            classrooms: exam.classrooms?.map(c => c._id || c) || [],
             totalMarks: exam.totalMarks || 100,
             passingMarks: exam.passingMarks || 40,
             description: exam.description || '',
@@ -72,8 +79,8 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
   const handleChange = (e) => {
     const { name, value, type, selectedOptions } = e.target;
     
-    if (name === 'subjects' && type === 'select-multiple') {
-      // Handle multiple select for subjects
+    if ((name === 'subjects' || name === 'classrooms') && type === 'select-multiple') {
+      // Handle multiple select for subjects and classrooms
       const selectedValues = Array.from(selectedOptions).map(option => option.value);
       setFormData(prev => ({ ...prev, [name]: selectedValues }));
     } else {
@@ -101,6 +108,7 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
         term: formData.term,
         examType: formData.examType,
         subjects: formData.subjects,
+        classrooms: formData.classrooms,
         totalMarks: parseInt(formData.totalMarks),
         passingMarks: parseInt(formData.passingMarks),
         description: formData.description,
@@ -254,6 +262,28 @@ export default function ExamForm({ isOpen, onClose, onSuccess, exam = null }) {
                   </select>
                   <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
                 </div>
+              </div>
+
+              {/* Classrooms - Multi-select */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Classrooms
+                </label>
+                <select
+                  name="classrooms"
+                  value={formData.classrooms}
+                  onChange={handleChange}
+                  multiple
+                  size={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {classrooms.map(classroom => (
+                    <option key={classroom._id} value={classroom._id}>
+                      {classroom.name} - {classroom.level}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple (optional)</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
