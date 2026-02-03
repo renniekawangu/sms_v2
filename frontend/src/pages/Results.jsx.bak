@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Upload, Eye, AlertCircle, Loader, CheckCircle, Send, Check, Download } from 'lucide-react'
+import { Plus, Upload, Eye, AlertCircle, Loader, CheckCircle, Send, Check, Download, Filter, BarChart3 } from 'lucide-react'
 import { resultApi, examApi, classroomApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import { ROLES } from '../config/rbac'
 import ResultsEntryForm from '../components/ResultsEntryForm'
+import ResultsFilterPanel from '../components/ResultsFilterPanel'
+import ResultsStatisticsPanel from '../components/ResultsStatisticsPanel'
 
 function Results() {
   const { user } = useAuth()
@@ -23,49 +25,38 @@ function Results() {
   const [transitioningId, setTransitioningId] = useState(null)
   const [selectedResults, setSelectedResults] = useState(new Set())
   const [bulkProcessing, setBulkProcessing] = useState(false)
-  const [statusFilter, setStatusFilter] = useState('')
-  const [subjectFilter, setSubjectFilter] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const [showStatistics, setShowStatistics] = useState(false)
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    statusFilter: '',
+    subjectFilter: '',
+    gradeFilter: '',
+    scoreMin: '',
+    scoreMax: ''
+  })
+  
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [itemsPerPage, setItemsPerPage] = useState(20)
 
   useEffect(() => {
-    console.log('Results page mounted, loading initial data...')
     loadInitialData()
   }, [])
 
   const loadInitialData = async () => {
     try {
-      console.log('Starting loadInitialData...')
       setLoading(true)
-      
-      console.log('Calling classroomApi.list()...')
       const classroomsData = await classroomApi.list()
-      console.log('Classrooms response:', classroomsData)
-      
-      console.log('Calling examApi.list()...')
       const examsData = await examApi.list()
-      console.log('Exams response:', examsData)
       
-      // Handle different response formats
-      const classroomsList = Array.isArray(classroomsData) 
-        ? classroomsData 
-        : classroomsData?.data 
-        ? Array.isArray(classroomsData.data) 
-          ? classroomsData.data 
-          : [classroomsData.data]
-        : classroomsData?.classrooms || []
-        
-      const examsList = Array.isArray(examsData)
-        ? examsData
-        : examsData?.exams || []
-      
-      console.log('Setting classrooms:', classroomsList)
-      console.log('Setting exams:', examsList)
+      const classroomsList = Array.isArray(classroomsData) ? classroomsData : classroomsData?.data || []
+      const examsList = Array.isArray(examsData) ? examsData : examsData?.exams || []
       
       setClassrooms(classroomsList)
       setExams(examsList)
     } catch (err) {
-      console.error('LoadInitialData error:', err)
       showError(err.message || 'Failed to load initial data')
     } finally {
       setLoading(false)
@@ -82,21 +73,19 @@ function Results() {
       setLoading(true)
       const data = await resultApi.getClassroomExamResults(selectedClassroom, selectedExam)
       
-      // If no results exist, initialize them
       if (!data.results || data.results.length === 0) {
-        console.log('No results found, initializing...')
         await resultApi.initializeResults({
           exam: selectedExam,
           classroom: selectedClassroom
         })
-        
-        // Reload results
         const newData = await resultApi.getClassroomExamResults(selectedClassroom, selectedExam)
         setResults(newData.results || [])
         showSuccess('Results initialized for all students')
       } else {
         setResults(data.results)
       }
+      setCurrentPage(1)
+      setSelectedResults(new Set())
     } catch (err) {
       showError(err.message || 'Failed to load results')
     } finally {
@@ -148,10 +137,10 @@ function Results() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedResults.size === results.length) {
+    if (selectedResults.size === paginatedResults.length) {
       setSelectedResults(new Set())
     } else {
-      setSelectedResults(new Set(results.map(r => r._id)))
+      setSelectedResults(new Set(paginatedResults.map(r => r._id)))
     }
   }
 
@@ -164,55 +153,97 @@ function Results() {
     try {
       setBulkProcessing(true)
       const resultIds = Array.from(selectedResults)
-      await resultApi[action](resultIds)
-      showSuccess(`${resultIds.length} results ${action}ed successfully`)
+      
+      const apiAction = action === 'bulkSubmit' ? 'bulkSubmit' :
+                        action === 'bulkApprove' ? 'bulkApprove' :
+                        action === 'bulkPublish' ? 'bulkPublish' : action
+
+      await resultApi[apiAction]?.(resultIds)
+      
+      showSuccess(`${resultIds.length} results processed successfully`)
       setSelectedResults(new Set())
       handleLoadResults()
     } catch (err) {
-      showError(err.message || `Failed to ${action} results`)
+      showError(err.message || `Failed to perform bulk action`)
     } finally {
       setBulkProcessing(false)
     }
   }
 
-  const exportToCSV = () => {
-    const filteredResults = results
-      .filter(result => !statusFilter || result.status === statusFilter)
-      .filter(result => !subjectFilter || result.subject?.name === subjectFilter)
+  const handleExportCSV = async () => {
+    try {
+      const filteredResults = getFilteredResults()
+      if (filteredResults.length === 0) {
+        showError('No results to export')
+        return
+      }
 
-    if (filteredResults.length === 0) {
-      showError('No results to export')
-      return
+      const response = await resultApi.exportCSV({
+        classroom: selectedClassroom,
+        exam: selectedExam,
+        status: filters.statusFilter || undefined
+      })
+
+      const blob = new Blob([response], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `results-export-${Date.now()}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      showSuccess('Results exported successfully')
+    } catch (err) {
+      showError(err.message || 'Failed to export results')
     }
+  }
 
-    const headers = ['Student Name', 'Student ID', 'Subject', 'Score', 'Max Marks', 'Grade', 'Status', 'Remarks']
-    const rows = filteredResults.map(r => [
-      r.student?.name || 'N/A',
-      r.student?.studentId || 'N/A',
-      r.subject?.name || 'N/A',
-      r.score || 0,
-      r.maxMarks || 100,
-      r.grade || 'N/A',
-      r.status || 'N/A',
-      r.remarks || ''
-    ])
+  const handleCsvImport = async (csvContent) => {
+    try {
+      setLoading(true)
+      const response = await resultApi.importCSV({
+        csvContent,
+        exam: selectedExam,
+        classroom: selectedClassroom
+      })
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n')
+      showSuccess(`Imported ${response.imported} results`)
+      if (response.errors && response.errors.length > 0) {
+        showError(`${response.errors.length} errors during import`)
+      }
+      setShowUploadForm(false)
+      handleLoadResults()
+    } catch (err) {
+      showError(err.message || 'Failed to import CSV')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `results-${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+  const getFilteredResults = () => {
+    return results
+      .filter(r => !filters.statusFilter || r.status === filters.statusFilter)
+      .filter(r => !filters.subjectFilter || r.subject?.name === filters.subjectFilter)
+      .filter(r => !filters.gradeFilter || r.grade === filters.gradeFilter)
+      .filter(r => !filters.scoreMin || r.score >= parseFloat(filters.scoreMin))
+      .filter(r => !filters.scoreMax || r.score <= parseFloat(filters.scoreMax))
+  }
 
-    showSuccess('Results exported to CSV')
+  const filteredResults = getFilteredResults()
+  const paginatedResults = filteredResults.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+  const totalPages = Math.ceil(filteredResults.length / itemsPerPage)
+
+  const statusSummary = {
+    draft: results.filter(r => r.status === 'draft').length,
+    submitted: results.filter(r => r.status === 'submitted').length,
+    approved: results.filter(r => r.status === 'approved').length,
+    published: results.filter(r => r.status === 'published').length,
+    rejected: results.filter(r => r.status === 'rejected').length
   }
 
   return (

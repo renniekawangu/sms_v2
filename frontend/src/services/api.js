@@ -1373,5 +1373,27 @@ export const resultApi = {
   getExamStatistics: async (examId, filters = {}) => {
     const query = new URLSearchParams(filters).toString()
     return apiCall(`/results/exam/${examId}/statistics${query ? '?' + query : ''}`)
+  },
+
+  // Bulk operations
+  bulkSubmit: async (resultIds) => {
+    return apiCall('/results/bulk/submit', {
+      method: 'POST',
+      body: JSON.stringify({ resultIds }),
+    })
+  },
+
+  bulkApprove: async (resultIds) => {
+    return apiCall('/results/bulk/approve', {
+      method: 'POST',
+      body: JSON.stringify({ resultIds }),
+    })
+  },
+
+  bulkPublish: async (resultIds) => {
+    return apiCall('/results/bulk/publish', {
+      method: 'POST',
+      body: JSON.stringify({ resultIds }),
+    })
   }
 }

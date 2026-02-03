@@ -695,4 +695,135 @@ router.get(
   })
 );
 
+// ==================== BULK OPERATIONS ====================
+
+/**
+ * POST /api/results/bulk/submit
+ * Submit multiple draft results at once
+ */
+router.post(
+  '/bulk/submit',
+  requireAuth,
+  requireRole(ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    const { resultIds } = req.body;
+
+    if (!Array.isArray(resultIds) || resultIds.length === 0) {
+      return res.status(400).json({ error: 'resultIds array is required' });
+    }
+
+    const results = await ExamResult.find({ _id: { $in: resultIds } });
+    
+    // Filter to only draft results
+    const draftResults = results.filter(r => r.status === 'draft');
+    
+    if (draftResults.length === 0) {
+      return res.status(400).json({ error: 'No draft results found' });
+    }
+
+    // For teachers, only allow submitting own results
+    if (req.user.role === ROLES.TEACHER) {
+      const filtered = draftResults.filter(r => r.submittedBy.equals(req.user.id));
+      if (filtered.length === 0) {
+        return res.status(403).json({ error: 'You can only submit your own results' });
+      }
+      draftResults.splice(0, draftResults.length, ...filtered);
+    }
+
+    const submitted = [];
+    for (const result of draftResults) {
+      await result.submit(req.user.id);
+      submitted.push(result);
+    }
+
+    logger.info(`Bulk submitted ${submitted.length} results`);
+
+    res.json({
+      success: true,
+      message: `${submitted.length} results submitted successfully`,
+      count: submitted.length
+    });
+  })
+);
+
+/**
+ * POST /api/results/bulk/approve
+ * Approve multiple submitted results at once
+ */
+router.post(
+  '/bulk/approve',
+  requireAuth,
+  requireRole(ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    const { resultIds } = req.body;
+
+    if (!Array.isArray(resultIds) || resultIds.length === 0) {
+      return res.status(400).json({ error: 'resultIds array is required' });
+    }
+
+    const results = await ExamResult.find({ _id: { $in: resultIds } });
+    
+    // Filter to only submitted results
+    const submittedResults = results.filter(r => r.status === 'submitted');
+    
+    if (submittedResults.length === 0) {
+      return res.status(400).json({ error: 'No submitted results found' });
+    }
+
+    const approved = [];
+    for (const result of submittedResults) {
+      await result.approve(req.user.id);
+      approved.push(result);
+    }
+
+    logger.info(`Bulk approved ${approved.length} results`);
+
+    res.json({
+      success: true,
+      message: `${approved.length} results approved successfully`,
+      count: approved.length
+    });
+  })
+);
+
+/**
+ * POST /api/results/bulk/publish
+ * Publish multiple approved results at once
+ */
+router.post(
+  '/bulk/publish',
+  requireAuth,
+  requireRole(ROLES.HEAD_TEACHER, ROLES.ADMIN),
+  asyncHandler(async (req, res) => {
+    const { resultIds } = req.body;
+
+    if (!Array.isArray(resultIds) || resultIds.length === 0) {
+      return res.status(400).json({ error: 'resultIds array is required' });
+    }
+
+    const results = await ExamResult.find({ _id: { $in: resultIds } });
+    
+    // Filter to only approved results
+    const approvedResults = results.filter(r => r.status === 'approved');
+    
+    if (approvedResults.length === 0) {
+      return res.status(400).json({ error: 'No approved results found' });
+    }
+
+    const published = [];
+    for (const result of approvedResults) {
+      await result.publish(req.user.id);
+      published.push(result);
+    }
+
+    logger.info(`Bulk published ${published.length} results`);
+
+    res.json({
+      success: true,
+      message: `${published.length} results published successfully`,
+      count: published.length
+    });
+  })
+);
+
 module.exports = router;
