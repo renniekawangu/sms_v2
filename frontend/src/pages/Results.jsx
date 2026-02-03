@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Upload, Eye, AlertCircle, Loader, Edit, CheckCircle } from 'lucide-react'
+import { Plus, Upload, Eye, AlertCircle, Loader, CheckCircle, Send, Check } from 'lucide-react'
 import { resultApi, examApi, classroomApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -20,6 +20,7 @@ function Results() {
   const [selectedExam, setSelectedExam] = useState('')
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [showGradeForm, setShowGradeForm] = useState(false)
+  const [transitioningId, setTransitioningId] = useState(null)
 
   useEffect(() => {
     console.log('Results page mounted, loading initial data...')
@@ -101,10 +102,32 @@ function Results() {
     switch(status) {
       case 'draft': return 'bg-gray-100 text-gray-700'
       case 'submitted': return 'bg-blue-100 text-blue-700'
-      case 'approved': return 'bg-yellow-100 text-yellow-700'
-      case 'published': return 'bg-green-100 text-green-700'
+      case 'approved': return 'bg-green-100 text-green-700'
+      case 'published': return 'bg-purple-100 text-purple-700'
       case 'rejected': return 'bg-red-100 text-red-700'
       default: return 'bg-gray-100 text-gray-700'
+    }
+  }
+
+  const handleStatusTransition = async (resultId, currentStatus) => {
+    const endpoints = {
+      'draft': 'submit',
+      'submitted': 'approve',
+      'approved': 'publish'
+    }
+
+    const endpoint = endpoints[currentStatus]
+    if (!endpoint) return
+
+    try {
+      setTransitioningId(resultId)
+      await resultApi[endpoint](resultId)
+      showSuccess(`Result ${endpoint}ed successfully`)
+      handleLoadResults()
+    } catch (err) {
+      showError(err.message || `Failed to ${endpoint} result`)
+    } finally {
+      setTransitioningId(null)
     }
   }
 
@@ -226,11 +249,32 @@ function Results() {
                     <td className="px-4 py-3 text-sm">
                       {result.status === 'draft' && (
                         <button
-                          onClick={() => navigate(`/results/${result._id}/edit`)}
-                          className="text-primary-blue hover:text-opacity-80 flex items-center gap-1"
+                          onClick={() => handleStatusTransition(result._id, 'draft')}
+                          disabled={transitioningId === result._id}
+                          className="text-blue-600 hover:text-opacity-80 flex items-center gap-1 disabled:opacity-50"
                         >
-                          <Edit size={16} />
-                          Edit
+                          <Send size={16} />
+                          Submit
+                        </button>
+                      )}
+                      {result.status === 'submitted' && (user.role === 'head-teacher' || user.role === 'admin') && (
+                        <button
+                          onClick={() => handleStatusTransition(result._id, 'submitted')}
+                          disabled={transitioningId === result._id}
+                          className="text-green-600 hover:text-opacity-80 flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <Check size={16} />
+                          Approve
+                        </button>
+                      )}
+                      {result.status === 'approved' && (user.role === 'admin' || user.role === 'head-teacher') && (
+                        <button
+                          onClick={() => handleStatusTransition(result._id, 'approved')}
+                          disabled={transitioningId === result._id}
+                          className="text-purple-600 hover:text-opacity-80 flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <CheckCircle size={16} />
+                          Publish
                         </button>
                       )}
                     </td>
