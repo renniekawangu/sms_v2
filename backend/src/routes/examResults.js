@@ -151,8 +151,14 @@ router.post(
         return res.status(404).json({ error: 'Exam not found' });
       }
 
-      // Get all students in classroom
-      const students = await Student.find({ classroomId: classroomId, isDeleted: false });
+      // Get classroom and its students
+      const Classroom = require('../models/classroom').Classroom;
+      const classroom = await Classroom.findById(classroomId).populate('students');
+      if (!classroom) {
+        return res.status(404).json({ error: 'Classroom not found' });
+      }
+
+      const students = classroom.students || [];
       if (students.length === 0) {
         return res.status(400).json({ error: 'No students found in this classroom' });
       }

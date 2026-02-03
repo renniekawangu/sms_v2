@@ -99,12 +99,17 @@ export default function ResultsEntryForm({ isOpen, onClose, onSuccess, classroom
                 {results.map((result) => {
                   const resultId = result._id || result.studentId;
                   const data = formData[resultId] || { score: '', remarks: '' };
+                  const studentName = result.student?.firstName && result.student?.lastName 
+                    ? `${result.student.firstName} ${result.student.lastName}`
+                    : result.studentName || 'Unknown';
+                  const studentId = result.student?.studentId || result.studentId || 'N/A';
+                  
                   return (
                     <tr key={resultId} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-3 text-gray-800">
                         <div>
-                          <div className="font-medium">{result.studentName}</div>
-                          <div className="text-xs text-gray-500">ID: {result.studentId}</div>
+                          <div className="font-medium">{studentName}</div>
+                          <div className="text-xs text-gray-500">ID: {studentId}</div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
