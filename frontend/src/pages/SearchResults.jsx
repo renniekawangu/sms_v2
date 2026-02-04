@@ -26,8 +26,9 @@ function SearchResults() {
           details = await teachersApi.get(userId)
         } else {
           // For staff/other roles, fetch from admin API
-          const staffList = await adminApi.listStaff()
-          details = staffList.find(s => s._id === userId)
+          const staffResponse = await adminApi.listStaff()
+          const staffArray = Array.isArray(staffResponse) ? staffResponse : staffResponse.data || []
+          details = staffArray.find(s => s._id === userId)
         }
 
         setUserDetails({ ...details, type: userType })

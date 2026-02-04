@@ -40,7 +40,8 @@ function Header({ onMenuClick }) {
 
       try {
         const students = await studentsApi.list()
-        const studentMatches = students.filter(s => 
+        const studentArray = Array.isArray(students) ? students : students.data || []
+        const studentMatches = studentArray.filter(s => 
           s.firstName?.toLowerCase().includes(queryLower) ||
           s.lastName?.toLowerCase().includes(queryLower) ||
           s.email?.toLowerCase().includes(queryLower) ||
@@ -54,7 +55,8 @@ function Header({ onMenuClick }) {
 
       try {
         const teachers = await teachersApi.list()
-        const teacherMatches = teachers.filter(t => 
+        const teacherArray = Array.isArray(teachers) ? teachers : teachers.data || []
+        const teacherMatches = teacherArray.filter(t => 
           t.name?.toLowerCase().includes(queryLower) ||
           t.email?.toLowerCase().includes(queryLower) ||
           t.phone?.includes(query) ||
@@ -66,8 +68,9 @@ function Header({ onMenuClick }) {
       }
 
       try {
-        const staffList = await adminApi.listStaff()
-        const staffMatches = staffList.filter(s => 
+        const staffResponse = await adminApi.listStaff()
+        const staffArray = Array.isArray(staffResponse) ? staffResponse : staffResponse.data || []
+        const staffMatches = staffArray.filter(s => 
           s.name?.toLowerCase().includes(queryLower) ||
           s.email?.toLowerCase().includes(queryLower) ||
           s.phone?.includes(query) ||
