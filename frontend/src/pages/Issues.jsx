@@ -48,7 +48,7 @@ function Issues() {
   const handleSubmit = async (formData) => {
     try {
       if (editingIssue) {
-        await issuesApi.update(editingIssue.issue_id, formData)
+        await issuesApi.update(editingIssue._id, formData)
         success('Issue updated successfully')
       } else {
         await issuesApi.create(formData)
@@ -92,10 +92,10 @@ function Issues() {
     const query = searchQuery.toLowerCase()
     return issues.filter((issue) => {
       return (
-        issue.type?.toLowerCase().includes(query) ||
-        issue.details?.toLowerCase().includes(query) ||
-        issue.raised_by?.toLowerCase().includes(query) ||
-        issue.issue_id?.toString().includes(query)
+        issue.title?.toLowerCase().includes(query) ||
+        issue.description?.toLowerCase().includes(query) ||
+        issue.category?.toLowerCase().includes(query) ||
+        issue._id?.toString().includes(query)
       )
     })
   }, [issues, searchQuery])
@@ -150,7 +150,7 @@ function Issues() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
               <input
                 type="text"
-                placeholder="Search issues by type, details, or raised by..."
+                placeholder="Search issues by title, category, or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
@@ -163,10 +163,11 @@ function Issues() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">ID</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Title</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Raised By</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Type</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Details</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Role</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Category</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Priority</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Status</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-text-dark">Actions</th>
               </tr>
@@ -180,49 +181,53 @@ function Issues() {
                 </tr>
               ) : (
                 filteredIssues.map((issue) => (
-                  <tr key={issue.issue_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4 text-sm text-text-dark">{issue.issue_id}</td>
-                    <td className="py-3 px-4 text-sm text-text-dark capitalize">{issue.raised_by}</td>
-                    <td className="py-3 px-4 text-sm text-text-muted">{issue.type}</td>
-                    <td className="py-3 px-4 text-sm text-text-muted">{issue.details}</td>
+                  <tr key={issue._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4 text-sm text-text-dark font-medium">{issue.title}</td>
+                    <td className="py-3 px-4 text-sm text-text-muted capitalize">{issue.category}</td>
+                    <td className="py-3 px-4 text-sm">
+                      <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${
+                        issue.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                        issue.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                        issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {issue.priority || 'medium'}
+                      </span>
+                    </td>
                     <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          issue.is_resolved
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}
-                      >
-                        {issue.is_resolved ? 'Resolved' : 'Pending'}
+                      <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${
+                        issue.status === 'resolved'
+                          ? 'bg-green-100 text-green-700'
+                          : issue.status === 'in-progress'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {issue.status || 'open'}
                       </span>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        {!issue.is_resolved && (
-                          <>
-                            {(user?.role === 'admin' || (user?.role === issue.raised_by)) && (
-                              <button
-                                onClick={() => handleEdit(issue)}
-                                className="text-primary-blue hover:text-primary-blue/80 text-sm font-medium flex items-center gap-1"
-                              >
-                                <Edit size={16} />
-                                Edit
-                              </button>
-                            )}
-                            {user?.role === 'admin' && (
-                              <button
-                                onClick={() => handleResolve(issue.issue_id)}
-                                className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center gap-1"
-                              >
-                                <CheckCircle size={16} />
-                                Resolve
-                              </button>
-                            )}
-                          </>
-                        )}
-                        {(user?.role === 'admin' || (user?.role === issue.raised_by)) && (
+                        {(user?.role === 'admin' || user?._id === issue.reportedBy?._id) && (
                           <button
-                            onClick={() => handleDelete(issue.issue_id)}
+                            onClick={() => handleEdit(issue)}
+                            className="text-primary-blue hover:text-primary-blue/80 text-sm font-medium flex items-center gap-1"
+                          >
+                            <Edit size={16} />
+                            Edit
+                          </button>
+                        )}
+                        {user?.role === 'admin' && issue.status !== 'resolved' && (
+                          <button
+                            onClick={() => handleResolve(issue._id)}
+                            className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center gap-1"
+                          >
+                            <CheckCircle size={16} />
+                            Resolve
+                          </button>
+                        )}
+                        {(user?.role === 'admin' || user?._id === issue.reportedBy?._id) && (
+                          <button
+                            onClick={() => handleDelete(issue._id)}
                             className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
                           >
                             <Trash2 size={16} />

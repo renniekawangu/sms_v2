@@ -4,26 +4,27 @@ import { useAuth } from '../contexts/AuthContext'
 function IssueForm({ issue, onSubmit, onCancel }) {
   const { user } = useAuth()
   const [formData, setFormData] = useState({
-    raised_by: '',
-    type: '',
-    details: '',
+    title: '',
+    category: '',
+    description: '',
+    priority: 'medium',
   })
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
     if (issue) {
       setFormData({
-        raised_by: issue.raised_by || '',
-        type: issue.type || '',
-        details: issue.details || '',
+        title: issue.title || '',
+        category: issue.category || '',
+        description: issue.description || '',
+        priority: issue.priority || 'medium',
       })
     } else {
-      // Auto-set raised_by based on user role
-      const defaultRaisedBy = user?.role === 'student' ? 'student' : user?.role === 'teacher' ? 'teacher' : 'student'
       setFormData({
-        raised_by: defaultRaisedBy,
-        type: '',
-        details: '',
+        title: '',
+        category: '',
+        description: '',
+        priority: 'medium',
       })
     }
   }, [issue, user])
@@ -31,16 +32,16 @@ function IssueForm({ issue, onSubmit, onCancel }) {
   const validate = () => {
     const newErrors = {}
 
-    if (!formData.raised_by) {
-      newErrors.raised_by = 'Raised by is required'
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required'
     }
 
-    if (!formData.type.trim()) {
-      newErrors.type = 'Issue type is required'
+    if (!formData.category) {
+      newErrors.category = 'Category is required'
     }
 
-    if (!formData.details.trim()) {
-      newErrors.details = 'Details are required'
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required'
     }
 
     setErrors(newErrors)
@@ -62,83 +63,99 @@ function IssueForm({ issue, onSubmit, onCancel }) {
     }
   }
 
-  const issueTypes = [
-    'Academic',
-    'Administrative',
-    'Technical',
-    'Financial',
-    'Facilities',
-    'Other'
+  const categoryTypes = [
+    'technical',
+    'academic',
+    'administrative',
+    'facility',
+    'financial',
+    'discipline',
+    'other'
   ]
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="raised_by" className="block text-sm font-medium text-text-dark mb-2">
-          Raised By <span className="text-red-500">*</span>
+        <label htmlFor="title" className="block text-sm font-medium text-text-dark mb-2">
+          Title <span className="text-red-500">*</span>
         </label>
-        <select
-          id="raised_by"
-          name="raised_by"
-          value={formData.raised_by}
+        <input
+          type="text"
+          id="title"
+          name="title"
+          value={formData.title}
           onChange={handleChange}
-          disabled={!!issue || user?.role === 'student' || user?.role === 'teacher'}
+          placeholder="Issue title..."
           className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-            errors.raised_by
+            errors.title
               ? 'border-red-300 focus:ring-red-500'
               : 'border-gray-200 focus:ring-primary-blue'
-          } ${(issue || user?.role === 'student' || user?.role === 'teacher') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-        >
-          <option value="">Select who raised the issue</option>
-          <option value="student">Student</option>
-          <option value="teacher">Teacher</option>
-        </select>
-        {errors.raised_by && <p className="mt-1 text-sm text-red-500">{errors.raised_by}</p>}
+          }`}
+        />
+        {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
       </div>
 
       <div>
-        <label htmlFor="type" className="block text-sm font-medium text-text-dark mb-2">
-          Issue Type <span className="text-red-500">*</span>
+        <label htmlFor="category" className="block text-sm font-medium text-text-dark mb-2">
+          Category <span className="text-red-500">*</span>
         </label>
         <select
-          id="type"
-          name="type"
-          value={formData.type}
+          id="category"
+          name="category"
+          value={formData.category}
           onChange={handleChange}
           className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-            errors.type
+            errors.category
               ? 'border-red-300 focus:ring-red-500'
               : 'border-gray-200 focus:ring-primary-blue'
           }`}
         >
-          <option value="">Select issue type</option>
-          {issueTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
+          <option value="">Select issue category</option>
+          {categoryTypes.map((category) => (
+            <option key={category} value={category}>
+              {category.charAt(0).toUpperCase() + category.slice(1)}
             </option>
           ))}
         </select>
-        {errors.type && <p className="mt-1 text-sm text-red-500">{errors.type}</p>}
+        {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category}</p>}
       </div>
 
       <div>
-        <label htmlFor="details" className="block text-sm font-medium text-text-dark mb-2">
-          Details <span className="text-red-500">*</span>
+        <label htmlFor="priority" className="block text-sm font-medium text-text-dark mb-2">
+          Priority
+        </label>
+        <select
+          id="priority"
+          name="priority"
+          value={formData.priority}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+        >
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="description" className="block text-sm font-medium text-text-dark mb-2">
+          Description <span className="text-red-500">*</span>
         </label>
         <textarea
-          id="details"
-          name="details"
-          value={formData.details}
+          id="description"
+          name="description"
+          value={formData.description}
           onChange={handleChange}
           rows="4"
           className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-            errors.details
+            errors.description
               ? 'border-red-300 focus:ring-red-500'
               : 'border-gray-200 focus:ring-primary-blue'
           }`}
           placeholder="Describe the issue in detail..."
         />
-        {errors.details && <p className="mt-1 text-sm text-red-500">{errors.details}</p>}
+        {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
       </div>
 
       <div className="flex items-center gap-3 pt-4">
