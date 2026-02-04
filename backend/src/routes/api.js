@@ -1011,8 +1011,8 @@ router.get('/issues', requireAuth, asyncHandler(async (req, res) => {
   if (assignedTo) filter.assignedTo = assignedTo;
   
   const issues = await Issue.find(filter)
-    .populate('reportedBy', 'email')
-    .populate('assignedTo', 'email')
+    .populate('reportedBy', 'email role')
+    .populate('assignedTo', 'email role')
     .populate('resolvedBy', 'email')
     .sort({ createdAt: -1 })
     .lean();
@@ -1049,7 +1049,7 @@ router.post('/issues', requireAuth, asyncHandler(async (req, res) => {
   
   await issue.save();
   const populated = await Issue.findById(issue._id)
-    .populate('reportedBy', 'email')
+    .populate('reportedBy', 'email role')
     .lean();
   res.status(201).json(populated);
 }));
@@ -1081,8 +1081,8 @@ router.put('/issues/:id', requireAuth, asyncHandler(async (req, res) => {
   
   await issue.save();
   const populated = await Issue.findById(issue._id)
-    .populate('reportedBy', 'email')
-    .populate('assignedTo', 'email')
+    .populate('reportedBy', 'email role')
+    .populate('assignedTo', 'email role')
     .lean();
   res.json(populated);
 }));
@@ -1095,7 +1095,7 @@ router.put('/issues/:id/resolve', requireAuth, asyncHandler(async (req, res) => 
   await issue.resolve(req.user.id, resolution);
   
   const populated = await Issue.findById(issue._id)
-    .populate('reportedBy', 'email')
+    .populate('reportedBy', 'email role')
     .populate('resolvedBy', 'email')
     .lean();
   res.json(populated);

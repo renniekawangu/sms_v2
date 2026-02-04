@@ -27,6 +27,7 @@ import Payments from './pages/Payments'
 import FinancialReports from './pages/FinancialReports'
 import Expenses from './pages/Expenses'
 import Issues from './pages/Issues'
+import SearchResults from './pages/SearchResults'
 import Settings from './pages/Settings'
 import UsersManagement from './pages/UsersManagement'
 import Messages from './pages/Messages'
@@ -332,6 +333,18 @@ function App() {
                   <ProtectedRoute route="/issues">
                     <Layout>
                       <Issues />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Search Results - All authenticated users */}
+              <Route
+                path="/search-results"
+                element={
+                  <ProtectedRoute route="/search-results">
+                    <Layout>
+                      <SearchResults />
                     </Layout>
                   </ProtectedRoute>
                 }

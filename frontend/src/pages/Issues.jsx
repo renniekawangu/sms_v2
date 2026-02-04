@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { AlertCircle, Plus, Edit, Trash2, Search, CheckCircle } from 'lucide-react'
+import { AlertCircle, Plus, Edit, Trash2, Search, CheckCircle, Eye, X } from 'lucide-react'
 import { issuesApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -14,6 +14,8 @@ function Issues() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingIssue, setEditingIssue] = useState(null)
+  const [viewingIssue, setViewingIssue] = useState(null)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const { success, error: showError } = useToast()
 
   useEffect(() => {
@@ -85,6 +87,11 @@ function Issues() {
         showError(errorMessage)
       }
     }
+  }
+
+  const handleView = (issue) => {
+    setViewingIssue(issue)
+    setIsViewModalOpen(true)
   }
 
   const filteredIssues = useMemo(() => {
@@ -183,6 +190,12 @@ function Issues() {
                 filteredIssues.map((issue) => (
                   <tr key={issue._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{issue.title}</td>
+                    <td className="py-3 px-4 text-sm text-text-muted">{issue.reportedBy?.email || 'Unknown'}</td>
+                    <td className="py-3 px-4 text-sm capitalize">
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                        {issue.reportedBy?.role || 'N/A'}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 text-sm text-text-muted capitalize">{issue.category}</td>
                     <td className="py-3 px-4 text-sm">
                       <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${
@@ -206,7 +219,15 @@ function Issues() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleView(issue)}
+                          className="text-gray-600 hover:text-gray-900 text-sm font-medium flex items-center gap-1"
+                          title="View description"
+                        >
+                          <Eye size={16} />
+                          View
+                        </button>
                         {(user?.role === 'admin' || user?._id === issue.reportedBy?._id) && (
                           <button
                             onClick={() => handleEdit(issue)}
@@ -269,6 +290,76 @@ function Issues() {
           }}
         />
       </Modal>
+
+      {/* View Description Modal */}
+      {isViewModalOpen && viewingIssue && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Issue Details</h2>
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-1">Title</label>
+                <p className="text-gray-700">{viewingIssue.title}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Category</label>
+                  <p className="text-gray-700 capitalize">{viewingIssue.category}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Priority</label>
+                  <span className={`px-2 py-1 rounded text-xs font-medium capitalize inline-block ${
+                    viewingIssue.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                    viewingIssue.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                    viewingIssue.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-green-100 text-green-700'
+                  }`}>
+                    {viewingIssue.priority || 'medium'}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Raised By</label>
+                  <p className="text-gray-700">{viewingIssue.reportedBy?.email || 'Unknown'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Status</label>
+                  <span className={`px-2 py-1 rounded text-xs font-medium capitalize inline-block ${
+                    viewingIssue.status === 'resolved'
+                      ? 'bg-green-100 text-green-700'
+                      : viewingIssue.status === 'in-progress'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {viewingIssue.status || 'open'}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-1">Description</label>
+                <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">{viewingIssue.description}</p>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
