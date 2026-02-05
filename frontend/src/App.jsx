@@ -340,7 +340,7 @@ function App() {
 
               {/* Search Results - All authenticated users */}
               <Route
-                path="/search-results"
+                path="/search-results/:id"
                 element={
                   <ProtectedRoute route="/search-results">
                     <Layout>

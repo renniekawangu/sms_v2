@@ -3,11 +3,13 @@ import { Users, Search, Plus, Edit, Trash2, Link as LinkIcon, Unlink, AlertCircl
 import { parentsApi, studentsApi } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { ROLES } from '../config/rbac'
 import Modal from '../components/Modal'
 
 function Parents() {
   const { user } = useAuth()
   const { success, error: showError } = useToast()
+  const isAdmin = user?.role === ROLES.ADMIN
   const [parents, setParents] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -166,6 +168,7 @@ function Parents() {
           <button
             onClick={() => handleOpenModal('create')}
             className="w-full sm:w-auto bg-white text-primary-blue px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+            style={{ display: isAdmin ? 'flex' : 'none' }}
           >
             <Plus size={18} />
             New Parent
@@ -227,26 +230,30 @@ function Parents() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleOpenModal('edit', parent)
-                    }}
-                    className="p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
-                    title="Edit"
-                  >
-                    <Edit size={16} className="sm:size-[18px]" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteParent(parent._id)
-                    }}
-                    className="p-1.5 sm:p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 size={16} className="sm:size-[18px]" />
-                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenModal('edit', parent)
+                        }}
+                        className="p-1.5 sm:p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit size={16} className="sm:size-[18px]" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteParent(parent._id)
+                        }}
+                        className="p-1.5 sm:p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} className="sm:size-[18px]" />
+                      </button>
+                    </>
+                  )}
                   {expandedParentId === parent._id ? (
                     <ChevronUp className="text-gray-400" />
                   ) : (

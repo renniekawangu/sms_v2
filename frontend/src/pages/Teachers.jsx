@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { User, Search, AlertCircle, Plus, Edit, Trash2, Download, CheckSquare, Square } from 'lucide-react'
 import { teachersApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
+import { useAuth } from '../contexts/AuthContext'
+import { ROLES } from '../config/rbac'
 import Modal from '../components/Modal'
 import TeacherForm from '../components/TeacherForm'
 import AdvancedSearch from '../components/AdvancedSearch'
@@ -27,6 +29,8 @@ function Teachers() {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false })
   const { success, error: showError } = useToast()
+  const { user } = useAuth()
+  const isAdmin = user?.role === ROLES.ADMIN
 
   useEffect(() => {
     loadTeachers()
@@ -226,14 +230,16 @@ function Teachers() {
           <p className="text-sm sm:text-base text-text-muted mt-1">Manage all teacher records ({teachers.length})</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={handleCreate}
-            className="flex items-center justify-center gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm font-medium"
-            title="Ctrl+N"
-          >
-            <Plus size={18} />
-            <span className="hidden sm:inline">Add Teacher</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleCreate}
+              className="flex items-center justify-center gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm font-medium"
+              title="Ctrl+N"
+            >
+              <Plus size={18} />
+              <span className="hidden sm:inline">Add Teacher</span>
+            </button>
+          )}
           <button
             onClick={handleExportAll}
             className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
@@ -251,7 +257,7 @@ function Teachers() {
               <span className="hidden sm:inline">Export ({selectedIds.size})</span>
             </button>
           )}
-          {selectedIds.size > 0 && (
+          {selectedIds.size > 0 && isAdmin && (
             <button
               onClick={handleDeleteSelected}
               className="flex items-center justify-center gap-2 bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
@@ -359,22 +365,26 @@ function Teachers() {
                     </td>
                     <td className="py-3 px-2 sm:px-4">
                       <div className="flex items-center gap-1 sm:gap-3">
-                        <button
-                          onClick={() => handleEdit(teacher)}
-                          className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-blue-50"
-                          title="Edit"
-                        >
-                          <Edit size={14} className="sm:size-4" />
-                          <span className="hidden sm:inline">Edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(teacher._id || teacher.teacher_id)}
-                          className="text-red-500 hover:text-red-600 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-red-50"
-                          title="Delete"
-                        >
-                          <Trash2 size={14} className="sm:size-4" />
-                          <span className="hidden sm:inline">Delete</span>
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => handleEdit(teacher)}
+                              className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-blue-50"
+                              title="Edit"
+                            >
+                              <Edit size={14} className="sm:size-4" />
+                              <span className="hidden sm:inline">Edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(teacher._id || teacher.teacher_id)}
+                              className="text-red-500 hover:text-red-600 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-red-50"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} className="sm:size-4" />
+                              <span className="hidden sm:inline">Delete</span>
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

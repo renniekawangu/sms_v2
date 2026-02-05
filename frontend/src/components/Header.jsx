@@ -4,11 +4,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import { studentsApi, teachersApi, adminApi } from '../services/api'
+import { ROLES } from '../config/rbac'
 
 function Header({ onMenuClick }) {
   const { user, logout } = useAuth()
   const { success } = useToast()
   const navigate = useNavigate()
+  const isAdmin = user?.role === ROLES.ADMIN
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
@@ -91,7 +93,7 @@ function Header({ onMenuClick }) {
   }
 
   const handleViewUser = (result) => {
-    navigate('/search-results', { state: { userId: result._id, userType: result.type, user: result } })
+    navigate(`/search-results/${result._id}?type=${result.type}`)
     setSearchQuery('')
     setShowResults(false)
   }
@@ -106,55 +108,57 @@ function Header({ onMenuClick }) {
         </div>
         
         <div className="flex-1 max-w-md hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
-            <input
-              type="text"
-              placeholder="Search by name, email, or phone..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              onFocus={() => searchQuery && setShowResults(true)}
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue focus:border-2"
-            />
-            
-            {/* Search Results Dropdown */}
-            {showResults && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-                {searchResults.map((result, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleViewUser(result)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {result.firstName ? `${result.firstName} ${result.lastName}` : result.name}
-                        </p>
-                        <p className="text-xs text-gray-500">{result.email}</p>
-                        {result.phone && <p className="text-xs text-gray-500">{result.phone}</p>}
+          {isAdmin && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
+              <input
+                type="text"
+                placeholder="Search by name, email, or phone..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                onFocus={() => searchQuery && setShowResults(true)}
+                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue focus:border-2"
+              />
+              
+              {/* Search Results Dropdown */}
+              {showResults && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+                  {searchResults.map((result, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleViewUser(result)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-gray-800">
+                            {result.firstName ? `${result.firstName} ${result.lastName}` : result.name}
+                          </p>
+                          <p className="text-xs text-gray-500">{result.email}</p>
+                          {result.phone && <p className="text-xs text-gray-500">{result.phone}</p>}
+                        </div>
+                        <span className="ml-2 text-xs font-medium bg-primary-blue text-white px-2 py-1 rounded capitalize">
+                          {result.type}
+                        </span>
                       </div>
-                      <span className="ml-2 text-xs font-medium bg-primary-blue text-white px-2 py-1 rounded capitalize">
-                        {result.type}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            {showResults && searchQuery && searchResults.length === 0 && !isSearching && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
-                <p className="text-center text-gray-500 text-sm">No users found</p>
-              </div>
-            )}
+              {showResults && searchQuery && searchResults.length === 0 && !isSearching && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
+                  <p className="text-center text-gray-500 text-sm">No users found</p>
+                </div>
+              )}
 
-            {isSearching && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
-                <p className="text-center text-gray-500 text-sm">Searching...</p>
-              </div>
-            )}
-          </div>
+              {isSearching && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
+                  <p className="text-center text-gray-500 text-sm">Searching...</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
