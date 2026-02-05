@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Download, BookOpen, CheckCircle, DollarSign, Calendar, User, AlertCircle, Loader, TrendingUp, FileText, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Download, BookOpen, CheckCircle, DollarSign, Calendar, User, AlertCircle, Loader, TrendingUp, FileText, RefreshCw, Award } from 'lucide-react'
 import { parentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useSettings } from '../contexts/SettingsContext'
@@ -31,11 +31,6 @@ function ChildDetail() {
 
   useEffect(() => {
     loadChildData()
-    // Set up auto-refresh every 30 seconds
-    const interval = setInterval(() => {
-      loadChildData()
-    }, 30000)
-    return () => clearInterval(interval)
   }, [id, currentAcademicYear])
 
   const loadChildData = async () => {
@@ -276,26 +271,6 @@ function ChildDetail() {
                 <span className="hidden sm:inline">Back to Children</span>
                 <span className="sm:hidden">Back</span>
               </button>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 transition disabled:opacity-50 text-xs sm:text-sm font-medium flex-1 sm:flex-none"
-                >
-                  <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-                  <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-                  <span className="sm:hidden text-center">Refresh</span>
-                </button>
-                <button
-                  onClick={handleDownloadReport}
-                  disabled={downloadingReport}
-                  className="flex items-center justify-center gap-1 px-3 py-2 sm:px-4 sm:py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-blue/90 transition disabled:opacity-50 text-xs sm:text-sm font-medium flex-1 sm:flex-none"
-                >
-                  <Download size={16} />
-                  <span className="hidden sm:inline">{downloadingReport ? 'Downloading...' : 'Download Report'}</span>
-                  <span className="sm:hidden text-center">{downloadingReport ? 'Loading...' : 'Report'}</span>
-                </button>
-              </div>
             </div>
 
             {/* Child Header */}
@@ -316,14 +291,15 @@ function ChildDetail() {
         {/* Stats Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-            {/* Average Grade */}
+            {/* Position in Class */}
             <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-blue-500">
               <div className="flex items-start sm:items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <p className="text-text-muted text-xs sm:text-sm font-medium">Average Grade</p>
+                  <p className="text-text-muted text-xs sm:text-sm font-medium">Overall Average</p>
                   <p className="text-2xl sm:text-3xl font-bold text-primary-blue mt-1 sm:mt-2">{avgGrade}</p>
+                  {grades.length > 0 && <p className="text-xs text-text-muted mt-1">All-time average</p>}
                 </div>
-                <TrendingUp size={24} className="hidden sm:block text-blue-500 opacity-20 flex-shrink-0" />
+                <Award size={24} className="hidden sm:block text-blue-500 opacity-20 flex-shrink-0" />
               </div>
             </div>
 
@@ -660,6 +636,7 @@ function ChildDetail() {
                           <thead>
                             <tr className="border-b border-gray-200">
                               <th className="text-left p-3 text-sm font-semibold text-text-muted">Date</th>
+                              <th className="text-left p-3 text-sm font-semibold text-text-muted">Day</th>
                               <th className="text-left p-3 text-sm font-semibold text-text-muted">Status</th>
                             </tr>
                           </thead>
@@ -668,6 +645,9 @@ function ChildDetail() {
                               <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                                 <td className="p-3 text-sm text-text-dark">
                                   {new Date(record.date).toLocaleDateString()}
+                                </td>
+                                <td className="p-3 text-sm text-text-dark">
+                                  {new Date(record.date).toLocaleDateString('en-US', { weekday: 'short' })}
                                 </td>
                                 <td className="p-3">
                                   <span
