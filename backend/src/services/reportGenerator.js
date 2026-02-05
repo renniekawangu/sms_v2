@@ -335,6 +335,159 @@ class ReportGenerator {
     doc.end()
     return doc
   }
+
+  // Create student report card
+  static async generateReportCard(reportCardData, options = {}) {
+    const { 
+      studentName, 
+      studentId, 
+      classroom, 
+      term, 
+      academicYear, 
+      school,
+      schoolLogo,
+      schoolAddress,
+      schoolPhone,
+      schoolEmail
+    } = options
+
+    const doc = this.createDocument()
+
+    // Header with school info
+    if (schoolLogo) {
+      try {
+        doc.image(schoolLogo, 40, 40, { width: 60 })
+      } catch (e) {
+        // Skip logo if not found
+      }
+    }
+
+    doc.fontSize(16).font('Helvetica-Bold').text(school || 'School Management System', { align: 'center' })
+    doc.fontSize(11).font('Helvetica').text('STUDENT REPORT CARD', { align: 'center' })
+    
+    if (schoolAddress) doc.fontSize(9).text(schoolAddress, { align: 'center' })
+    if (schoolPhone) doc.fontSize(9).text(`Tel: ${schoolPhone}`, { align: 'center' })
+    if (schoolEmail) doc.fontSize(9).text(`Email: ${schoolEmail}`, { align: 'center' })
+
+    doc.moveTo(40, doc.y + 5).lineTo(555, doc.y + 5).stroke()
+    doc.moveDown()
+
+    // Student Information Section
+    doc.fontSize(11).font('Helvetica-Bold').text('STUDENT INFORMATION', { underline: true })
+    doc.fontSize(10).font('Helvetica')
+    
+    const infoX = 40
+    const infoCol2 = 280
+    
+    doc.text(`Student Name: ${studentName}`, infoX, doc.y)
+    doc.text(`Student ID: ${studentId}`, infoCol2, doc.y - doc.heightOfString('Student Name: test'))
+    
+    doc.moveDown(0.3)
+    doc.text(`Classroom: ${classroom || 'N/A'}`, infoX)
+    doc.text(`Academic Year: ${academicYear}`, infoCol2, doc.y - doc.heightOfString('Classroom: test'))
+    
+    doc.moveDown(0.3)
+    doc.text(`Term: ${term}`, infoX)
+    doc.moveDown()
+
+    // Academic Performance Section
+    if (reportCardData && reportCardData.length > 0) {
+      doc.fontSize(11).font('Helvetica-Bold').text('ACADEMIC PERFORMANCE', { underline: true })
+      doc.moveDown(0.5)
+
+      // Calculate overall statistics
+      const totalMarks = reportCardData.reduce((sum, r) => sum + (r.score || 0), 0)
+      const totalMaxMarks = reportCardData.reduce((sum, r) => sum + (r.maxMarks || 100), 0)
+      const overallPercentage = totalMaxMarks > 0 ? ((totalMarks / totalMaxMarks) * 100).toFixed(1) : 0
+      const avgScore = (totalMarks / reportCardData.length).toFixed(1)
+
+      // Summary Statistics
+      doc.fontSize(10).font('Helvetica-Bold').text('Summary:', { underline: true })
+      doc.fontSize(9).font('Helvetica')
+      doc.text(`Total Marks: ${totalMarks}/${totalMaxMarks}`)
+      doc.text(`Overall Percentage: ${overallPercentage}%`)
+      doc.text(`Average Score: ${avgScore}`)
+      doc.moveDown()
+
+      // Grades Table
+      doc.fontSize(10).font('Helvetica-Bold').text('Subject Performance:', { underline: true })
+      doc.moveDown(0.3)
+
+      const headers = ['Subject', 'Score', 'Max Marks', 'Percentage', 'Grade', 'Remarks']
+      const rows = reportCardData.map(result => {
+        const percentage = result.maxMarks ? ((result.score / result.maxMarks) * 100).toFixed(1) : 0
+        return [
+          result.subject || 'N/A',
+          String(result.score || 0),
+          String(result.maxMarks || 100),
+          `${percentage}%`,
+          result.grade || 'N/A',
+          result.remarks || '-'
+        ]
+      })
+
+      this.addTable(doc, headers, rows, {
+        columnWidths: [90, 70, 85, 85, 55, 90]
+      })
+    }
+
+    doc.moveDown()
+
+    // Overall Grade Calculation
+    const overallGrade = this.calculateOverallGrade(reportCardData)
+    const status = this.getStudentStatus(overallGrade)
+
+    doc.fontSize(11).font('Helvetica-Bold').text('OVERALL RESULT', { underline: true })
+    doc.fontSize(10).font('Helvetica')
+    doc.text(`Overall Grade: ${overallGrade}`)
+    doc.text(`Status: ${status}`)
+    doc.moveDown()
+
+    // Teacher Comments Section
+    doc.fontSize(11).font('Helvetica-Bold').text('TEACHER\'S COMMENTS', { underline: true })
+    doc.fontSize(9).font('Helvetica')
+    doc.rect(40, doc.y, 515, 60).stroke()
+    doc.text('_' * 100, 45, doc.y + 5)
+    doc.moveDown(4)
+
+    // Footer
+    this.addFooters(doc)
+    doc.end()
+    return doc
+  }
+
+  // Calculate overall grade based on subject grades
+  static calculateOverallGrade(reportCardData) {
+    if (!reportCardData || reportCardData.length === 0) return 'N/A'
+
+    const gradeValues = {
+      'A': 5,
+      'B': 4,
+      'C': 3,
+      'D': 2,
+      'F': 1
+    }
+
+    const totalValue = reportCardData.reduce((sum, r) => {
+      return sum + (gradeValues[r.grade] || 0)
+    }, 0)
+
+    const avgValue = totalValue / reportCardData.length
+
+    if (avgValue >= 4.5) return 'A'
+    if (avgValue >= 3.5) return 'B'
+    if (avgValue >= 2.5) return 'C'
+    if (avgValue >= 1.5) return 'D'
+    return 'F'
+  }
+
+  // Determine student status
+  static getStudentStatus(overallGrade) {
+    if (overallGrade === 'A' || overallGrade === 'B') return 'PROMOTED'
+    if (overallGrade === 'C') return 'PROMOTED WITH CAUTION'
+    if (overallGrade === 'D') return 'AT RISK'
+    return 'REPEAT'
+  }
 }
 
 module.exports = ReportGenerator

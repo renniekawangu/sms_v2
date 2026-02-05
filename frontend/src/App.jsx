@@ -32,6 +32,7 @@ import Settings from './pages/Settings'
 import UsersManagement from './pages/UsersManagement'
 import Messages from './pages/Messages'
 import Reports from './pages/Reports'
+import ReportCards from './pages/ReportCards'
 import Exams from './pages/Exams'
 import Results from './pages/Results'
 import ResultsApproval from './pages/ResultsApproval'
@@ -369,6 +370,18 @@ function App() {
                   <ProtectedRoute requiredRole={[ROLES.HEAD_TEACHER, ROLES.ADMIN]} route="/reports">
                     <Layout>
                       <Reports />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Report Cards - HEAD_TEACHER, TEACHER, ADMIN & STUDENT */}
+              <Route
+                path="/report-cards"
+                element={
+                  <ProtectedRoute requiredRole={[ROLES.HEAD_TEACHER, ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT]} route="/report-cards">
+                    <Layout>
+                      <ReportCards />
                     </Layout>
                   </ProtectedRoute>
                 }

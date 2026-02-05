@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText, Award, CheckCircle, DollarSign, CreditCard, TrendingDown, AlertCircle, Settings, UserCog, Lock, X, Search, LogOut, Mail, BarChart3 } from 'lucide-react'
+import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText, Award, CheckCircle, DollarSign, CreditCard, TrendingDown, AlertCircle, Settings, UserCog, Lock, X, Search, LogOut, Mail, BarChart3, Bookmark } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
@@ -26,6 +26,7 @@ const allMenuItems = {
   timetable: { label: 'Timetable', icon: Calendar, path: '/timetable', roles: [ROLES.ADMIN, ROLES.HEAD_TEACHER, ROLES.STUDENT] },
   exams: { label: 'Exams', icon: FileText, path: '/exams', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.HEAD_TEACHER] },
   results: { label: 'Results', icon: Award, path: '/results', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER] },
+  reportCards: { label: 'Report Cards', icon: Bookmark, path: '/report-cards', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER, ROLES.STUDENT] },
   resultsApproval: { label: 'Results Approval', icon: CheckCircle, path: '/results-approval', roles: [ROLES.ADMIN, ROLES.HEAD_TEACHER] },
   attendance: { label: 'Attendance', icon: CheckCircle, path: '/attendance', roles: [ROLES.ADMIN, ROLES.TEACHER, ROLES.HEAD_TEACHER] },
   fees: { label: 'Fees', icon: DollarSign, path: '/fees', roles: [ROLES.ADMIN, ROLES.ACCOUNTS, ROLES.HEAD_TEACHER] },

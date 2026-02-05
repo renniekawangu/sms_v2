@@ -10,6 +10,9 @@ const { Staff } = require('../models/staff')
 const { Classroom } = require('../models/classroom')
 const { Subject } = require('../models/subjects')
 const { Payment } = require('../models/payment')
+const { ExamResult } = require('../models/examResult')
+const { Exam } = require('../models/exam')
+const { SchoolSettings } = require('../models/school-settings')
 
 const router = express.Router()
 
@@ -255,6 +258,209 @@ router.get('/analytics', requireAuth, asyncHandler(async (req, res) => {
   doc.pipe(res)
 }))
 
+// Generate student report card for a specific term
+router.get('/report-card/:studentId', requireAuth, asyncHandler(async (req, res) => {
+  const { studentId } = req.params
+  const { term, academicYear } = req.query
+
+  console.log('[REPORT] Generating report card:', { studentId, term, academicYear })
+
+  // Get student info
+  const student = await Student.findById(studentId)
+    .select('firstName lastName studentId classId')
+    .populate('classId', 'className')
+    .lean()
+
+  if (!student) {
+    return res.status(404).json({ error: 'Student not found' })
+  }
+
+  // Get exam results for the student in the specified term and academic year
+  const filter = {
+    student: studentId,
+    status: 'published'
+  }
+
+  // If term and academicYear are provided, filter by them
+  if (term || academicYear) {
+    const examFilter = {}
+    if (term) examFilter.term = term
+    if (academicYear) examFilter.academicYear = academicYear
+
+    const exams = await Exam.find(examFilter).select('_id').lean()
+    const examIds = exams.map(e => e._id)
+
+    if (examIds.length > 0) {
+      filter.exam = { $in: examIds }
+    }
+  }
+
+  const results = await ExamResult.find(filter)
+    .populate('exam', 'term academicYear name')
+    .populate('subject', 'subjectName')
+    .select('exam subject score maxMarks grade remarks')
+    .lean()
+
+  console.log('[REPORT] Found exam results:', results.length)
+
+  // Group results by subject and calculate summary
+  const reportCardData = results.map(r => ({
+    subject: r.subject?.subjectName || 'N/A',
+    score: r.score || 0,
+    maxMarks: r.maxMarks || 100,
+    grade: r.grade || 'N/A',
+    remarks: r.remarks || '-'
+  }))
+
+  // Get school settings
+  const schoolSettings = await SchoolSettings.findOne().lean()
+
+  // Get the first exam's term and academic year for the report
+  const firstExam = results.length > 0 ? results[0].exam : null
+  const reportTerm = term || firstExam?.term || 'Current Term'
+  const reportAcademicYear = academicYear || firstExam?.academicYear || new Date().getFullYear()
+
+  // Generate PDF
+  const doc = await ReportGenerator.generateReportCard(reportCardData, {
+    studentName: `${student.firstName} ${student.lastName}`,
+    studentId: student.studentId || student._id,
+    classroom: student.classId?.className || 'N/A',
+    term: reportTerm,
+    academicYear: reportAcademicYear,
+    school: schoolSettings?.schoolName || 'School Management System',
+    schoolAddress: schoolSettings?.schoolAddress || '',
+    schoolPhone: schoolSettings?.schoolPhone || '',
+    schoolEmail: schoolSettings?.schoolEmail || ''
+  })
+
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="report-card-${student.firstName}-${student.lastName}-${reportTerm.replace(' ', '-')}.pdf"`)
+  doc.pipe(res)
+}))
+
+// Get all terms available for a student
+router.get('/terms/available', requireAuth, asyncHandler(async (req, res) => {
+  const { studentId } = req.query
+
+  if (!studentId) {
+    return res.status(400).json({ error: 'studentId is required' })
+  }
+
+  // Get all exams that have results for this student
+  const exams = await Exam.find()
+    .select('term academicYear')
+    .lean()
+
+  // Filter to only exams with results for this student
+  const studentExams = await ExamResult.find({
+    student: studentId,
+    status: 'published'
+  })
+    .populate('exam', 'term academicYear')
+    .lean()
+
+  const uniqueTerms = {}
+  studentExams.forEach(result => {
+    if (result.exam) {
+      const key = `${result.exam.term}-${result.exam.academicYear}`
+      uniqueTerms[key] = {
+        term: result.exam.term,
+        academicYear: result.exam.academicYear
+      }
+    }
+  })
+
+  const terms = Object.values(uniqueTerms)
+
+  res.json({
+    success: true,
+    terms: terms
+  })
+}))
+
+// Get report card for all students in a classroom for a specific term
+router.get('/report-cards/classroom/:classroomId', requireAuth, asyncHandler(async (req, res) => {
+  const { classroomId } = req.params
+  const { term, academicYear, format = 'json' } = req.query
+
+  console.log('[REPORT] Generating class report cards:', { classroomId, term, academicYear })
+
+  // Get classroom info
+  const classroom = await Classroom.findById(classroomId).select('className').lean()
+  if (!classroom) {
+    return res.status(404).json({ error: 'Classroom not found' })
+  }
+
+  // Get all students in the classroom
+  const students = await Student.find({ classId: classroomId }).lean()
+
+  if (students.length === 0) {
+    return res.status(404).json({ error: 'No students found in this classroom' })
+  }
+
+  // Get all report cards for students
+  const reportCards = []
+
+  for (const student of students) {
+    const filter = {
+      student: student._id,
+      status: 'published'
+    }
+
+    if (term || academicYear) {
+      const examFilter = {}
+      if (term) examFilter.term = term
+      if (academicYear) examFilter.academicYear = academicYear
+
+      const exams = await Exam.find(examFilter).select('_id').lean()
+      const examIds = exams.map(e => e._id)
+
+      if (examIds.length > 0) {
+        filter.exam = { $in: examIds }
+      }
+    }
+
+    const results = await ExamResult.find(filter)
+      .populate('exam', 'term academicYear')
+      .populate('subject', 'subjectName')
+      .select('exam subject score maxMarks grade remarks')
+      .lean()
+
+    const reportCardData = results.map(r => ({
+      subject: r.subject?.subjectName || 'N/A',
+      score: r.score || 0,
+      maxMarks: r.maxMarks || 100,
+      grade: r.grade || 'N/A',
+      remarks: r.remarks || '-'
+    }))
+
+    const firstExam = results.length > 0 ? results[0].exam : null
+    const reportTerm = term || firstExam?.term || 'Current Term'
+    const reportAcademicYear = academicYear || firstExam?.academicYear || new Date().getFullYear()
+
+    reportCards.push({
+      studentId: student._id,
+      studentName: `${student.firstName} ${student.lastName}`,
+      studentNumber: student.studentId,
+      classroom: classroom.className,
+      term: reportTerm,
+      academicYear: reportAcademicYear,
+      results: reportCardData,
+      overallGrade: ReportGenerator.calculateOverallGrade(reportCardData),
+      status: ReportGenerator.getStudentStatus(ReportGenerator.calculateOverallGrade(reportCardData))
+    })
+  }
+
+  res.json({
+    success: true,
+    classroom: classroom.className,
+    term: term || 'Current',
+    academicYear: academicYear || new Date().getFullYear(),
+    count: reportCards.length,
+    reportCards: reportCards
+  })
+}))
+
 // Get available report types and parameters
 router.get('/available', requireAuth, asyncHandler(async (req, res) => {
   const classes = await Classroom.find().select('_id className').lean()
@@ -266,6 +472,7 @@ router.get('/available', requireAuth, asyncHandler(async (req, res) => {
     reportTypes: [
       { id: 'attendance', name: 'Attendance Report', description: 'Generate attendance records' },
       { id: 'grades', name: 'Grade Report', description: 'Generate student grades and results' },
+      { id: 'report-card', name: 'Student Report Card', description: 'Generate student report cards by term' },
       { id: 'fees', name: 'Fee Statement', description: 'Generate student fee statements' },
       { id: 'analytics', name: 'Analytics Report', description: 'School-wide analytics (Admin only)' }
     ],
