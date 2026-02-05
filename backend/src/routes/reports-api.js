@@ -51,8 +51,8 @@ router.get('/attendance', requireAuth, asyncHandler(async (req, res) => {
   }
 
   if (classId) {
-    const cls = await Classroom.findById(classId).select('className').lean()
-    if (cls) className = cls.className
+    const cls = await Classroom.findById(classId).select('name').lean()
+    if (cls) className = cls.name
   }
 
   // Generate PDF
@@ -106,8 +106,8 @@ router.get('/grades', requireAuth, asyncHandler(async (req, res) => {
   }
 
   if (classId) {
-    const cls = await Classroom.findById(classId).select('className').lean()
-    if (cls) className = cls.className
+    const cls = await Classroom.findById(classId).select('name').lean()
+    if (cls) className = cls.name
   }
 
   const doc = await ReportGenerator.generateGradeReport(formattedGrades, {
@@ -267,8 +267,8 @@ router.get('/report-card/:studentId', requireAuth, asyncHandler(async (req, res)
 
   // Get student info
   const student = await Student.findById(studentId)
-    .select('firstName lastName studentId classId')
-    .populate('classId', 'className')
+    .select('firstName lastName studentId classroomId')
+    .populate('classroomId', 'name className')
     .lean()
 
   if (!student) {
@@ -297,7 +297,7 @@ router.get('/report-card/:studentId', requireAuth, asyncHandler(async (req, res)
 
   const results = await ExamResult.find(filter)
     .populate('exam', 'term academicYear name')
-    .populate('subject', 'subjectName')
+    .populate('subject', 'name')
     .select('exam subject score maxMarks grade remarks')
     .lean()
 
@@ -305,7 +305,7 @@ router.get('/report-card/:studentId', requireAuth, asyncHandler(async (req, res)
 
   // Group results by subject and calculate summary
   const reportCardData = results.map(r => ({
-    subject: r.subject?.subjectName || 'N/A',
+    subject: r.subject?.name || 'N/A',
     score: r.score || 0,
     maxMarks: r.maxMarks || 100,
     grade: r.grade || 'N/A',
@@ -315,19 +315,99 @@ router.get('/report-card/:studentId', requireAuth, asyncHandler(async (req, res)
   // Get school settings
   const schoolSettings = await SchoolSettings.findOne().lean()
 
+  console.log('[REPORT] School settings:', schoolSettings)
+
   // Get the first exam's term and academic year for the report
   const firstExam = results.length > 0 ? results[0].exam : null
   const reportTerm = term || firstExam?.term || 'Current Term'
   const reportAcademicYear = academicYear || firstExam?.academicYear || new Date().getFullYear()
 
+  // Calculate position in class
+  let positionInClass = 'N/A'
+  let classStudentCount = 'N/A'
+  try {
+    // Get all students in the same classroom
+    const classroomId = student.classroomId?._id
+    if (classroomId) {
+      const classroomStudents = await Student.find({ classroomId }).select('_id').lean()
+      classStudentCount = classroomStudents.length
+      const studentIds = classroomStudents.map(s => s._id)
+
+      // Get exam results for all students in the classroom for the same term/year
+      const allStudentResults = await ExamResult.find({
+        student: { $in: studentIds },
+        status: 'published',
+        ...filter
+      })
+        .select('student score maxMarks grade')
+        .lean()
+
+      // Calculate overall score for each student
+      const studentScores = {}
+      allStudentResults.forEach(r => {
+        const studentIdStr = r.student.toString()
+        if (!studentScores[studentIdStr]) {
+          studentScores[studentIdStr] = { totalScore: 0, totalMaxMarks: 0, resultCount: 0 }
+        }
+        studentScores[studentIdStr].totalScore += r.score || 0
+        studentScores[studentIdStr].totalMaxMarks += r.maxMarks || 100
+        studentScores[studentIdStr].resultCount += 1
+      })
+
+      // Sort students by score (highest first)
+      const rankedStudents = Object.entries(studentScores)
+        .map(([id, data]) => ({
+          id,
+          percentage: data.totalMaxMarks > 0 ? (data.totalScore / data.totalMaxMarks) * 100 : 0
+        }))
+        .sort((a, b) => b.percentage - a.percentage)
+
+      // Find current student's position
+      const currentStudentId = studentId.toString()
+      const position = rankedStudents.findIndex(s => s.id === currentStudentId) + 1
+      
+      if (position > 0) {
+        positionInClass = position.toString()
+      }
+    }
+  } catch (e) {
+    console.error('[REPORT] Error calculating position in class:', e.message)
+  }
+
+  // Build logo path - handle both cases where schoolLogo is just filename or full path
+  let logoPath = null
+  if (schoolSettings?.schoolLogo) {
+    let logoFile = schoolSettings.schoolLogo
+    
+    // If it's a URL (starts with http), extract just the filename
+    if (logoFile.startsWith('http://') || logoFile.startsWith('https://')) {
+      logoFile = logoFile.split('/').pop() // Get the last part (filename)
+    }
+    
+    // If it doesn't already start with uploads path, add it
+    if (!logoFile.includes('/')) {
+      logoFile = `logo/${logoFile}`
+    }
+    
+    logoPath = `/uploads/${logoFile}`
+  } else {
+    // Use default logo if school settings don't have one
+    logoPath = '/uploads/logo.png'
+  }
+  
+  console.log('[REPORT] Using logo path:', logoPath)
+
   // Generate PDF
   const doc = await ReportGenerator.generateReportCard(reportCardData, {
     studentName: `${student.firstName} ${student.lastName}`,
     studentId: student.studentId || student._id,
-    classroom: student.classId?.className || 'N/A',
+    classroom: student.classroomId?.name || student.classroomId?.className || 'N/A',
+    positionInClass: positionInClass,
+    classStudentCount: classStudentCount,
     term: reportTerm,
     academicYear: reportAcademicYear,
     school: schoolSettings?.schoolName || 'School Management System',
+    schoolLogo: logoPath,
     schoolAddress: schoolSettings?.schoolAddress || '',
     schoolPhone: schoolSettings?.schoolPhone || '',
     schoolEmail: schoolSettings?.schoolEmail || ''
@@ -386,7 +466,7 @@ router.get('/report-cards/classroom/:classroomId', requireAuth, asyncHandler(asy
   console.log('[REPORT] Generating class report cards:', { classroomId, term, academicYear })
 
   // Get classroom info
-  const classroom = await Classroom.findById(classroomId).select('className').lean()
+  const classroom = await Classroom.findById(classroomId).select('name className').lean()
   if (!classroom) {
     return res.status(404).json({ error: 'Classroom not found' })
   }
@@ -453,7 +533,7 @@ router.get('/report-cards/classroom/:classroomId', requireAuth, asyncHandler(asy
 
   res.json({
     success: true,
-    classroom: classroom.className,
+    classroom: classroom.name || classroom.className,
     term: term || 'Current',
     academicYear: academicYear || new Date().getFullYear(),
     count: reportCards.length,

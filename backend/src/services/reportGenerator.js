@@ -1,4 +1,5 @@
 const PDFDocument = require('pdfkit')
+const path = require('path')
 const { Readable } = require('stream')
 
 class ReportGenerator {
@@ -338,26 +339,53 @@ class ReportGenerator {
 
   // Create student report card
   static async generateReportCard(reportCardData, options = {}) {
-    const { 
-      studentName, 
-      studentId, 
-      classroom, 
-      term, 
-      academicYear, 
-      school,
-      schoolLogo,
-      schoolAddress,
-      schoolPhone,
-      schoolEmail
-    } = options
+    try {
+      const { 
+        studentName, 
+        studentId, 
+        classroom, 
+        positionInClass,
+        classStudentCount,
+        term, 
+        academicYear, 
+        school,
+        schoolLogo,
+        schoolAddress,
+        schoolPhone,
+        schoolEmail
+      } = options
+
+      // Ensure reportCardData is an array
+      const data = Array.isArray(reportCardData) ? reportCardData : []
 
     const doc = this.createDocument()
 
     // Header with school info
     if (schoolLogo) {
       try {
-        doc.image(schoolLogo, 40, 40, { width: 60 })
+        console.log('[REPORT_GENERATOR] Attempting to load logo from:', schoolLogo)
+        
+        // Resolve the logo path - it can be a URL path like /uploads/logo.png
+        let logoPath = schoolLogo
+        
+        // Extract filename if it's a path or URL
+        let filename = schoolLogo.split('/').pop()
+        
+        // Build absolute path to uploads folder
+        logoPath = path.join(__dirname, '../../uploads', filename)
+        
+        console.log('[REPORT_GENERATOR] Resolved logo path to:', logoPath)
+        
+        // Check if file exists before trying to render
+        const fs = require('fs')
+        if (fs.existsSync(logoPath)) {
+          console.log('[REPORT_GENERATOR] Logo file found, rendering')
+          doc.image(logoPath, 40, 40, { width: 60 })
+        } else {
+          console.log('[REPORT_GENERATOR] Logo file not found at:', logoPath)
+        }
       } catch (e) {
+        console.error('[REPORT_GENERATOR] Error loading logo:', e.message)
         // Skip logo if not found
       }
     }
@@ -369,37 +397,42 @@ class ReportGenerator {
     if (schoolPhone) doc.fontSize(9).text(`Tel: ${schoolPhone}`, { align: 'center' })
     if (schoolEmail) doc.fontSize(9).text(`Email: ${schoolEmail}`, { align: 'center' })
 
-    doc.moveTo(40, doc.y + 5).lineTo(555, doc.y + 5).stroke()
+    const lineY = doc.y + 5
+    doc.moveTo(40, lineY).lineTo(555, lineY).stroke()
     doc.moveDown()
 
     // Student Information Section
     doc.fontSize(11).font('Helvetica-Bold').text('STUDENT INFORMATION', { underline: true })
     doc.fontSize(10).font('Helvetica')
     
-    const infoX = 40
-    const infoCol2 = 280
-    
-    doc.text(`Student Name: ${studentName}`, infoX, doc.y)
-    doc.text(`Student ID: ${studentId}`, infoCol2, doc.y - doc.heightOfString('Student Name: test'))
-    
-    doc.moveDown(0.3)
-    doc.text(`Classroom: ${classroom || 'N/A'}`, infoX)
-    doc.text(`Academic Year: ${academicYear}`, infoCol2, doc.y - doc.heightOfString('Classroom: test'))
-    
-    doc.moveDown(0.3)
-    doc.text(`Term: ${term}`, infoX)
+    doc.text(`Student Name: ${studentName}`)
+    doc.text(`Student ID: ${studentId}`)
+    doc.text(`Classroom: ${classroom || 'N/A'}`)
+    doc.text(`Academic Year: ${academicYear}`)
+    doc.text(`Term: ${term}`)
     doc.moveDown()
 
     // Academic Performance Section
-    if (reportCardData && reportCardData.length > 0) {
+    if (data && data.length > 0) {
       doc.fontSize(11).font('Helvetica-Bold').text('ACADEMIC PERFORMANCE', { underline: true })
       doc.moveDown(0.5)
 
+      // Position and class info
+      if (positionInClass && positionInClass !== 'N/A') {
+        doc.fontSize(10).font('Helvetica')
+        doc.text(`Position in Class: ${positionInClass}`)
+      }
+      if (classStudentCount && classStudentCount !== 'N/A') {
+        doc.fontSize(10).font('Helvetica')
+        doc.text(`Students in Class: ${classStudentCount}`)
+      }
+      doc.moveDown(0.5)
+
       // Calculate overall statistics
-      const totalMarks = reportCardData.reduce((sum, r) => sum + (r.score || 0), 0)
-      const totalMaxMarks = reportCardData.reduce((sum, r) => sum + (r.maxMarks || 100), 0)
+      const totalMarks = data.reduce((sum, r) => sum + (r.score || 0), 0)
+      const totalMaxMarks = data.reduce((sum, r) => sum + (r.maxMarks || 100), 0)
       const overallPercentage = totalMaxMarks > 0 ? ((totalMarks / totalMaxMarks) * 100).toFixed(1) : 0
-      const avgScore = (totalMarks / reportCardData.length).toFixed(1)
+      const avgScore = (totalMarks / data.length).toFixed(1)
 
       // Summary Statistics
       doc.fontSize(10).font('Helvetica-Bold').text('Summary:', { underline: true })
@@ -414,7 +447,7 @@ class ReportGenerator {
       doc.moveDown(0.3)
 
       const headers = ['Subject', 'Score', 'Max Marks', 'Percentage', 'Grade', 'Remarks']
-      const rows = reportCardData.map(result => {
+      const rows = data.map(result => {
         const percentage = result.maxMarks ? ((result.score / result.maxMarks) * 100).toFixed(1) : 0
         return [
           result.subject || 'N/A',
@@ -446,14 +479,19 @@ class ReportGenerator {
     // Teacher Comments Section
     doc.fontSize(11).font('Helvetica-Bold').text('TEACHER\'S COMMENTS', { underline: true })
     doc.fontSize(9).font('Helvetica')
-    doc.rect(40, doc.y, 515, 60).stroke()
-    doc.text('_' * 100, 45, doc.y + 5)
+    const commentBoxY = doc.y
+    doc.rect(40, commentBoxY, 515, 60).stroke()
+    doc.text('_'.repeat(100), 45, commentBoxY + 5)
     doc.moveDown(4)
 
     // Footer
     this.addFooters(doc)
     doc.end()
     return doc
+    } catch (error) {
+      console.error('[REPORT_GENERATOR] Error generating report card:', error.message)
+      throw error
+    }
   }
 
   // Calculate overall grade based on subject grades

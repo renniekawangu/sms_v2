@@ -94,6 +94,8 @@ const toTeacherDto = (teacher, teacherId) => ({
 
 const toClassroomDto = (classroom, teacher, students) => ({
   _id: classroom._id,
+  name: classroom.name,
+  className: classroom.name, // Alias for compatibility
   grade: classroom.grade,
   section: classroom.section,
   teacher_id: classroom.teacher_id || null,
@@ -102,6 +104,8 @@ const toClassroomDto = (classroom, teacher, students) => ({
 
 const toClassroomDtoWithTimetable = (classroom, teacher, students, timetable) => ({
   _id: classroom._id,
+  name: classroom.name,
+  className: classroom.name, // Alias for compatibility
   grade: classroom.grade,
   section: classroom.section,
   teacher_id: classroom.teacher_id || null,

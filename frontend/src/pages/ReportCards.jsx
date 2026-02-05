@@ -39,20 +39,38 @@ const ReportCards = () => {
         })
       ])
 
-      if (studentsRes.ok) {
-        const data = await studentsRes.json()
-        const studentList = data.data || data.students || []
-        setStudents(studentList)
+      if (!studentsRes.ok) {
+        throw new Error(`Failed to load students: ${studentsRes.status}`)
+      }
+      if (!classroomsRes.ok) {
+        throw new Error(`Failed to load classrooms: ${classroomsRes.status}`)
       }
 
-      if (classroomsRes.ok) {
-        const data = await classroomsRes.json()
-        const classroomList = data.data || data.classrooms || []
-        setClassrooms(classroomList)
+      const studentsData = await studentsRes.json()
+      const classroomsData = await classroomsRes.json()
+
+      console.log('[ReportCards] Students data:', studentsData)
+      console.log('[ReportCards] Classrooms data:', classroomsData)
+
+      // API returns array directly, or wrapped in data/students property
+      const studentList = Array.isArray(studentsData) ? studentsData : (studentsData.data || studentsData.students || [])
+      const classroomList = Array.isArray(classroomsData) ? classroomsData : (classroomsData.data || classroomsData.classrooms || [])
+
+      console.log('[ReportCards] Processed students:', studentList.length)
+      console.log('[ReportCards] Processed classrooms:', classroomList.length)
+
+      setStudents(studentList)
+      setClassrooms(classroomList)
+
+      if (studentList.length === 0) {
+        error('No students found in the system')
+      }
+      if (classroomList.length === 0) {
+        error('No classrooms found in the system')
       }
     } catch (err) {
-      console.error('Error loading initial data:', err)
-      error('Failed to load students and classrooms')
+      console.error('[ReportCards] Error loading initial data:', err)
+      error(err.message || 'Failed to load students and classrooms')
     } finally {
       setLoading(false)
     }
@@ -263,7 +281,7 @@ const ReportCards = () => {
                     <option value="">Select a student...</option>
                     {students.map(student => (
                       <option key={student._id} value={student._id}>
-                        {student.firstName} {student.lastName} ({student.studentId})
+                        {student.firstName} {student.lastName} ({student.student_id || student.studentId || '-'})
                       </option>
                     ))}
                   </select>
