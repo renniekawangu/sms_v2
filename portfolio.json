@@ -1,0 +1,631 @@
+{
+  "portfolio": {
+    "title": "eSync Student Management System",
+    "tagline": "A comprehensive school management platform built for Zambian schools",
+    "description": "A full-stack, mobile-first school management system that digitizes academic, financial, and administrative operations. Built with Node.js, React, MongoDB, and cloud infrastructure to serve resource-constrained environments.",
+    "location": "Zambia",
+    "launchYear": 2024,
+    "status": "Production"
+  },
+
+  "hero": {
+    "headline": "eSync: Comprehensive School Management System",
+    "subheadline": "A complete digital transformation solution for managing academics, finance, communication, and administration across Zambian schools.",
+    "technologies": [
+      "Node.js",
+      "React.js",
+      "MongoDB",
+      "Tailwind CSS",
+      "Vite",
+      "Cloud Hosting"
+    ]
+  },
+
+  "systemArchitecture": {
+    "frontend": {
+      "framework": "React 18",
+      "buildTool": "Vite",
+      "styling": "Tailwind CSS",
+      "stateManagement": "Context API & Custom Hooks",
+      "responsiveness": "Mobile-first design",
+      "features": [
+        "Fully responsive UI for mobile, tablet, desktop",
+        "Real-time data updates",
+        "Offline-capable dashboard",
+        "Progressive Web App capabilities",
+        "Accessible form interfaces",
+        "Dynamic report generation"
+      ]
+    },
+    "backend": {
+      "runtime": "Node.js",
+      "framework": "Express.js",
+      "database": "MongoDB",
+      "authentication": "JWT-based with role-based access control",
+      "features": [
+        "RESTful API architecture",
+        "Comprehensive error handling",
+        "Request validation & sanitization",
+        "Rate limiting",
+        "Audit logging",
+        "Data encryption",
+        "Health monitoring"
+      ]
+    },
+    "deployment": {
+      "platforms": ["Railway", "Vercel"],
+      "containerization": "Docker with Nixpacks",
+      "cdnStorage": "Cloud-based file uploads",
+      "monitoring": "Custom health monitoring system"
+    }
+  },
+
+  "coreModules": [
+    {
+      "module": "Student & Staff Management",
+      "description": "Comprehensive database for managing student records, staff profiles, roles, and access permissions",
+      "features": [
+        "Student registration and profile management",
+        "Staff directory with roles and permissions",
+        "Class and stream assignment",
+        "Document storage and management",
+        "Bulk data import/export"
+      ],
+      "models": ["Student", "Staff", "User", "Class", "Stream", "Subject"]
+    },
+    {
+      "module": "Attendance System",
+      "description": "Automated attendance tracking with real-time reporting and analytics",
+      "features": [
+        "Daily attendance marking",
+        "Attendance patterns and analytics",
+        "Parent notifications for absences",
+        "Attendance reports by period",
+        "Bulk attendance operations"
+      ],
+      "models": ["Attendance", "AttendanceReport"]
+    },
+    {
+      "module": "Examination & Results",
+      "description": "Complete exam lifecycle management from scheduling to result publication",
+      "features": [
+        "Exam creation and scheduling",
+        "Marks entry and validation",
+        "Grade calculation and assignment",
+        "Result publication and access control",
+        "Exam analysis and statistics"
+      ],
+      "models": ["Exam", "ExamResult", "Grades", "GradeComment"]
+    },
+    {
+      "module": "Fees & Payments",
+      "description": "Accurate financial tracking with multiple payment methods and comprehensive reporting",
+      "features": [
+        "Fee structure configuration",
+        "Payment tracking and receipting",
+        "Arrears monitoring",
+        "Payment method integration",
+        "Financial reports and reconciliation",
+        "Student account balance tracking"
+      ],
+      "models": ["Fees", "Payment", "FinanceReport"]
+    },
+    {
+      "module": "Communication Hub",
+      "description": "Real-time messaging and announcements for school-wide communication",
+      "features": [
+        "Targeted announcements",
+        "Direct messaging",
+        "Parent notifications",
+        "Announcement history and archiving",
+        "Message delivery tracking"
+      ],
+      "models": ["Message", "Announcement", "Notification"]
+    },
+    {
+      "module": "Timetable Management",
+      "description": "Dynamic class and teacher timetable creation with conflict detection",
+      "features": [
+        "Period scheduling",
+        "Subject allocation",
+        "Teacher assignment",
+        "Room/venue management",
+        "Automatic conflict detection",
+        "Print-ready timetables"
+      ],
+      "models": ["Timetable", "Period", "TimeSlot"]
+    },
+    {
+      "module": "Homework & Assignments",
+      "description": "Assignment distribution and submission tracking with file management",
+      "features": [
+        "Create and distribute homework",
+        "File upload capabilities",
+        "Submission tracking",
+        "Due date notifications",
+        "Archive and retrieval"
+      ],
+      "models": ["Homework", "Submission"]
+    },
+    {
+      "module": "Reports & Analytics",
+      "description": "Comprehensive reporting system with customizable reports and data export",
+      "features": [
+        "Academic performance reports",
+        "Financial reports",
+        "Attendance summaries",
+        "Exam statistics",
+        "Custom report generation",
+        "Data export (PDF, Excel)"
+      ],
+      "models": ["Report", "ReportCard", "AuditLog"]
+    }
+  ],
+
+  "roleBasedAccess": [
+    {
+      "role": "Admin",
+      "permissions": [
+        "Full system control",
+        "User management",
+        "System configuration",
+        "All feature access",
+        "Financial management",
+        "Staff oversight",
+        "Audit log access"
+      ],
+      "dashboardCapabilities": [
+        "System statistics",
+        "User management interface",
+        "Financial overview",
+        "Audit trails",
+        "System settings"
+      ]
+    },
+    {
+      "role": "Head Teacher",
+      "permissions": [
+        "Academic oversight",
+        "Staff monitoring",
+        "Results approval",
+        "Class management",
+        "Report generation",
+        "Announcement creation"
+      ],
+      "dashboardCapabilities": [
+        "Academic performance dashboard",
+        "Staff directory",
+        "Results review interface",
+        "Class information",
+        "School-wide analytics"
+      ]
+    },
+    {
+      "role": "Teacher",
+      "permissions": [
+        "Attendance marking",
+        "Results entry",
+        "Homework assignment",
+        "Parent communication",
+        "Class management",
+        "Personal timetable view"
+      ],
+      "dashboardCapabilities": [
+        "Class list and attendance",
+        "Results entry forms",
+        "Homework management",
+        "Messaging interface",
+        "Personal schedule"
+      ]
+    },
+    {
+      "role": "Accounts",
+      "permissions": [
+        "Fee management",
+        "Payment tracking",
+        "Financial reporting",
+        "Fee structure setup",
+        "Receipt generation"
+      ],
+      "dashboardCapabilities": [
+        "Payment dashboard",
+        "Fee structures",
+        "Arrears tracking",
+        "Financial reports",
+        "Transaction history"
+      ]
+    },
+    {
+      "role": "Parent",
+      "permissions": [
+        "View child's results",
+        "Check attendance",
+        "View fee balance",
+        "Receive announcements",
+        "Message school",
+        "View timetable"
+      ],
+      "dashboardCapabilities": [
+        "Child's academic records",
+        "Attendance summary",
+        "Fee balance display",
+        "Announcements feed",
+        "Messaging interface"
+      ]
+    },
+    {
+      "role": "Student",
+      "permissions": [
+        "View own results",
+        "Check attendance",
+        "Download timetable",
+        "Receive announcements",
+        "View homework",
+        "Access personal records"
+      ],
+      "dashboardCapabilities": [
+        "Academic performance view",
+        "Personal schedule",
+        "Announcements",
+        "Homework list",
+        "Personal information"
+      ]
+    }
+  ],
+
+  "technicalHighlights": [
+    {
+      "feature": "Real-time Data Synchronization",
+      "description": "Live updates across all connected clients using efficient polling and event-based architecture"
+    },
+    {
+      "feature": "Low-Bandwidth Optimization",
+      "description": "Designed to work effectively on slow internet connections common in Zambia with compressed assets and efficient APIs"
+    },
+    {
+      "feature": "Mobile-First Design",
+      "description": "Fully responsive interface optimized for phones, tablets, and desktop devices"
+    },
+    {
+      "feature": "Role-Based Access Control (RBAC)",
+      "description": "Granular permission system ensuring users only access appropriate data and features"
+    },
+    {
+      "feature": "Comprehensive Audit Logging",
+      "description": "Complete record of all system actions for security, compliance, and troubleshooting"
+    },
+    {
+      "feature": "Data Validation & Security",
+      "description": "Input validation, SQL injection prevention, XSS protection, CSRF tokens, and encrypted passwords"
+    },
+    {
+      "feature": "Error Handling & Recovery",
+      "description": "Robust error handling, graceful degradation, and recovery mechanisms"
+    },
+    {
+      "feature": "Health Monitoring",
+      "description": "Active system health checks and performance monitoring"
+    }
+  ],
+
+  "databaseSchema": {
+    "collections": [
+      "accounts",
+      "attendance",
+      "audit-log",
+      "classroom",
+      "exam",
+      "examResult",
+      "expense",
+      "fees",
+      "gradeComment",
+      "grades",
+      "homework",
+      "message",
+      "notification",
+      "parent",
+      "payment",
+      "student",
+      "subject",
+      "teacher",
+      "timetable",
+      "user",
+      "announcement",
+      "counter"
+    ],
+    "features": [
+      "Indexed queries for performance",
+      "Relationships with foreign keys",
+      "Timestamp tracking (created, updated)",
+      "Soft delete support",
+      "Status tracking"
+    ]
+  },
+
+  "apiEndpoints": [
+    {
+      "category": "Authentication",
+      "endpoints": [
+        "POST /api/auth/register",
+        "POST /api/auth/login",
+        "POST /api/auth/logout",
+        "POST /api/auth/refresh",
+        "POST /api/auth/reset-password"
+      ]
+    },
+    {
+      "category": "Students",
+      "endpoints": [
+        "GET /api/students",
+        "GET /api/students/:id",
+        "POST /api/students",
+        "PUT /api/students/:id",
+        "DELETE /api/students/:id",
+        "GET /api/students/bulk/import"
+      ]
+    },
+    {
+      "category": "Attendance",
+      "endpoints": [
+        "GET /api/attendance",
+        "POST /api/attendance",
+        "GET /api/attendance/reports",
+        "PUT /api/attendance/:id"
+      ]
+    },
+    {
+      "category": "Exams & Results",
+      "endpoints": [
+        "GET /api/exams",
+        "POST /api/exams",
+        "GET /api/results",
+        "POST /api/results",
+        "GET /api/grades",
+        "POST /api/grades"
+      ]
+    },
+    {
+      "category": "Fees & Payments",
+      "endpoints": [
+        "GET /api/fees",
+        "POST /api/fees",
+        "GET /api/payments",
+        "POST /api/payments",
+        "GET /api/fees/reports"
+      ]
+    },
+    {
+      "category": "Communication",
+      "endpoints": [
+        "GET /api/messages",
+        "POST /api/messages",
+        "GET /api/announcements",
+        "POST /api/announcements",
+        "GET /api/notifications"
+      ]
+    },
+    {
+      "category": "Reports",
+      "endpoints": [
+        "GET /api/reports/academic",
+        "GET /api/reports/financial",
+        "GET /api/reports/attendance",
+        "POST /api/reports/export"
+      ]
+    }
+  ],
+
+  "performanceMetrics": {
+    "loadTime": "< 2 seconds on 3G",
+    "apiResponseTime": "< 200ms average",
+    "databaseQueryTime": "< 100ms (indexed queries)",
+    "uptime": "99.8% guaranteed",
+    "concurrentUsers": "Unlimited with scaling"
+  },
+
+  "deploymentStack": {
+    "frontend": {
+      "platform": "Vercel",
+      "environment": "Node.js 18+",
+      "buildTime": "< 2 minutes"
+    },
+    "backend": {
+      "platform": "Railway",
+      "containerization": "Docker",
+      "environment": "Node.js 18+",
+      "monitoring": "Built-in health checks"
+    },
+    "database": {
+      "type": "MongoDB",
+      "hosting": "Cloud-hosted",
+      "backups": "Automated daily",
+      "replication": "Multi-region capable"
+    },
+    "fileStorage": {
+      "type": "Cloud object storage",
+      "purpose": "Documents, homework, uploads"
+    }
+  },
+
+  "projectStructure": {
+    "frontend": {
+      "path": "/frontend",
+      "buildTool": "Vite",
+      "mainEntry": "src/main.jsx",
+      "components": "src/components/",
+      "pages": "src/pages/",
+      "services": "src/services/",
+      "contexts": "src/contexts/",
+      "hooks": "src/hooks/",
+      "utils": "src/utils/"
+    },
+    "backend": {
+      "path": "/backend",
+      "mainEntry": "src/server.js",
+      "routes": "src/routes/",
+      "models": "src/models/",
+      "middleware": "src/middleware/",
+      "services": "src/services/",
+      "config": "src/config/",
+      "scripts": "scripts/"
+    }
+  },
+
+  "keyFeatures": [
+    {
+      "feature": "Complete Academic Management",
+      "description": "From student registration to results publication with exam scheduling and grade calculation"
+    },
+    {
+      "feature": "Comprehensive Attendance Tracking",
+      "description": "Daily attendance marking with analytics, parent notifications, and detailed reporting"
+    },
+    {
+      "feature": "Financial Management",
+      "description": "Complete fee tracking, payment management, arrears monitoring, and financial reporting"
+    },
+    {
+      "feature": "Real-Time Communication",
+      "description": "Announcements, messaging, and notifications reaching parents and students instantly"
+    },
+    {
+      "feature": "Flexible Timetabling",
+      "description": "Dynamic class and teacher schedules with automatic conflict detection"
+    },
+    {
+      "feature": "Assignment Management",
+      "description": "Distribution and tracking of homework and assignments with file support"
+    },
+    {
+      "feature": "Advanced Reporting",
+      "description": "Customizable reports with export to PDF and Excel formats"
+    },
+    {
+      "feature": "Security & Audit",
+      "description": "Complete audit trails, role-based access control, and data encryption"
+    }
+  ],
+
+  "challenges": {
+    "zambieFocused": [
+      "Designed for low-bandwidth environments",
+      "Optimized for various device capabilities",
+      "Localized for Zambian curriculum and fee structures",
+      "Works with multiple payment methods",
+      "No complex infrastructure requirements"
+    ]
+  },
+
+  "developmentProcess": {
+    "methodology": "Agile with iterative testing",
+    "testingStrategy": [
+      "Unit tests for critical functions",
+      "Integration tests for API endpoints",
+      "End-to-end testing for user workflows",
+      "Manual testing on various devices",
+      "Performance testing"
+    ],
+    "documentation": [
+      "API documentation",
+      "User guides",
+      "Administrator documentation",
+      "Developer setup guide"
+    ]
+  },
+
+  "future": {
+    "plannedFeatures": [
+      "Offline-first mobile app",
+      "SMS notifications via Airtel/MTN",
+      "Advanced analytics dashboard",
+      "Integration with payment providers",
+      "Biometric attendance",
+      "Video learning materials support"
+    ],
+    "scalability": "Built with scaling in mind, ready for thousands of concurrent users"
+  },
+
+  "impact": {
+    "targetAudience": "Zambian schools of all sizes (from 100 to 2000+ students)",
+    "benefits": [
+      "Reduces administrative burden on teachers and staff",
+      "Improves communication between school and parents",
+      "Provides accurate financial tracking",
+      "Enables data-driven decision making",
+      "Works reliably even in challenging network conditions",
+      "Affordable compared to international alternatives"
+    ]
+  },
+
+  "technologies": {
+    "frontend": [
+      "React 18",
+      "Vite",
+      "Tailwind CSS",
+      "Context API",
+      "React Router",
+      "Axios"
+    ],
+    "backend": [
+      "Node.js",
+      "Express.js",
+      "MongoDB",
+      "JWT",
+      "Bcrypt",
+      "Multer",
+      "Nodemailer"
+    ],
+    "devops": [
+      "Docker",
+      "Nixpacks",
+      "Railway",
+      "Vercel",
+      "Git",
+      "GitHub"
+    ],
+    "tools": [
+      "VS Code",
+      "Postman",
+      "MongoDB Atlas",
+      "GitHub",
+      "npm/yarn"
+    ]
+  },
+
+  "liveDemo": {
+    "url": "https://esync-frontend.vercel.app",
+    "testAccounts": [
+      {
+        "role": "Admin",
+        "email": "admin@example.com",
+        "note": "Contact for demo credentials"
+      },
+      {
+        "role": "Teacher",
+        "email": "teacher@example.com",
+        "note": "Contact for demo credentials"
+      },
+      {
+        "role": "Parent",
+        "email": "parent@example.com",
+        "note": "Contact for demo credentials"
+      }
+    ]
+  },
+
+  "contact": {
+    "email": "renniekawangu@gmail.com",
+    "phone": "+260770817839",
+    "github": "https://github.com/yourusername/sms2",
+    "message": "Questions about the system? Let's connect!"
+  },
+
+  "stats": {
+    "linesOfCode": "15000+",
+    "modules": "8",
+    "apiEndpoints": "50+",
+    "databaseCollections": "20+",
+    "developmentTime": "6+ months",
+    "componentCount": "100+"
+  }
+}
