@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { ROLES } from '../config/rbac'
 import Modal from '../components/Modal'
+import PageHeader from '../components/PageHeader'
 
 function Parents() {
   const { user } = useAuth()
@@ -154,30 +155,29 @@ function Parents() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      {/* Page Header */}
-      <div className="bg-gradient-to-r from-primary-blue to-blue-600 text-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-md">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 flex items-center gap-2 sm:gap-3">
-              <Users size={24} className="sm:size-32" />
-              Parents Management
-            </h1>
-            <p className="text-xs sm:text-sm text-blue-100">Manage parents and link them to students</p>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Family Links"
+        title="Parents"
+        description="Manage parents and guardians, review linked students, and keep family relationships organized in one place."
+        meta={
+          <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Visible parents</p>
+            <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{filteredParents.length}</p>
           </div>
-          <button
-            onClick={() => handleOpenModal('create')}
-            className="w-full sm:w-auto bg-white text-primary-blue px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
-            style={{ display: isAdmin ? 'flex' : 'none' }}
-          >
-            <Plus size={18} />
-            New Parent
-          </button>
-        </div>
-      </div>
+        }
+        actions={
+          isAdmin ? (
+            <button onClick={() => handleOpenModal('create')} className="btn-ui btn-primary">
+              <Plus size={18} />
+              <span>New Parent</span>
+            </button>
+          ) : null
+        }
+      />
 
       {/* Search Bar */}
-      <div className="relative">
+      <div className="toolbar-card relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={18} />
         <input
           type="text"
@@ -190,7 +190,7 @@ function Parents() {
 
       {/* No Results */}
       {filteredParents.length === 0 && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+        <div className="surface-card border-l-4 border-yellow-400 bg-yellow-50 section-pad">
           <div className="flex items-center gap-3">
             <AlertCircle className="text-yellow-600" />
             <div>
@@ -206,7 +206,7 @@ function Parents() {
         {filteredParents.map(parent => (
           <div
             key={parent._id}
-            className="bg-card-white rounded-custom shadow-custom border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+            className="surface-card surface-card-strong border border-gray-200 overflow-hidden hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition-shadow"
           >
             {/* Parent Header */}
             <div

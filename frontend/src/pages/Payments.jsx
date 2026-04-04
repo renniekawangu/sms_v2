@@ -4,6 +4,7 @@ import { accountsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/Modal'
 import PaymentForm from '../components/PaymentForm'
+import PageHeader from '../components/PageHeader'
 
 function Payments() {
   const [payments, setPayments] = useState([])
@@ -152,36 +153,44 @@ function Payments() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Payments</h1>
-          <p className="text-sm sm:text-base text-text-muted mt-1">Record and manage payment records</p>
-        </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-3 py-2 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-        </button>
-      </div>
-
-      <button
-        onClick={handleCreate}
-        className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
-      >
-        <Plus size={18} />
-        <span>Record Payment</span>
-      </button>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Finance Desk"
+        title="Payments"
+        description="Track incoming payments with a cleaner summary, faster filtering, and a table that matches the rest of the system."
+        meta={
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Loaded payments</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{payments.length}</p>
+            </div>
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Search results</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{filteredPayments.length}</p>
+            </div>
+          </>
+        }
+        actions={
+          <>
+            <button onClick={handleRefresh} disabled={refreshing} className="btn-ui btn-secondary">
+              <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </button>
+            <button onClick={handleCreate} className="btn-ui btn-primary">
+              <Plus size={18} />
+              <span>Record Payment</span>
+            </button>
+          </>
+        }
+      />
 
       {/* Payment Summary Card */}
       {Object.keys(summary).length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {Object.entries(summary).map(([method, data]) => (
-            <div key={method} className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+            <div key={method} className="stat-card">
               <p className="text-sm text-gray-600 capitalize font-medium">{method}</p>
-              <p className="text-xl font-bold text-text-dark mt-1">K{data.amount?.toLocaleString()}</p>
+              <p className="mt-1 font-display text-2xl font-bold text-text-dark">K{data.amount?.toLocaleString()}</p>
               <p className="text-xs text-gray-500 mt-1">{data.count} payments</p>
             </div>
           ))}
@@ -189,7 +198,7 @@ function Payments() {
       )}
 
       {/* Filters Panel */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
+      <div className="toolbar-card">
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="flex items-center gap-2 text-primary-blue font-medium hover:text-primary-blue/80 transition-colors"
@@ -249,7 +258,7 @@ function Payments() {
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6">
+      <div className="table-shell p-3 sm:p-4 lg:p-6">
         {payments.length > 0 && (
           <div className="mb-4 sm:mb-6">
             <div className="relative">
@@ -329,14 +338,14 @@ function Payments() {
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    className="btn-ui btn-secondary px-3 py-1 text-sm disabled:opacity-50"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(pagination.pages, prev + 1))}
                     disabled={currentPage === pagination.pages}
-                    className="px-3 py-1 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    className="btn-ui btn-secondary px-3 py-1 text-sm disabled:opacity-50"
                   >
                     Next
                   </button>

@@ -6,6 +6,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import { ROLES } from '../config/rbac'
 import ResultsEntryForm from '../components/ResultsEntryForm'
+import PageHeader from '../components/PageHeader'
 
 function Results() {
   const { user } = useAuth()
@@ -216,14 +217,27 @@ function Results() {
   }
 
   return (
-    <div className="p-4 sm:p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-text-dark">Results Management</h1>
-        <p className="text-sm text-text-muted mt-1">Enter and manage exam results</p>
-      </div>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Academic Workflow"
+        title="Results Management"
+        description="Load a classroom and exam, enter grades, then move results through submission, approval, and publishing with a clearer review flow."
+        meta={
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Loaded results</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{results.length}</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Selected</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{selectedResults.size}</p>
+            </div>
+          </>
+        }
+      />
 
       {/* Selection Panel */}
-      <div className="bg-card-white rounded-lg shadow-sm p-4 mb-6">
+      <div className="surface-card section-pad">
         {loading && <div className="text-sm text-text-muted mb-4">Loading classrooms and exams...</div>}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
@@ -264,7 +278,7 @@ function Results() {
             <button
               onClick={handleLoadResults}
               disabled={loading || !selectedClassroom || !selectedExam}
-              className="w-full bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="btn-ui btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Load Results
             </button>
@@ -322,7 +336,7 @@ function Results() {
 
         {/* Bulk Actions */}
         {selectedResults.size > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+          <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
             <p className="text-sm text-blue-900 mb-3 font-medium">{selectedResults.size} result(s) selected</p>
             <div className="flex flex-wrap gap-2">
               {/* Submit All button for draft results */}
@@ -330,7 +344,7 @@ function Results() {
                 <button
                   onClick={() => handleBulkAction('bulkSubmit')}
                   disabled={bulkProcessing}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                  className="btn-ui btn-primary disabled:opacity-50"
                 >
                   <Send size={16} />
                   Submit All
@@ -341,7 +355,7 @@ function Results() {
                 <button
                   onClick={() => handleBulkAction('bulkApprove')}
                   disabled={bulkProcessing}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                  className="btn-ui btn-secondary disabled:opacity-50"
                 >
                   <Check size={16} />
                   Approve All
@@ -352,7 +366,7 @@ function Results() {
                 <button
                   onClick={() => handleBulkAction('bulkPublish')}
                   disabled={bulkProcessing}
-                  className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                  className="btn-ui btn-secondary disabled:opacity-50"
                 >
                   <CheckCircle size={16} />
                   Publish All
@@ -360,7 +374,7 @@ function Results() {
               )}
               <button
                 onClick={() => setSelectedResults(new Set())}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="btn-ui btn-secondary"
               >
                 Clear Selection
               </button>
@@ -372,7 +386,7 @@ function Results() {
         {results.length > 0 && (
           <button
             onClick={exportToCSV}
-            className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-opacity-90 mt-4"
+            className="btn-ui btn-secondary mt-4"
           >
             <Download size={18} />
             Export to CSV
@@ -386,13 +400,13 @@ function Results() {
           <Loader className="animate-spin" size={40} />
         </div>
       ) : results.length === 0 ? (
-        <div className="bg-card-white rounded-lg shadow-sm p-12 text-center">
+        <div className="surface-card section-pad p-12 text-center">
           <AlertCircle size={48} className="mx-auto text-text-muted mb-4" />
           <p className="text-text-muted text-lg">No results yet</p>
           <p className="text-sm text-text-muted mt-2">Select a classroom and exam, then enter grades</p>
         </div>
       ) : (
-        <div className="bg-card-white rounded-lg shadow-sm overflow-hidden">
+        <div className="table-shell overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
@@ -487,7 +501,7 @@ function Results() {
 
       {/* Submission Info */}
       {results.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+        <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
           <div className="flex items-start gap-3">
             <CheckCircle size={20} className="text-blue-600 mt-0.5" />
             <div>
