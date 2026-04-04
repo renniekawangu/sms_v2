@@ -104,8 +104,8 @@ function Header({ onMenuClick }) {
   const greetingName = user?.name?.split(' ')[0] || 'Team'
 
   return (
-    <header className="sticky top-0 z-30 px-2 pt-2 sm:px-4 sm:pt-4 lg:px-6">
-      <div className="surface-card surface-card-strong border border-white/70 px-4 py-3 sm:px-5 sm:py-4">
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <nav className="px-3 py-2 sm:px-4 lg:px-6" aria-label="Top navigation">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl">
@@ -178,6 +178,15 @@ function Header({ onMenuClick }) {
                 </div>
               )}
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center justify-center rounded-2xl border border-red-100 bg-white p-2.5 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              aria-label="Logout"
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
           </div>
         </div>
 
@@ -237,7 +246,7 @@ function Header({ onMenuClick }) {
             </div>
           </div>
         )}
-      </div>
+      </nav>
     </header>
   )
 }
