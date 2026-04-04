@@ -121,7 +121,7 @@ function Header({ onMenuClick }) {
             </div>
 
             <div className="min-w-0">
-              <p className="truncate font-display text-base font-semibold text-slate-900 sm:mt-1 sm:text-xl">
+              <p className="font-display text-base font-semibold text-slate-900 sm:mt-1 sm:text-xl">
                 Welcome back, {greetingName}
               </p>
             </div>
