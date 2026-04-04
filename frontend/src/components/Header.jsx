@@ -104,7 +104,7 @@ function Header({ onMenuClick }) {
   const greetingName = user?.name?.split(' ')[0] || 'Team'
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header className="fixed top-0 left-0 right-0 md:left-72 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
       <nav className="px-3 py-2 sm:px-4 lg:px-6" aria-label="Top navigation">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
