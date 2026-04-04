@@ -145,13 +145,9 @@ function Sidebar({ isOpen, onClose }) {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-                  <img src="/logo.png" alt="Esync Logo" className="h-8 w-8 object-contain" />
+                <div className="flex h-12 w-full items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+                  <img src="/logo.png" alt="Esync Logo" className="h-8 w-full object-contain" />
                 </div>
-              </div>
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
-                <p className="mt-2 truncate text-sm font-semibold text-white">{user?.name || 'User'}</p>
-                <p className="truncate text-xs uppercase tracking-[0.12em] text-slate-300">{userRole}</p>
               </div>
             </div>
             
