@@ -116,7 +116,7 @@ function Header({ onMenuClick }) {
               <Menu size={20} />
             </button>
 
-            <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f9d8a,#0a7d6d)] shadow-[0_12px_24px_rgba(15,157,138,0.24)]">
+            <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#02A7BF,#0A6E7D)] shadow-[0_12px_24px_rgba(2,167,191,0.24)]">
               <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
             </div>
 
@@ -145,7 +145,7 @@ function Header({ onMenuClick }) {
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     onFocus={() => searchQuery && setShowResults(true)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 py-3 pl-11 pr-4 text-sm text-slate-700 shadow-inner outline-none transition placeholder:text-slate-400 focus:border-primary-blue focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 py-3 pl-11 pr-4 text-sm text-slate-700 shadow-inner outline-none transition placeholder:text-slate-400 focus:border-primary-blue focus:bg-white focus:ring-4 focus:ring-cyan-100"
                     aria-label="Search users"
                     aria-expanded={showResults}
                     aria-controls="header-search-results"
@@ -157,7 +157,7 @@ function Header({ onMenuClick }) {
                         <button
                           key={index}
                           onClick={() => handleViewUser(result)}
-                          className="w-full border-b border-slate-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-emerald-50/60"
+                          className="w-full border-b border-slate-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-cyan-50/70"
                           role="option"
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -168,7 +168,7 @@ function Header({ onMenuClick }) {
                               <p className="truncate text-xs text-slate-500">{result.email}</p>
                               {result.phone && <p className="truncate text-xs text-slate-400">{result.phone}</p>}
                             </div>
-                            <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                            <span className="shrink-0 rounded-full bg-cyan-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
                               {result.type}
                             </span>
                           </div>
@@ -192,8 +192,8 @@ function Header({ onMenuClick }) {
               )}
             </div>
 
-            <div className="hidden sm:flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#0f9d8a,#0a7d6d)] text-sm font-bold text-white">
+            <div className="hidden sm:flex items-center gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/70 px-3 py-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#02A7BF,#0A6E7D)] text-sm font-bold text-white">
                 {greetingName.charAt(0).toUpperCase()}
               </div>
               <div className="text-right">
@@ -223,7 +223,7 @@ function Header({ onMenuClick }) {
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => searchQuery && setShowResults(true)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 py-3 pl-11 pr-4 text-sm text-slate-700 shadow-inner outline-none transition placeholder:text-slate-400 focus:border-primary-blue focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 py-3 pl-11 pr-4 text-sm text-slate-700 shadow-inner outline-none transition placeholder:text-slate-400 focus:border-primary-blue focus:bg-white focus:ring-4 focus:ring-cyan-100"
                 aria-label="Search users"
                 aria-expanded={showResults}
                 aria-controls="header-search-results-mobile"
@@ -235,7 +235,7 @@ function Header({ onMenuClick }) {
                     <button
                       key={index}
                       onClick={() => handleViewUser(result)}
-                      className="w-full border-b border-slate-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-emerald-50/60"
+                      className="w-full border-b border-slate-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-cyan-50/70"
                       role="option"
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -246,7 +246,7 @@ function Header({ onMenuClick }) {
                           <p className="truncate text-xs text-slate-500">{result.email}</p>
                           {result.phone && <p className="truncate text-xs text-slate-400">{result.phone}</p>}
                         </div>
-                        <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                        <span className="shrink-0 rounded-full bg-cyan-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
                           {result.type}
                         </span>
                       </div>

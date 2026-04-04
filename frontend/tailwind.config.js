@@ -8,27 +8,28 @@ export default {
     extend: {
       colors: {
         primary: {
-          blue: '#00BFFF',
+          blue: '#02A7BF',
+          deep: '#0A6E7D',
         },
         secondary: {
-          blue: '#00BFFF',
+          blue: '#5E9054',
         },
         accent: {
-          yellow: '#FFC107',
+          yellow: '#7CCB74',
         },
         background: {
-          light: '#F5F8FF',
+          light: '#F3F9FB',
         },
         card: {
           white: '#FFFFFF',
         },
         text: {
-          dark: '#1F2937',
-          muted: '#6B7280',
-          capri: '#00BFFF',
+          dark: '#102033',
+          muted: '#5F7187',
+          capri: '#02A7BF',
         },
         border: {
-          capri: '#00BFFF',
+          capri: '#02A7BF',
         },
       },
       fontFamily: {

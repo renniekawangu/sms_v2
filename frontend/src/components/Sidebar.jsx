@@ -128,12 +128,12 @@ function Sidebar({ isOpen, onClose }) {
                   <img src="/logo.png" alt="Esync Logo" className="h-8 w-8 object-contain" />
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/80">eSync Workspace</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200/80">eSync Workspace</p>
                   <p className="font-display text-lg font-semibold text-white">School OS</p>
                 </div>
               </div>
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
-                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-emerald-200/75">
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-cyan-200/75">
                   <Sparkles size={12} />
                   Signed in
                 </div>
@@ -166,7 +166,7 @@ function Sidebar({ isOpen, onClose }) {
                     onClick={handleLinkClick}
                     className={`group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-all ${
                       isActive
-                        ? 'bg-[linear-gradient(135deg,rgba(15,157,138,0.34),rgba(15,157,138,0.16))] text-white shadow-[0_14px_28px_rgba(15,157,138,0.18)]'
+                        ? 'bg-[linear-gradient(135deg,rgba(2,167,191,0.34),rgba(94,144,84,0.18))] text-white shadow-[0_14px_28px_rgba(2,167,191,0.2)]'
                         : 'text-slate-300 hover:bg-white/6 hover:text-white'
                     }`}
                   >
