@@ -116,8 +116,8 @@ function Header({ onMenuClick }) {
               <Menu size={20} />
             </button>
 
-            <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#02A7BF,#0A6E7D)] shadow-[0_12px_24px_rgba(2,167,191,0.24)]">
-              <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
+            <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-2xl">
+              <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
           </div>
 
