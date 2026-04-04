@@ -47,6 +47,16 @@ body {
   height: auto;
 }
 
+::selection {
+  background: rgba(15, 157, 138, 0.2);
+  color: var(--ui-text);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(15, 157, 138, 0.35);
+  outline-offset: 2px;
+}
+
 #root {
   width: 100%;
   min-height: 100vh;
@@ -351,8 +361,8 @@ h1, h2, h3, h4, h5, h6 {
   }
   body {
     height: auto;
-    -webkit-user-select: none;
-    user-select: none;
+    -webkit-user-select: auto;
+    user-select: auto;
     position: relative;
     width: 100%;
   }
@@ -361,5 +371,14 @@ h1, h2, h3, h4, h5, h6 {
     min-height: 100dvh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

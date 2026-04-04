@@ -23,16 +23,6 @@ body.modal-open {
 
 /* Mobile viewport safety */
 @media (max-width: 640px) {
-  body {
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  
-  input, textarea, select {
-    -webkit-user-select: text;
-    user-select: text;
-  }
-  
   /* Prevent zoom on input focus */
   input[type="text"],
   input[type="email"],
