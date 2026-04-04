@@ -178,15 +178,6 @@ function Header({ onMenuClick }) {
                 </div>
               )}
             </div>
-
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center justify-center rounded-2xl border border-red-100 bg-white p-2.5 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-              aria-label="Logout"
-              title="Logout"
-            >
-              <LogOut size={18} />
-            </button>
           </div>
         </div>
 
