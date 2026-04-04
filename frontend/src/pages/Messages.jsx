@@ -15,6 +15,7 @@ const Messages = () => {
   const [newMessage, setNewMessage] = useState('')
   const [showNewChat, setShowNewChat] = useState(false)
   const [contacts, setContacts] = useState([])
+  const [contactsLoading, setContactsLoading] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const messagesEndRef = useRef(null)
   const selectedConversationRef = useRef(null)
@@ -50,6 +51,12 @@ const Messages = () => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    if (showNewChat) {
+      loadNewChatContacts()
+    }
+  }, [showNewChat])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -196,11 +203,11 @@ const Messages = () => {
 
   const handleStartNewChat = async (contactId) => {
     try {
-      const contact = contacts.find(c => c._id === contactId)
+      const contact = contacts.find(c => (c._id || c.id) === contactId)
       if (!contact) return
 
       const newConversation = {
-        id: contactId,
+        id: String(contactId),
         user: { id: contactId, name: contact.name },
         lastMessage: null,
         messages: []
@@ -216,12 +223,20 @@ const Messages = () => {
   }
 
   const loadNewChatContacts = async () => {
-    if (!showNewChat || contacts.length > 0) return
+    if (contacts.length > 0) return
     try {
+      setContactsLoading(true)
       const result = await messagesApi.getContacts()
-      setContacts(result.contacts || [])
+      const currentUserId = String(user?.user_id || user?.id || user?._id || '')
+      const normalized = (result.contacts || [])
+        .map((c) => ({ ...c, _id: c._id || c.id }))
+        .filter((c) => String(c._id) !== currentUserId)
+
+      setContacts(normalized)
     } catch (err) {
       error('Error loading contacts')
+    } finally {
+      setContactsLoading(false)
     }
   }
 
@@ -271,8 +286,7 @@ const Messages = () => {
           </div>
           <button
             onClick={() => {
-              setShowNewChat(!showNewChat)
-              loadNewChatContacts()
+              setShowNewChat((prev) => !prev)
             }}
             className="btn-ui btn-primary w-full"
           >
@@ -307,10 +321,18 @@ const Messages = () => {
               </button>
             </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
+              {contactsLoading && (
+                <p className="text-sm text-gray-500">Loading contacts...</p>
+              )}
+
+              {!contactsLoading && contacts.length === 0 && (
+                <p className="text-sm text-gray-500">No contacts available.</p>
+              )}
+
               {contacts.map((contact) => (
                 <button
-                  key={contact._id}
-                  onClick={() => handleStartNewChat(contact._id)}
+                  key={contact._id || contact.id}
+                  onClick={() => handleStartNewChat(contact._id || contact.id)}
                   className="w-full text-left px-3 py-2 hover:bg-white rounded-lg transition-colors"
                 >
                   <p className="font-medium text-gray-900">{contact.name}</p>
