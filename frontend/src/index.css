@@ -1,9 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ui-bg: #f4f7fb;
+  --ui-bg-strong: #e7eef8;
+  --ui-surface: rgba(255, 255, 255, 0.88);
+  --ui-surface-strong: #ffffff;
+  --ui-surface-border: rgba(148, 163, 184, 0.2);
+  --ui-text: #102033;
+  --ui-muted: #5f7187;
+  --ui-primary: #0f9d8a;
+  --ui-primary-strong: #0a7d6d;
+  --ui-primary-soft: rgba(15, 157, 138, 0.14);
+  --ui-accent: #ffb84d;
+  --ui-danger: #d64545;
+  --ui-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  --ui-shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 html {
@@ -14,10 +34,14 @@ html {
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #F5F8FF;
+  color: var(--ui-text);
+  background:
+    radial-gradient(circle at top left, rgba(15, 157, 138, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(255, 184, 77, 0.2), transparent 22%),
+    linear-gradient(180deg, #f9fbfd 0%, var(--ui-bg) 42%, #eef3f8 100%);
   width: 100%;
   overflow-x: hidden;
   height: auto;
@@ -29,6 +53,206 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Sora', 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.03em;
+}
+
+@layer components {
+  .app-shell {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .app-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent 90%);
+  }
+
+  .page-shell {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 1.25rem 0 2rem;
+  }
+
+  .page-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.35rem 1.4rem;
+    border: 1px solid var(--ui-surface-border);
+    border-radius: 28px;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(247, 251, 255, 0.92)),
+      linear-gradient(120deg, rgba(15, 157, 138, 0.07), rgba(255, 184, 77, 0.08));
+    box-shadow: var(--ui-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .page-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .page-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: fit-content;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    background: var(--ui-primary-soft);
+    color: var(--ui-primary-strong);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .page-title {
+    margin: 0.1rem 0 0;
+    font-size: clamp(1.8rem, 2vw, 2.6rem);
+    font-weight: 700;
+    line-height: 1.05;
+    color: var(--ui-text);
+  }
+
+  .page-description {
+    margin: 0.55rem 0 0;
+    max-width: 65ch;
+    color: var(--ui-muted);
+    font-size: 0.98rem;
+    line-height: 1.7;
+  }
+
+  .page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .surface-card {
+    border: 1px solid var(--ui-surface-border);
+    border-radius: 24px;
+    background: var(--ui-surface);
+    box-shadow: var(--ui-shadow-soft);
+    backdrop-filter: blur(16px);
+  }
+
+  .surface-card-strong {
+    background: var(--ui-surface-strong);
+  }
+
+  .section-pad {
+    padding: 1.25rem;
+  }
+
+  .toolbar-card {
+    padding: 1rem;
+    border: 1px solid var(--ui-surface-border);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: var(--ui-shadow-soft);
+  }
+
+  .stat-card {
+    position: relative;
+    overflow: hidden;
+    padding: 1.25rem;
+    border: 1px solid var(--ui-surface-border);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 253, 0.88));
+    box-shadow: var(--ui-shadow-soft);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ui-shadow);
+    border-color: rgba(15, 157, 138, 0.24);
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    inset: auto -15% -40% auto;
+    width: 8rem;
+    height: 8rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(15, 157, 138, 0.12), transparent 70%);
+  }
+
+  .btn-ui {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 44px;
+    padding: 0.72rem 1rem;
+    border-radius: 14px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .btn-ui:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn-primary {
+    color: white;
+    background: linear-gradient(135deg, var(--ui-primary), var(--ui-primary-strong));
+    box-shadow: 0 12px 25px rgba(15, 157, 138, 0.22);
+  }
+
+  .btn-secondary {
+    color: var(--ui-text);
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid var(--ui-surface-border);
+  }
+
+  .btn-danger {
+    color: white;
+    background: linear-gradient(135deg, #eb5b5b, var(--ui-danger));
+    box-shadow: 0 12px 25px rgba(214, 69, 69, 0.18);
+  }
+
+  .table-shell {
+    overflow: hidden;
+    border: 1px solid var(--ui-surface-border);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--ui-shadow-soft);
+  }
+
+  .table-shell table thead tr {
+    background: linear-gradient(180deg, rgba(241, 245, 249, 0.88), rgba(248, 250, 252, 0.88));
+  }
+
+  .table-shell table tbody tr:hover {
+    background: rgba(15, 157, 138, 0.05);
+  }
 }
 
 /* iOS Safari specific fixes */
@@ -52,4 +276,3 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 }
-

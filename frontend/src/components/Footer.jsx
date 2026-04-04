@@ -5,10 +5,9 @@ function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-blue-100 border-t border-blue-300 mt-8 sm:mt-12 lg:mt-16">
-      {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+    <footer className="px-3 pb-4 pt-2 sm:px-4 lg:px-6">
+      <div className="mx-auto max-w-[1440px] overflow-hidden rounded-[28px] border border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(244,248,252,0.92))] shadow-[0_20px_55px_rgba(15,23,42,0.08)]">
+        <div className="grid grid-cols-1 gap-4 px-4 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8 lg:py-8">
           {/* School Info */}
           <div className="space-y-3">
             <div className="flex items-start gap-3">
@@ -22,15 +21,15 @@ function Footer() {
                 <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain flex-shrink-0" />
               )}
               <div>
-                <h3 className="text-base sm:text-lg font-semibold text-text-dark">{schoolSettings.schoolName}</h3>
-                <p className="text-xs sm:text-sm text-text-muted mt-1">{schoolSettings.schoolDescription || 'School Management System'}</p>
+                <h3 className="font-display text-base font-semibold text-text-dark sm:text-lg">{schoolSettings.schoolName}</h3>
+                <p className="mt-1 text-xs sm:text-sm text-text-muted">{schoolSettings.schoolDescription || 'School Management System'}</p>
               </div>
             </div>
           </div>
 
           {/* Contact Information */}
           <div className="space-y-2">
-            <h4 className="text-sm sm:text-base font-semibold text-text-dark mb-3">Contact</h4>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-text-dark sm:text-base">Contact</h4>
             <div className="space-y-2 text-xs sm:text-sm text-text-muted">
               {schoolSettings.schoolPhone && (
                 <p>
@@ -52,10 +51,10 @@ function Footer() {
 
           {/* Academic Year Info */}
           <div className="space-y-2">
-            <h4 className="text-sm sm:text-base font-semibold text-text-dark mb-3">Current Academic Year</h4>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-text-dark sm:text-base">Current Academic Year</h4>
             {currentAcademicYear ? (
               <div className="text-xs sm:text-sm text-text-muted space-y-1">
-                <p className="font-semibold text-primary-blue text-sm sm:text-base">{currentAcademicYear.year}</p>
+                <p className="text-sm font-semibold text-primary-blue sm:text-base">{currentAcademicYear.year}</p>
                 <p>
                   {currentAcademicYear.startDate ? new Date(currentAcademicYear.startDate).toLocaleDateString() : ''} - {currentAcademicYear.endDate ? new Date(currentAcademicYear.endDate).toLocaleDateString() : ''}
                 </p>
@@ -70,7 +69,7 @@ function Footer() {
 
           {/* System Settings */}
           <div className="space-y-2">
-            <h4 className="text-sm sm:text-base font-semibold text-text-dark mb-3">Settings</h4>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-text-dark sm:text-base">Settings</h4>
             <div className="space-y-1 text-xs sm:text-sm text-text-muted">
               <p>
                 <span className="font-medium text-text-dark">Currency:</span> {schoolSettings.currency}
@@ -84,21 +83,12 @@ function Footer() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Footer Divider */}
-      <div className="border-t border-blue-300"></div>
-
-      {/* Bottom Footer */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 text-xs sm:text-sm text-text-muted">
-          <p>
-            © {currentYear} {schoolSettings.schoolName}. All rights reserved.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
-            <p>
-              eSync School Management System v2.0
-            </p>
+        <div className="border-t border-slate-200/80 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 text-xs text-text-muted sm:flex-row sm:items-center sm:justify-between sm:text-sm">
+            <p>© {currentYear} {schoolSettings.schoolName}. All rights reserved.</p>
+            <div className="flex flex-col gap-1 sm:flex-row sm:gap-6">
+              <p>eSync School Management System v2.0</p>
+            </div>
           </div>
         </div>
       </div>

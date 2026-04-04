@@ -32,7 +32,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+        display: ['Sora', 'Plus Jakarta Sans', 'sans-serif'],
       },
       borderRadius: {
         custom: '12px',

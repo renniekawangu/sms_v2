@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { GraduationCap, User, Users, School, FileText, Award, DollarSign, Calendar, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { studentsApi, teachersApi, classroomsApi, feesApi, expensesApi, issuesApi, parentsApi, teacherApi } from '../services/api'
+import PageHeader from '../components/PageHeader'
 
 // Admin Dashboard
 function AdminDashboard() {
@@ -61,76 +62,89 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Admin Dashboard</h1>
-        <p className="text-sm sm:text-base text-text-muted mt-1">Overview of the school management system</p>
-      </div>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Control Center"
+        title="Admin Dashboard"
+        description="A unified snapshot of users, classrooms, finance, and academic activity so you can act quickly without hopping between disconnected screens."
+        meta={
+          <>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Academic Year</p>
+              <p className="mt-1 font-display text-lg font-semibold text-slate-900">{currentAcademicYear?.year || 'Not Set'}</p>
+            </div>
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">School</p>
+              <p className="mt-1 font-display text-lg font-semibold text-slate-900">{schoolSettings?.schoolName || 'School'}</p>
+            </div>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <Link to="/roles" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
+        <Link to="/roles" className="stat-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Users & Roles</p>
-              <p className="text-3xl font-semibold text-text-dark">Manage</p>
+              <p className="font-display text-3xl font-semibold text-text-dark">Manage</p>
             </div>
-            <Users className="text-primary-blue" size={40} />
+            <Users className="text-primary-blue" size={36} />
           </div>
         </Link>
 
-        <Link to="/students" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
+        <Link to="/students" className="stat-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Students</p>
-              <p className="text-3xl font-semibold text-text-dark">{stats.students}</p>
+              <p className="font-display text-3xl font-semibold text-text-dark">{stats.students}</p>
             </div>
-            <GraduationCap className="text-primary-blue" size={40} />
+            <GraduationCap className="text-primary-blue" size={36} />
           </div>
         </Link>
 
-        <Link to="/teachers" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
+        <Link to="/teachers" className="stat-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Teachers</p>
-              <p className="text-3xl font-semibold text-text-dark">{stats.teachers}</p>
+              <p className="font-display text-3xl font-semibold text-text-dark">{stats.teachers}</p>
             </div>
-            <User className="text-primary-blue" size={40} />
+            <User className="text-primary-blue" size={36} />
           </div>
         </Link>
 
-        <Link to="/classrooms" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
+        <Link to="/classrooms" className="stat-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Classrooms</p>
-              <p className="text-3xl font-semibold text-text-dark">{stats.classrooms}</p>
+              <p className="font-display text-3xl font-semibold text-text-dark">{stats.classrooms}</p>
             </div>
-            <School className="text-primary-blue" size={40} />
+            <School className="text-primary-blue" size={36} />
           </div>
         </Link>
 
-        <Link to="/fees" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
+        <Link to="/fees" className="stat-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Total Fees</p>
-              <p className="text-3xl font-semibold text-text-dark">K{stats.totalFees}</p>
+              <p className="font-display text-3xl font-semibold text-text-dark">K{stats.totalFees}</p>
             </div>
-            <DollarSign className="text-primary-blue" size={40} />
+            <DollarSign className="text-primary-blue" size={36} />
           </div>
         </Link>
 
-        <Link to="/expenses" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-t-4 border-t-primary-blue">
+        <Link to="/expenses" className="stat-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-text-muted mb-1">Total Expenses</p>
-              <p className="text-3xl font-semibold text-text-dark">K{stats.totalExpenses}</p>
+              <p className="font-display text-3xl font-semibold text-text-dark">K{stats.totalExpenses}</p>
             </div>
-            <DollarSign className="text-primary-blue" size={40} />
+            <DollarSign className="text-primary-blue" size={36} />
           </div>
         </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-        <Link to="/results" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow border-l-4 border-l-primary-blue">
+        <Link to="/results" className="surface-card section-pad hover:shadow-[0_20px_45px_rgba(15,23,42,0.1)] transition-shadow">
           <div className="flex items-center gap-4">
             <Award className="text-primary-blue" size={32} />
             <div>
@@ -140,7 +154,7 @@ function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="/issues" className="bg-card-white rounded-custom shadow-custom p-6 hover:shadow-lg transition-shadow">
+        <Link to="/issues" className="surface-card section-pad hover:shadow-[0_20px_45px_rgba(15,23,42,0.1)] transition-shadow">
           <div className="flex items-center gap-4">
             <AlertCircle className="text-primary-blue" size={32} />
             <div>

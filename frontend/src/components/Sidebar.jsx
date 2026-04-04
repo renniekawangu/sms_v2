@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText, Award, CheckCircle, DollarSign, CreditCard, TrendingDown, AlertCircle, Settings, UserCog, Lock, X, Search, LogOut, Mail, BarChart3, Bookmark } from 'lucide-react'
+import { Grid, GraduationCap, User, Users, School, BookOpen, Calendar, FileText, Award, CheckCircle, DollarSign, CreditCard, TrendingDown, AlertCircle, Settings, UserCog, Lock, X, LogOut, Mail, BarChart3, Bookmark, Sparkles } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
@@ -107,7 +107,7 @@ function Sidebar({ isOpen, onClose }) {
       {/* Mobile overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
@@ -115,59 +115,82 @@ function Sidebar({ isOpen, onClose }) {
       {/* Sidebar */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50
-        w-64 bg-card-white shadow-custom flex flex-col
+        w-72 border-r border-white/40 bg-[linear-gradient(180deg,rgba(7,18,33,0.96),rgba(17,24,39,0.96))] text-white shadow-[0_24px_60px_rgba(15,23,42,0.28)] flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         h-screen md:h-auto overflow-y-auto
       `}>
-        <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <img src="/logo.png" alt="Esync Logo" className="w-32 sm:w-40 h-20 sm:h-24 object-contain" />
+        <div className="border-b border-white/10 p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+                  <img src="/logo.png" alt="Esync Logo" className="h-8 w-8 object-contain" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/80">eSync Workspace</p>
+                  <p className="font-display text-lg font-semibold text-white">School OS</p>
+                </div>
+              </div>
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-emerald-200/75">
+                  <Sparkles size={12} />
+                  Signed in
+                </div>
+                <p className="mt-2 truncate text-sm font-semibold text-white">{user?.name || 'User'}</p>
+                <p className="truncate text-xs uppercase tracking-[0.12em] text-slate-300">{userRole}</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={onClose}
+              className="md:hidden rounded-xl p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Close menu"
+            >
+              <X size={20} />
+            </button>
           </div>
-          {/* Close button for mobile */}
-          <button
-            onClick={onClose}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
-            aria-label="Close menu"
-          >
-            <X size={20} className="text-text-dark" />
-          </button>
         </div>
-        <nav className="flex-1 p-2 sm:p-4 overflow-y-auto">
-          <ul className="space-y-1">
+
+        <nav className="flex-1 overflow-y-auto p-3 sm:p-4">
+          <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Navigation</p>
+          <ul className="space-y-1.5">
             {menuItems.map((item) => {
               const Icon = item.icon
               const itemPath = getMenuItemPath(item)
-              const isActive = location.pathname === itemPath
+              const isActive = location.pathname === itemPath || (itemPath !== '/' && location.pathname.startsWith(item.path))
               return (
                 <li key={item.label}>
                   <Link
                     to={itemPath}
                     onClick={handleLinkClick}
-                    className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors border-l-4 text-sm sm:text-base ${
+                    className={`group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-all ${
                       isActive
-                        ? 'bg-primary-blue text-white border-l-white'
-                        : 'text-text-muted hover:bg-gray-50 hover:text-text-dark border-l-transparent hover:border-l-primary-blue'
+                        ? 'bg-[linear-gradient(135deg,rgba(15,157,138,0.34),rgba(15,157,138,0.16))] text-white shadow-[0_14px_28px_rgba(15,157,138,0.18)]'
+                        : 'text-slate-300 hover:bg-white/6 hover:text-white'
                     }`}
                   >
-                  <Icon size={18} className="flex-shrink-0" />
-                  <span className="font-medium hidden sm:inline">{item.label}</span>
-                  <span className="font-medium sm:hidden truncate">{item.label}</span>
-                </Link>
-              </li>
+                    <span className={`flex h-10 w-10 items-center justify-center rounded-2xl transition ${
+                      isActive ? 'bg-white/14 text-white' : 'bg-white/5 text-slate-300 group-hover:bg-white/10 group-hover:text-white'
+                    }`}>
+                      <Icon size={18} className="flex-shrink-0" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                  </Link>
+                </li>
               )
             })}
           </ul>
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-4 sm:p-6 border-t border-gray-100">
+        <div className="border-t border-white/10 p-4 sm:p-5">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none text-sm sm:text-base"
+            className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-red-300/30 hover:bg-red-500/10 hover:text-white focus:outline-none"
           >
             <LogOut size={18} className="flex-shrink-0" />
-            <span className="font-medium hidden sm:inline">Logout</span>
+            <span className="font-medium">Logout</span>
           </button>
         </div>
       </aside>

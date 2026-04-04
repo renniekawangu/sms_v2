@@ -10,6 +10,7 @@ import AdvancedSearch from '../components/AdvancedSearch'
 import Pagination from '../components/Pagination'
 import SkeletonLoader from '../components/SkeletonLoader'
 import ConfirmDialog from '../components/ConfirmDialog'
+import PageHeader from '../components/PageHeader'
 import { exportToCSV, exportToJSON } from '../utils/exportData'
 import { filterData, sortData, searchData, paginateData } from '../utils/filterSort'
 import { validateFormData } from '../utils/validation'
@@ -192,9 +193,9 @@ function Students() {
 
   if (loading) {
     return (
-      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="page-stack">
         <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3"></div>
-        <div className="bg-card-white rounded-custom shadow-custom p-4 overflow-x-auto">
+        <div className="surface-card section-pad overflow-x-auto">
           <table className="min-w-full">
             <tbody>
               <SkeletonLoader count={5} variant="row" />
@@ -224,69 +225,84 @@ function Students() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Students</h1>
-          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all student records ({students.length})</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {isAdmin && (
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Student Records"
+        title="Students"
+        description={`Manage enrolment, details, and exports from one consistent workspace. You currently have ${students.length} student records in view.`}
+        meta={
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Visible records</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{processedStudents.length}</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Selected</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{selectedIds.size}</p>
+            </div>
+          </>
+        }
+        actions={
+          <>
+            {isAdmin && (
+              <button
+                onClick={handleCreate}
+                className="btn-ui btn-primary"
+                title="Ctrl+N"
+              >
+                <Plus size={18} />
+                <span>Add Student</span>
+              </button>
+            )}
             <button
-              onClick={handleCreate}
-              className="flex items-center justify-center gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm font-medium"
-              title="Ctrl+N"
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Add Student</span>
-            </button>
-          )}
-          <button
-            onClick={handleExportAll}
-            className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-            title="Ctrl+E"
-          >
-            <Download size={18} />
-            <span className="hidden sm:inline">Export All</span>
-          </button>
-          {selectedIds.size > 0 && (
-            <button
-              onClick={handleExportSelected}
-              className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              onClick={handleExportAll}
+              className="btn-ui btn-secondary"
+              title="Ctrl+E"
             >
               <Download size={18} />
-              <span className="hidden sm:inline">Export ({selectedIds.size})</span>
+              <span>Export All</span>
             </button>
-          )}
-          {selectedIds.size > 0 && isAdmin && (
-            <button
-              onClick={handleDeleteSelected}
-              className="flex items-center justify-center gap-2 bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-            >
-              <Trash2 size={18} />
-              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Advanced Search */}
-      <AdvancedSearch
-        searchFields={['name', 'email', 'student_id']}
-        filterOptions={{
-          grade: ['A', 'B', 'C', 'D', 'E'],
-          status: ['Active', 'Inactive', 'Graduated']
-        }}
-        onSearch={setSearchQuery}
-        onFilter={setFilters}
-        onClear={() => {
-          setSearchQuery('')
-          setFilters({})
-        }}
-        loading={loading}
+            {selectedIds.size > 0 && (
+              <button
+                onClick={handleExportSelected}
+                className="btn-ui btn-secondary"
+              >
+                <Download size={18} />
+                <span>Export Selected</span>
+              </button>
+            )}
+            {selectedIds.size > 0 && isAdmin && (
+              <button
+                onClick={handleDeleteSelected}
+                className="btn-ui btn-danger"
+              >
+                <Trash2 size={18} />
+                <span>Delete Selected</span>
+              </button>
+            )}
+          </>
+        }
       />
 
-      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+      {/* Advanced Search */}
+      <div className="toolbar-card">
+        <AdvancedSearch
+          searchFields={['name', 'email', 'student_id']}
+          filterOptions={{
+            grade: ['A', 'B', 'C', 'D', 'E'],
+            status: ['Active', 'Inactive', 'Graduated']
+          }}
+          onSearch={setSearchQuery}
+          onFilter={setFilters}
+          onClear={() => {
+            setSearchQuery('')
+            setFilters({})
+          }}
+          loading={loading}
+        />
+      </div>
+
+      <div className="table-shell p-3 sm:p-4 lg:p-6">
         <div className="overflow-x-auto">
           <table className="w-full text-xs sm:text-sm">
             <thead>
@@ -335,7 +351,7 @@ function Students() {
             <tbody>
               {paginatedData.data.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-8 text-center text-xs sm:text-sm text-text-muted">
+                  <td colSpan="8" className="py-12 text-center text-xs sm:text-sm text-text-muted">
                     No students found
                   </td>
                 </tr>
