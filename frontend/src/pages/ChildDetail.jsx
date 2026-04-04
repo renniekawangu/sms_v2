@@ -175,7 +175,7 @@ function ChildDetail() {
     if (!grade) return 'text-gray-500'
     const gradeStr = String(grade).toUpperCase()
     if (gradeStr.startsWith('A')) return 'text-green-600'
-    if (gradeStr.startsWith('B')) return 'text-blue-600'
+    if (gradeStr.startsWith('B')) return 'text-primary-blue'
     if (gradeStr.startsWith('C')) return 'text-yellow-600'
     if (gradeStr.startsWith('D')) return 'text-orange-600'
     if (gradeStr.startsWith('E') || gradeStr.startsWith('F')) return 'text-red-600'
@@ -186,7 +186,7 @@ function ChildDetail() {
     if (!grade) return 'bg-gray-50'
     const gradeStr = String(grade).toUpperCase()
     if (gradeStr.startsWith('A')) return 'bg-green-50 border-green-200'
-    if (gradeStr.startsWith('B')) return 'bg-blue-50 border-blue-200'
+    if (gradeStr.startsWith('B')) return 'bg-cyan-50 border-cyan-200'
     if (gradeStr.startsWith('C')) return 'bg-yellow-50 border-yellow-200'
     if (gradeStr.startsWith('D')) return 'bg-orange-50 border-orange-200'
     if (gradeStr.startsWith('E') || gradeStr.startsWith('F')) return 'bg-red-50 border-red-200'
@@ -258,7 +258,7 @@ function ChildDetail() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background-light">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
@@ -275,7 +275,7 @@ function ChildDetail() {
 
             {/* Child Header */}
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary-blue to-blue-600 flex items-center justify-center text-white flex-shrink-0">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary-blue to-primary-deep flex items-center justify-center text-white flex-shrink-0">
                 <User size={24} className="sm:w-8 sm:h-8" />
               </div>
               <div className="flex-1 min-w-0">
@@ -292,19 +292,19 @@ function ChildDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             {/* Position in Class */}
-            <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-blue-500">
+            <div className="surface-card section-pad border-l-4 border-primary-blue">
               <div className="flex items-start sm:items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-text-muted text-xs sm:text-sm font-medium">Overall Average</p>
                   <p className="text-2xl sm:text-3xl font-bold text-primary-blue mt-1 sm:mt-2">{avgGrade}</p>
                   {grades.length > 0 && <p className="text-xs text-text-muted mt-1">All-time average</p>}
                 </div>
-                <Award size={24} className="hidden sm:block text-blue-500 opacity-20 flex-shrink-0" />
+                <Award size={24} className="hidden sm:block text-primary-blue opacity-20 flex-shrink-0" />
               </div>
             </div>
 
             {/* Attendance */}
-            <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-green-500">
+            <div className="surface-card section-pad border-l-4 border-green-500">
               <div className="flex items-start sm:items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-text-muted text-xs sm:text-sm font-medium">Attendance Rate</p>
@@ -315,7 +315,7 @@ function ChildDetail() {
             </div>
 
             {/* Fees Status */}
-            <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-orange-500">
+            <div className="surface-card section-pad border-l-4 border-orange-500">
               <div className="flex items-start sm:items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-text-muted text-xs sm:text-sm font-medium">Fees Paid</p>
@@ -326,7 +326,7 @@ function ChildDetail() {
             </div>
 
             {/* Pending Fees */}
-            <div className="bg-white rounded-lg shadow-custom p-3 sm:p-6 border-l-4 border-red-500">
+            <div className="surface-card section-pad border-l-4 border-red-500">
               <div className="flex items-start sm:items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-text-muted text-xs sm:text-sm font-medium">Fees Pending</p>
@@ -340,7 +340,7 @@ function ChildDetail() {
 
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-          <div className="bg-white rounded-lg shadow-custom overflow-hidden">
+          <div className="surface-card overflow-hidden">
             {/* Tab Navigation */}
             <div className="border-b border-gray-200">
               <div className="flex overflow-x-auto">
@@ -387,10 +387,10 @@ function ChildDetail() {
                                 </div>
                               ))}
                               {grades.length > 4 && (
-                                <div className="flex-shrink-0 lg:flex-shrink min-w-max lg:min-w-0 lg:flex-1 bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-blue-300 rounded-lg p-3 text-center">
-                                  <p className="text-xs font-semibold text-blue-600 mb-1">Average</p>
+                                <div className="flex-shrink-0 lg:flex-shrink min-w-max lg:min-w-0 lg:flex-1 bg-gradient-to-br from-cyan-100 to-cyan-50 border-2 border-cyan-300 rounded-lg p-3 text-center">
+                                  <p className="text-xs font-semibold text-cyan-700 mb-1">Average</p>
                                   <p className="text-2xl font-bold text-primary-blue">{avgGrade}%</p>
-                                  <p className="text-xs text-blue-600 mt-1">+{grades.length - 4} more</p>
+                                  <p className="text-xs text-cyan-700 mt-1">+{grades.length - 4} more</p>
                                 </div>
                               )}
                             </div>
@@ -443,7 +443,7 @@ function ChildDetail() {
                       Fees Overview
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 bg-blue-50 rounded-lg">
+                      <div className="p-4 bg-cyan-50 rounded-lg">
                         <p className="text-text-muted text-sm">Total Amount</p>
                         <p className="text-2xl font-bold text-primary-blue mt-1">
                           K{(feesStatus.paid + feesStatus.pending).toFixed(2)}
@@ -563,7 +563,7 @@ function ChildDetail() {
                                     .filter(g => g.exam?.academicYear === selectedAcademicYear && g.exam?.term === selectedTerm)
                                     .map((result, idx) => {
                                       const percentage = result.exam?.totalMarks ? Math.round((result.score / result.exam.totalMarks) * 100) : 0;
-                                      const gradeColor = percentage >= 80 ? 'text-green-600 bg-green-50' : percentage >= 60 ? 'text-blue-600 bg-blue-50' : percentage >= 40 ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50';
+                                      const gradeColor = percentage >= 80 ? 'text-green-600 bg-green-50' : percentage >= 60 ? 'text-primary-blue bg-cyan-50' : percentage >= 40 ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50';
                                       
                                       return (
                                         <tr key={idx} className="border-b hover:bg-gray-50 transition-colors">
@@ -835,7 +835,7 @@ function ChildDetail() {
                       ))}
                     </div>
                   ) : (
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
                       <p className="text-text-muted text-sm">No fee records available yet</p>
                     </div>
                   )}

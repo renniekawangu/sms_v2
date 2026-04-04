@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Download, FileText, GraduationCap, Calendar, AlertCircle, Loader, CheckCircle } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
+import PageHeader from '../components/PageHeader'
 
 const ReportCards = () => {
   const { success, error } = useToast()
@@ -214,19 +215,27 @@ const ReportCards = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 sm:p-4 lg:p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2">
-            <GraduationCap size={28} className="text-blue-600" />
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-dark">Student Report Cards</h1>
-          </div>
-          <p className="text-text-muted text-sm sm:text-base">Generate and download student report cards for every term</p>
-        </div>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Academics"
+        title="Student Report Cards"
+        description="Generate and download individual or classroom report cards by term and academic year."
+        meta={
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Students</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{students.length}</p>
+            </div>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">Classrooms</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{classrooms.length}</p>
+            </div>
+          </>
+        }
+      />
 
         {/* View Selection */}
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+        <div className="surface-card section-pad">
           <h2 className="text-lg font-semibold text-text-dark mb-4">Select Report Type</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <button
@@ -258,12 +267,12 @@ const ReportCards = () => {
 
         {/* Individual Report Card View */}
         {view === 'individual' && (
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+          <div className="surface-card section-pad">
             <h2 className="text-lg sm:text-xl font-semibold text-text-dark mb-4">Generate Individual Report Card</h2>
 
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader size={24} className="animate-spin text-blue-500 mr-2" />
+                <Loader size={24} className="animate-spin text-primary-blue mr-2" />
                 <p className="text-text-muted">Loading data...</p>
               </div>
             ) : (
@@ -276,7 +285,7 @@ const ReportCards = () => {
                   <select
                     value={selectedStudent}
                     onChange={handleStudentChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="ui-select"
                   >
                     <option value="">Select a student...</option>
                     {students.map(student => (
@@ -297,7 +306,7 @@ const ReportCards = () => {
                       <select
                         value={selectedTerm}
                         onChange={(e) => setSelectedTerm(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="ui-select"
                       >
                         {availableTerms.map((term, idx) => (
                           <option key={idx} value={term.term}>
@@ -314,7 +323,7 @@ const ReportCards = () => {
                       <select
                         value={selectedAcademicYear}
                         onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="ui-select"
                       >
                         {availableTerms.map((term, idx) => (
                           <option key={idx} value={term.academicYear}>
@@ -341,7 +350,7 @@ const ReportCards = () => {
               <button
                 onClick={handleDownloadIndividualReportCard}
                 disabled={downloading || !selectedStudent || !selectedTerm || !selectedAcademicYear}
-                className="mt-6 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 sm:py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="mt-6 btn-ui btn-primary w-full disabled:bg-gray-400"
               >
                 {downloading ? (
                   <>
@@ -361,12 +370,12 @@ const ReportCards = () => {
 
         {/* Classroom Report Cards View */}
         {view === 'classroom' && (
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+          <div className="surface-card section-pad">
             <h2 className="text-lg sm:text-xl font-semibold text-text-dark mb-4">Generate Classroom Report Cards</h2>
 
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader size={24} className="animate-spin text-blue-500 mr-2" />
+                <Loader size={24} className="animate-spin text-primary-blue mr-2" />
                 <p className="text-text-muted">Loading data...</p>
               </div>
             ) : (
@@ -383,7 +392,7 @@ const ReportCards = () => {
                       setSelectedTerm('')
                       setSelectedAcademicYear('')
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="ui-select"
                   >
                     <option value="">Select a classroom...</option>
                     {classrooms.map(classroom => (
@@ -402,7 +411,7 @@ const ReportCards = () => {
                   <select
                     value={selectedTerm}
                     onChange={(e) => setSelectedTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="ui-select"
                   >
                     <option value="">Select term...</option>
                     <option value="Term 1">Term 1</option>
@@ -419,7 +428,7 @@ const ReportCards = () => {
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="ui-select"
                   >
                     <option value="">Select year...</option>
                     <option value="2024-2025">2024-2025</option>
@@ -434,7 +443,7 @@ const ReportCards = () => {
               <button
                 onClick={handleDownloadClassroomReportCards}
                 disabled={downloading}
-                className="mt-6 w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-2 sm:py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="mt-6 btn-ui btn-primary w-full disabled:bg-gray-400"
               >
                 {downloading ? (
                   <>
@@ -454,12 +463,12 @@ const ReportCards = () => {
 
         {/* Info Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <CheckCircle size={20} className="text-blue-600 mt-1 flex-shrink-0" />
+              <CheckCircle size={20} className="text-cyan-700 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-blue-900 mb-2">What's Included</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
+                <h3 className="font-semibold text-cyan-900 mb-2">What's Included</h3>
+                <ul className="text-sm text-cyan-800 space-y-1">
                   <li>• Student information and ID</li>
                   <li>• All subject scores and grades</li>
                   <li>• Overall percentage and grade</li>
@@ -485,7 +494,6 @@ const ReportCards = () => {
             </div>
           </div>
         </div>
-      </div>
     </div>
   )
 }

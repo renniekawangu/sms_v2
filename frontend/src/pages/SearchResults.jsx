@@ -206,9 +206,9 @@ function SearchResults() {
     return (
     <div className="space-y-6">
       {/* Avatar Section */}
-      <div className="bg-card-white rounded-lg shadow p-6 flex items-center justify-between gap-6">
+      <div className="surface-card section-pad flex items-center justify-between gap-6">
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 bg-gradient-to-br from-primary-blue to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-24 h-24 bg-gradient-to-br from-primary-blue to-primary-deep rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white text-3xl font-bold">{initials}</span>
           </div>
           <div>
@@ -223,7 +223,7 @@ function SearchResults() {
           <div className="flex gap-2">
             <button
               onClick={handleEdit}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="btn-ui btn-primary"
             >
               <Edit size={16} />
               Edit
@@ -268,7 +268,7 @@ function SearchResults() {
                         type="text"
                         value={editData.firstName || ''}
                         onChange={(e) => setEditData({ ...editData, firstName: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                        className="ui-input mt-1"
                       />
                     </div>
                     <div>
@@ -277,7 +277,7 @@ function SearchResults() {
                         type="text"
                         value={editData.lastName || ''}
                         onChange={(e) => setEditData({ ...editData, lastName: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                        className="ui-input mt-1"
                       />
                     </div>
                   </div>
@@ -287,7 +287,7 @@ function SearchResults() {
                       type="email"
                       value={editData.email || ''}
                       onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="ui-input mt-1"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -297,7 +297,7 @@ function SearchResults() {
                         type="text"
                         value={editData.phone || ''}
                         onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                        className="ui-input mt-1"
                       />
                     </div>
                     <div>
@@ -305,7 +305,7 @@ function SearchResults() {
                       <select
                         value={editData.gender || ''}
                         onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                        className="ui-select mt-1"
                       >
                         <option value="">Select Gender</option>
                         <option value="male">Male</option>
@@ -320,7 +320,7 @@ function SearchResults() {
                       type="date"
                       value={editData.dob ? editData.dob.split('T')[0] : ''}
                       onChange={(e) => setEditData({ ...editData, dob: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="ui-input mt-1"
                     />
                   </div>
                   <div>
@@ -329,7 +329,7 @@ function SearchResults() {
                       type="text"
                       value={editData.address || ''}
                       onChange={(e) => setEditData({ ...editData, address: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="ui-input mt-1"
                     />
                   </div>
                 </>
@@ -344,7 +344,7 @@ function SearchResults() {
                       type="text"
                       value={editData.classLevel || ''}
                       onChange={(e) => setEditData({ ...editData, classLevel: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="ui-input mt-1"
                     />
                   </div>
                   <div>
@@ -353,7 +353,7 @@ function SearchResults() {
                       type="text"
                       value={editData.student_id || ''}
                       onChange={(e) => setEditData({ ...editData, student_id: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="ui-input mt-1"
                     />
                   </div>
                   <div>
@@ -362,7 +362,7 @@ function SearchResults() {
                       type="date"
                       value={editData.date_of_join ? editData.date_of_join.split('T')[0] : ''}
                       onChange={(e) => setEditData({ ...editData, date_of_join: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                      className="ui-input mt-1"
                     />
                   </div>
                 </>
@@ -370,8 +370,8 @@ function SearchResults() {
 
               {/* Grades Section Note */}
               {editingSection === 'grades' && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+                  <p className="text-sm text-cyan-800">
                     <strong>Note:</strong> Exam results are typically managed through the Exams and Results modules. Contact your administrator to modify grades.
                   </p>
                 </div>
@@ -379,8 +379,8 @@ function SearchResults() {
 
               {/* Parents Section Note */}
               {editingSection === 'parents' && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+                  <p className="text-sm text-cyan-800">
                     <strong>Note:</strong> Parent information is typically managed in the Parents module. Use the dedicated Parents section to modify parent details.
                   </p>
                 </div>
@@ -409,7 +409,7 @@ function SearchResults() {
       )}
 
       {/* Personal Information */}
-      <div className="bg-card-white rounded-lg shadow p-6">
+      <div className="surface-card section-pad">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <GraduationCap size={20} />
@@ -418,7 +418,7 @@ function SearchResults() {
           {userType === 'student' && (
             <button
               onClick={() => handleEdit('personal')}
-              className="flex items-center gap-2 px-3 py-1 text-primary-blue hover:bg-blue-50 rounded-lg transition text-sm"
+              className="flex items-center gap-2 px-3 py-1 text-primary-blue hover:bg-cyan-50 rounded-lg transition text-sm"
             >
               <Edit size={14} />
               Edit
@@ -472,13 +472,13 @@ function SearchResults() {
       </div>
 
       {/* Academic Information */}
-      <div className="bg-card-white rounded-lg shadow p-6">
+      <div className="surface-card section-pad">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-text-dark">Academic Information</h3>
           {userType === 'student' && (
             <button
               onClick={() => handleEdit('academic')}
-              className="flex items-center gap-2 px-3 py-1 text-primary-blue hover:bg-blue-50 rounded-lg transition text-sm"
+              className="flex items-center gap-2 px-3 py-1 text-primary-blue hover:bg-cyan-50 rounded-lg transition text-sm"
             >
               <Edit size={14} />
               Edit
@@ -508,15 +508,15 @@ function SearchResults() {
 
       {/* Parents Section */}
       {userDetails?.type === 'student' && parents.length > 0 && (
-        <div className="bg-card-white rounded-lg shadow p-6">
+        <div className="surface-card section-pad">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Users size={20} className="text-blue-600" />
+              <Users size={20} className="text-primary-blue" />
               <h3 className="text-lg font-semibold text-text-dark">Parent Information</h3>
             </div>
             <button
               onClick={() => handleEdit('parents')}
-              className="flex items-center gap-2 px-3 py-1 text-primary-blue hover:bg-blue-50 rounded-lg transition text-sm"
+              className="flex items-center gap-2 px-3 py-1 text-primary-blue hover:bg-cyan-50 rounded-lg transition text-sm"
             >
               <Edit size={14} />
               Edit
@@ -570,7 +570,7 @@ function SearchResults() {
 
       {/* Grades Section */}
       {userDetails?.type === 'student' && (
-        <div className="bg-card-white rounded-lg shadow p-6">
+        <div className="surface-card section-pad">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <BookOpen size={20} className="text-primary-blue" />
@@ -579,7 +579,7 @@ function SearchResults() {
             {grades.length > 0 && (
               <button
                 onClick={() => handleEdit('grades')}
-                className="flex items-center gap-2 px-3 py-1 text-primary-blue hover:bg-blue-50 rounded-lg transition text-sm"
+                className="flex items-center gap-2 px-3 py-1 text-primary-blue hover:bg-cyan-50 rounded-lg transition text-sm"
               >
                 <Edit size={14} />
                 Edit

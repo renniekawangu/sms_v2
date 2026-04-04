@@ -253,14 +253,14 @@ const Messages = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background-light">
       {/* Conversations Sidebar */}
       <div className={`w-full md:w-80 bg-white border-r border-gray-200 flex flex-col ${selectedConversation ? 'hidden md:flex' : 'flex'}`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Mail size={24} className="text-blue-500" />
+              <Mail size={24} className="text-primary-blue" />
               Messages
             </h1>
             {unreadCount > 0 && (
@@ -274,7 +274,7 @@ const Messages = () => {
               setShowNewChat(!showNewChat)
               loadNewChatContacts()
             }}
-            className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
+            className="btn-ui btn-primary w-full"
           >
             <Plus size={20} /> New Chat
           </button>
@@ -289,14 +289,14 @@ const Messages = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="ui-input pl-10"
             />
           </div>
         </div>
 
         {/* New Chat Panel */}
         {showNewChat && (
-          <div className="border-b border-gray-200 bg-blue-50 p-4">
+          <div className="border-b border-cyan-200 bg-cyan-50 p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-900">Start a chat</h3>
               <button
@@ -334,12 +334,12 @@ const Messages = () => {
                 <button
                   key={conv.id}
                   onClick={() => loadConversationMessages(conv)}
-                  className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                    selectedConversation?.id === conv.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                  className={`w-full p-4 text-left hover:bg-cyan-50/40 transition-colors ${
+                    selectedConversation?.id === conv.id ? 'bg-cyan-50 border-l-4 border-primary-blue' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-blue to-primary-deep flex items-center justify-center text-white font-semibold flex-shrink-0">
                       {conv.user.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -353,7 +353,7 @@ const Messages = () => {
                         {formatLastMessageTime(conv.lastMessage?.createdAt)}
                       </span>
                       {conv.lastMessage && !conv.lastMessage.isRead && conv.lastMessage.sender.id !== user.id && (
-                        <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                        <span className="w-3 h-3 bg-primary-blue rounded-full"></span>
                       )}
                     </div>
                   </div>
@@ -376,7 +376,7 @@ const Messages = () => {
               >
                 ←
               </button>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-blue to-primary-deep flex items-center justify-center text-white font-semibold">
                 {selectedConversation.user.name.charAt(0).toUpperCase()}
               </div>
               <div>
@@ -398,11 +398,11 @@ const Messages = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-white to-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-white to-cyan-50/30">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-semibold mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-blue to-primary-deep flex items-center justify-center text-white text-2xl font-semibold mx-auto mb-4">
                     {selectedConversation.user.name.charAt(0).toUpperCase()}
                   </div>
                   <h3 className="font-semibold text-gray-900">You matched with {selectedConversation.user.name}</h3>
@@ -438,7 +438,7 @@ const Messages = () => {
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${
                             isCurrentUser
                               ? 'bg-gradient-to-br from-green-400 to-green-600'
-                              : 'bg-gradient-to-br from-blue-400 to-blue-600'
+                                : 'bg-gradient-to-br from-primary-blue to-primary-deep'
                           }`}>
                             {senderInitial}
                           </div>
@@ -454,7 +454,7 @@ const Messages = () => {
                           {/* Message bubble */}
                           <div className={`px-4 py-2 rounded-lg ${
                             isCurrentUser
-                              ? 'bg-blue-500 text-white rounded-br-none'
+                                ? 'bg-primary-blue text-white rounded-br-none'
                               : 'bg-gray-200 text-gray-900 rounded-bl-none'
                           }`}>
                             <p className="text-sm">{msg.message}</p>
@@ -482,12 +482,12 @@ const Messages = () => {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-200 text-sm"
               />
               <button
                 type="submit"
                 disabled={loading || !newMessage.trim()}
-                className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-full font-semibold transition-colors flex items-center gap-2"
+                className="px-6 py-3 bg-primary-blue hover:bg-primary-deep disabled:bg-gray-300 text-white rounded-full font-semibold transition-colors flex items-center gap-2"
               >
                 <Send size={18} />
               </button>

@@ -127,16 +127,8 @@ function Sidebar({ isOpen, onClose }) {
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
                   <img src="/logo.png" alt="Esync Logo" className="h-8 w-8 object-contain" />
                 </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200/80">eSync Workspace</p>
-                  <p className="font-display text-lg font-semibold text-white">School OS</p>
-                </div>
               </div>
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
-                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-cyan-200/75">
-                  <Sparkles size={12} />
-                  Signed in
-                </div>
                 <p className="mt-2 truncate text-sm font-semibold text-white">{user?.name || 'User'}</p>
                 <p className="truncate text-xs uppercase tracking-[0.12em] text-slate-300">{userRole}</p>
               </div>
