@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { DollarSign, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-react'
 import { feesApi, studentsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { useSettings } from '../contexts/SettingsContext'
@@ -27,7 +27,6 @@ function Fees() {
   const { success, error: showError } = useToast()
   const { schoolSettings, currentAcademicYear, academicYears: contextAcademicYears } = useSettings()
   const currency = useCurrency()
-  const filterTimeoutRef = useRef(null)
 
   // Debounced filter update function
   const debouncedFilterUpdate = useCallback(
@@ -146,8 +145,8 @@ function Fees() {
   if (loading) {
     return (
       <ErrorBoundary>
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="mb-4">
+        <div className="page-stack">
+          <div className="surface-card section-pad">
             <h2 className="text-lg font-semibold mb-4">Fees Management</h2>
             <TableSkeleton rows={5} />
           </div>
@@ -176,7 +175,7 @@ function Fees() {
 
   return (
     <ErrorBoundary>
-      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="page-stack">
       <PageHeader
         eyebrow="Fee Ledger"
         title="Fees"
@@ -187,8 +186,8 @@ function Fees() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Loaded fees</p>
               <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{fees.length}</p>
             </div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Visible fees</p>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">Visible fees</p>
               <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{filteredFees.length}</p>
             </div>
           </>
@@ -279,7 +278,7 @@ function Fees() {
                 </tr>
               ) : (
                 filteredFees.map((fee) => (
-                  <tr key={fee._id || fee.fee_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={fee._id || fee.fee_id} className="border-b border-gray-100 hover:bg-cyan-50/50 transition-colors">
                     <td className="py-3 px-4 text-sm text-text-dark">{fee._id}</td>
                     <td className="py-3 px-4 text-sm text-text-dark">{fee.studentId?.firstName} {fee.studentId?.lastName}</td>
                     <td className="py-3 px-4 text-sm text-text-dark font-medium">{formatCurrency(fee.amount, currency)}</td>

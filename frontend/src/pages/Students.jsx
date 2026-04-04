@@ -236,8 +236,8 @@ function Students() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Visible records</p>
               <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{processedStudents.length}</p>
             </div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Selected</p>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">Selected</p>
               <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{selectedIds.size}</p>
             </div>
           </>
@@ -352,12 +352,26 @@ function Students() {
               {paginatedData.data.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="py-12 text-center text-xs sm:text-sm text-text-muted">
-                    No students found
+                    <div className="flex flex-col items-center gap-3">
+                      <GraduationCap size={24} className="text-cyan-600" />
+                      <p>No students found</p>
+                      {(searchQuery || Object.keys(filters).length > 0) && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery('')
+                            setFilters({})
+                          }}
+                          className="btn-ui btn-secondary"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
                 paginatedData.data.map((student) => (
-                  <tr key={student._id || student.student_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={student._id || student.student_id} className="border-b border-gray-100 hover:bg-cyan-50/50 transition-colors">
                     <td className="py-3 px-2 sm:px-4">
                       <button
                         onClick={() => toggleSelect(student._id || student.student_id)}
@@ -386,7 +400,7 @@ function Students() {
                           <>
                             <button
                               onClick={() => handleEdit(student)}
-                              className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-blue-50"
+                              className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-cyan-50"
                               title="Edit"
                             >
                               <Edit size={14} className="sm:size-4" />

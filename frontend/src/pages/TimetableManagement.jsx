@@ -18,6 +18,7 @@ import { timetableApi, classroomsApi, teachersApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import TimetableScheduleView from '../components/TimetableScheduleView';
 import Modal from '../components/Modal';
+import PageHeader from '../components/PageHeader';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -105,37 +106,44 @@ function TimetableManagement() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading timetable data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-blue mx-auto"></div>
+          <p className="mt-4 text-text-muted">Loading timetable data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-          <Calendar className="w-6 sm:w-8 h-6 sm:h-8 flex-shrink-0" />
-          Timetable Management
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-600">
-          Manage class schedules, instructors, and course assignments
-        </p>
-      </div>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Scheduling"
+        title="Timetable Management"
+        description="Manage class schedules, instructors, and course assignments with a consistent school-wide workflow."
+        meta={
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Schedules</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{schedules.length}</p>
+            </div>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">Instructors</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{instructors.length}</p>
+            </div>
+          </>
+        }
+      />
 
       {/* Tabs */}
-      <div className="mb-4 sm:mb-6">
+      <div>
         <div className="border-b border-gray-200 overflow-x-auto">
           <nav className="-mb-px flex gap-2 sm:gap-4 lg:gap-8">
             <button
               onClick={() => setActiveTab('schedules')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'schedules'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-blue text-primary-blue'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -146,7 +154,7 @@ function TimetableManagement() {
               onClick={() => setActiveTab('instructors')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'instructors'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-blue text-primary-blue'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -157,7 +165,7 @@ function TimetableManagement() {
               onClick={() => setActiveTab('courses')}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'courses'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-primary-blue text-primary-blue'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -169,7 +177,7 @@ function TimetableManagement() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-custom p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+      <div className="surface-card section-pad">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
@@ -178,7 +186,7 @@ function TimetableManagement() {
             <select
               value={filters.classroom}
               onChange={(e) => setFilters({ ...filters, classroom: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500"
+              className="ui-select"
             >
               <option value="">All Classrooms</option>
               {classrooms.map(classroom => (
@@ -196,7 +204,7 @@ function TimetableManagement() {
               type="text"
               value={filters.academicYear}
               onChange={(e) => setFilters({ ...filters, academicYear: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500"
+              className="ui-input"
               placeholder="2024"
             />
           </div>
@@ -207,7 +215,7 @@ function TimetableManagement() {
             <select
               value={filters.term}
               onChange={(e) => setFilters({ ...filters, term: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="ui-select"
             >
               <option value="Term 1">Term 1</option>
               <option value="Term 2">Term 2</option>
@@ -219,7 +227,7 @@ function TimetableManagement() {
           <div className="flex items-end">
             <button
               onClick={loadData}
-              className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="btn-ui btn-secondary w-full"
             >
               <Filter className="inline-block w-4 h-4 mr-2" />
               Apply Filters
@@ -237,7 +245,7 @@ function TimetableManagement() {
             </h2>
             <button
               onClick={handleCreateSchedule}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              className="btn-ui btn-primary"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Schedule
@@ -255,7 +263,7 @@ function TimetableManagement() {
               </p>
               <button
                 onClick={handleCreateSchedule}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="btn-ui btn-primary"
               >
                 Create Schedule
               </button>
@@ -275,7 +283,7 @@ function TimetableManagement() {
                   <div className="mt-2 flex justify-end">
                     <button
                       onClick={() => handleExportSchedule(schedule)}
-                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                      className="px-3 py-1 text-sm text-primary-blue hover:text-primary-blue/80 flex items-center"
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Export JSON
@@ -296,7 +304,7 @@ function TimetableManagement() {
             </h2>
             <button
               onClick={handleCreateInstructor}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              className="btn-ui btn-primary"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Instructor
@@ -308,7 +316,7 @@ function TimetableManagement() {
               <div key={instructor._id} className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center mb-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <Users className="w-6 h-6 text-blue-600" />
+                    <Users className="w-6 h-6 text-primary-blue" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">
@@ -324,7 +332,7 @@ function TimetableManagement() {
                       {instructor.subjects.map((subject, idx) => (
                         <span
                           key={idx}
-                          className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
+                          className="px-2 py-1 text-xs bg-cyan-100 text-cyan-800 rounded"
                         >
                           {subject}
                         </span>
@@ -349,7 +357,7 @@ function TimetableManagement() {
             </h2>
             <button
               onClick={handleCreateCourse}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              className="btn-ui btn-primary"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Course

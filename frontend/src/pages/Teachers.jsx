@@ -235,8 +235,8 @@ function Teachers() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Visible records</p>
               <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{processedTeachers.length}</p>
             </div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Selected</p>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">Selected</p>
               <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{selectedIds.size}</p>
             </div>
           </>
@@ -337,12 +337,15 @@ function Teachers() {
               {paginatedData.data.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="py-12 text-center text-xs sm:text-sm text-text-muted">
-                    No teachers found
+                    <div className="flex flex-col items-center gap-3">
+                      <User size={24} className="text-cyan-600" />
+                      <p>No teachers found</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 paginatedData.data.map((teacher) => (
-                  <tr key={teacher._id || teacher.teacher_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={teacher._id || teacher.teacher_id} className="border-b border-gray-100 hover:bg-cyan-50/50 transition-colors">
                     <td className="py-3 px-2 sm:px-4">
                       <button
                         onClick={() => toggleSelect(teacher._id || teacher.teacher_id)}
@@ -371,7 +374,7 @@ function Teachers() {
                           <>
                             <button
                               onClick={() => handleEdit(teacher)}
-                              className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-blue-50"
+                              className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-cyan-50"
                               title="Edit"
                             >
                               <Edit size={14} className="sm:size-4" />

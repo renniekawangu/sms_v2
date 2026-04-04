@@ -30,22 +30,15 @@ function Results() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
   useEffect(() => {
-    console.log('Results page mounted, loading initial data...')
     loadInitialData()
   }, [])
 
   const loadInitialData = async () => {
     try {
-      console.log('Starting loadInitialData...')
       setLoading(true)
-      
-      console.log('Calling classroomApi.list()...')
+
       const classroomsData = await classroomApi.list()
-      console.log('Classrooms response:', classroomsData)
-      
-      console.log('Calling examApi.list()...')
       const examsData = await examApi.list()
-      console.log('Exams response:', examsData)
       
       // Handle different response formats
       const classroomsList = Array.isArray(classroomsData) 
@@ -59,9 +52,6 @@ function Results() {
       const examsList = Array.isArray(examsData)
         ? examsData
         : examsData?.exams || []
-      
-      console.log('Setting classrooms:', classroomsList)
-      console.log('Setting exams:', examsList)
       
       setClassrooms(classroomsList)
       setExams(examsList)
@@ -108,7 +98,7 @@ function Results() {
   const getStatusColor = (status) => {
     switch(status) {
       case 'draft': return 'bg-gray-100 text-gray-700'
-      case 'submitted': return 'bg-blue-100 text-blue-700'
+      case 'submitted': return 'bg-cyan-100 text-cyan-700'
       case 'approved': return 'bg-green-100 text-green-700'
       case 'published': return 'bg-purple-100 text-purple-700'
       case 'rejected': return 'bg-red-100 text-red-700'
@@ -149,10 +139,10 @@ function Results() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedResults.size === results.length) {
+    if (selectedResults.size === filteredResults.length) {
       setSelectedResults(new Set())
     } else {
-      setSelectedResults(new Set(results.map(r => r._id)))
+      setSelectedResults(new Set(filteredResults.map(r => r._id)))
     }
   }
 
@@ -177,10 +167,6 @@ function Results() {
   }
 
   const exportToCSV = () => {
-    const filteredResults = results
-      .filter(result => !statusFilter || result.status === statusFilter)
-      .filter(result => !subjectFilter || result.subject?.name === subjectFilter)
-
     if (filteredResults.length === 0) {
       showError('No results to export')
       return
@@ -216,6 +202,10 @@ function Results() {
     showSuccess('Results exported to CSV')
   }
 
+  const filteredResults = results
+    .filter(result => !statusFilter || result.status === statusFilter)
+    .filter(result => !subjectFilter || result.subject?.name === subjectFilter)
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -228,8 +218,8 @@ function Results() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Loaded results</p>
               <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{results.length}</p>
             </div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Selected</p>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">Selected</p>
               <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{selectedResults.size}</p>
             </div>
           </>
@@ -246,7 +236,7 @@ function Results() {
               value={selectedClassroom}
               onChange={(e) => setSelectedClassroom(e.target.value)}
               disabled={loading || classrooms.length === 0}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue disabled:bg-gray-100"
+              className="ui-select disabled:bg-gray-100"
             >
               <option value="">
                 {loading ? 'Loading...' : classrooms.length === 0 ? 'No classrooms available' : 'Select Classroom'}
@@ -264,7 +254,7 @@ function Results() {
               value={selectedExam}
               onChange={(e) => setSelectedExam(e.target.value)}
               disabled={loading || !selectedClassroom}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue disabled:bg-gray-100"
+              className="ui-select disabled:bg-gray-100"
             >
               <option value="">{!selectedClassroom ? 'Select classroom first' : 'Select Exam'}</option>
               {exams && exams.length > 0 && exams.filter(exam => exam.status !== 'closed' && exam.status !== 'cancelled').map(exam => (
@@ -290,7 +280,7 @@ function Results() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowGradeForm(true)}
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-opacity-90"
+                className="btn-ui btn-primary"
               >
                 <Upload size={18} />
                 Enter Grades
@@ -298,13 +288,13 @@ function Results() {
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-text-dark mb-1">Filter by Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                  className="ui-select"
                 >
                   <option value="">All Statuses</option>
                   <option value="draft">Draft</option>
@@ -318,7 +308,7 @@ function Results() {
                 <select
                   value={subjectFilter}
                   onChange={(e) => setSubjectFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-blue"
+                  className="ui-select"
                 >
                   <option value="">All Subjects</option>
                   {Array.from(new Set(results.map(r => r.subject?.name)))
@@ -336,8 +326,8 @@ function Results() {
 
         {/* Bulk Actions */}
         {selectedResults.size > 0 && (
-          <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-            <p className="text-sm text-blue-900 mb-3 font-medium">{selectedResults.size} result(s) selected</p>
+          <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+            <p className="text-sm text-cyan-900 mb-3 font-medium">{selectedResults.size} result(s) selected</p>
             <div className="flex flex-wrap gap-2">
               {/* Submit All button for draft results */}
               {Array.from(selectedResults).some(id => results.find(r => r._id === id)?.status === 'draft') && (
@@ -399,22 +389,22 @@ function Results() {
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader className="animate-spin" size={40} />
         </div>
-      ) : results.length === 0 ? (
+      ) : filteredResults.length === 0 ? (
         <div className="surface-card section-pad p-12 text-center">
           <AlertCircle size={48} className="mx-auto text-text-muted mb-4" />
-          <p className="text-text-muted text-lg">No results yet</p>
-          <p className="text-sm text-text-muted mt-2">Select a classroom and exam, then enter grades</p>
+          <p className="text-text-muted text-lg">No results found</p>
+          <p className="text-sm text-text-muted mt-2">Adjust filters or select a classroom and exam, then enter grades</p>
         </div>
       ) : (
         <div className="table-shell overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-cyan-50/60 border-b">
                 <tr>
                   <th className="px-4 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={selectedResults.size === results.length && results.length > 0}
+                      checked={selectedResults.size === filteredResults.length && filteredResults.length > 0}
                       onChange={toggleSelectAll}
                       className="w-4 h-4"
                     />
@@ -428,11 +418,8 @@ function Results() {
                 </tr>
               </thead>
               <tbody>
-                {results
-                  .filter(result => !statusFilter || result.status === statusFilter)
-                  .filter(result => !subjectFilter || result.subject?.name === subjectFilter)
-                  .map(result => (
-                  <tr key={result._id} className="border-b hover:bg-gray-50 transition-colors">
+                {filteredResults.map(result => (
+                  <tr key={result._id} className="border-b hover:bg-cyan-50/50 transition-colors">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
@@ -464,7 +451,7 @@ function Results() {
                         <button
                           onClick={() => handleStatusTransition(result._id, 'draft')}
                           disabled={transitioningId === result._id}
-                          className="text-blue-600 hover:text-opacity-80 flex items-center gap-1 disabled:opacity-50"
+                          className="text-cyan-700 hover:text-cyan-600 flex items-center gap-1 disabled:opacity-50"
                         >
                           <Send size={16} />
                           Submit
@@ -501,12 +488,12 @@ function Results() {
 
       {/* Submission Info */}
       {results.length > 0 && (
-        <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+        <div className="mt-6 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
           <div className="flex items-start gap-3">
-            <CheckCircle size={20} className="text-blue-600 mt-0.5" />
+            <CheckCircle size={20} className="text-cyan-700 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-blue-900">Ready to Submit?</p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm font-medium text-cyan-900">Ready to Submit?</p>
+              <p className="text-sm text-cyan-700 mt-1">
                 Once all grades are entered, you can submit the results for head-teacher approval.
               </p>
             </div>

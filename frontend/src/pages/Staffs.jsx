@@ -9,6 +9,7 @@ import AdvancedSearch from '../components/AdvancedSearch'
 import Pagination from '../components/Pagination'
 import SkeletonLoader from '../components/SkeletonLoader'
 import ConfirmDialog from '../components/ConfirmDialog'
+import PageHeader from '../components/PageHeader'
 import { exportToCSV } from '../utils/exportData'
 import { filterData, sortData, searchData, paginateData } from '../utils/filterSort'
 import useKeyboardShortcuts from '../utils/keyboardShortcuts.jsx'
@@ -301,9 +302,9 @@ function Staffs() {
 
   if (loading) {
     return (
-      <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="page-stack">
         <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3"></div>
-        <div className="bg-card-white rounded-custom shadow-custom p-4 overflow-x-auto">
+        <div className="surface-card section-pad overflow-x-auto">
           <table className="min-w-full">
             <tbody>
               <SkeletonLoader count={5} variant="row" />
@@ -315,51 +316,64 @@ function Staffs() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Staffs</h1>
-          <p className="text-sm sm:text-base text-text-muted mt-1">Manage all staff records ({staffs.length})</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Support & Operations"
+        title="Staffs"
+        description={`Manage staff records, assignments, and exports from a single workspace. ${staffs.length} records are currently loaded.`}
+        meta={
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Visible records</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{processedStaffs.length}</p>
+            </div>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">Selected</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{selectedIds.size}</p>
+            </div>
+          </>
+        }
+        actions={
+          <>
           {isAdmin && (
-            <button 
+            <button
               onClick={handleAddClick}
-              className="flex items-center justify-center gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors font-medium text-sm"
+              className="btn-ui btn-primary"
               title="Ctrl+N"
             >
               <Plus size={18} />
-              <span className="hidden sm:inline">Add Staff</span>
+              <span>Add Staff</span>
             </button>
           )}
           <button
             onClick={handleExportAll}
-            className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            className="btn-ui btn-secondary"
             title="Ctrl+E"
           >
             <Download size={18} />
-            <span className="hidden sm:inline">Export All</span>
+            <span>Export All</span>
           </button>
           {selectedIds.size > 0 && isAdmin && (
             <button
               onClick={handleExportSelected}
-              className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              className="btn-ui btn-secondary"
             >
               <Download size={18} />
-              <span className="hidden sm:inline">Export ({selectedIds.size})</span>
+              <span>Export ({selectedIds.size})</span>
             </button>
           )}
           {selectedIds.size > 0 && (
             <button
               onClick={handleDeleteSelected}
-              className="flex items-center justify-center gap-2 bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              className="btn-ui btn-danger"
             >
               <Trash2 size={18} />
-              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
+              <span>Delete ({selectedIds.size})</span>
             </button>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 flex items-start gap-3">
@@ -369,22 +383,24 @@ function Staffs() {
       )}
 
       {/* Advanced Search */}
-      <AdvancedSearch
-        searchFields={['name', 'email', 'department']}
-        filterOptions={{
-          role: ['teacher', 'administrator', 'secretary', 'librarian', 'security', 'maintenance'],
-          department: ['Administration', 'Academic', 'Support', 'Security']
-        }}
-        onSearch={setSearchQuery}
-        onFilter={setFilters}
-        onClear={() => {
-          setSearchQuery('')
-          setFilters({})
-        }}
-        loading={loading}
-      />
+      <div className="toolbar-card">
+        <AdvancedSearch
+          searchFields={['name', 'email', 'department']}
+          filterOptions={{
+            role: ['teacher', 'administrator', 'secretary', 'librarian', 'security', 'maintenance'],
+            department: ['Administration', 'Academic', 'Support', 'Security']
+          }}
+          onSearch={setSearchQuery}
+          onFilter={setFilters}
+          onClear={() => {
+            setSearchQuery('')
+            setFilters({})
+          }}
+          loading={loading}
+        />
+      </div>
 
-      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+      <div className="table-shell p-3 sm:p-4 lg:p-6">
         <div className="overflow-x-auto">
           <table className="w-full text-xs sm:text-sm">
             <thead>
@@ -439,7 +455,7 @@ function Staffs() {
                 </tr>
               ) : (
                 paginatedData.data.map((staff) => (
-                  <tr key={staff.id || staff._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={staff.id || staff._id} className="border-b border-gray-100 hover:bg-cyan-50/50 transition-colors">
                     <td className="py-3 px-2 sm:px-4">
                       <button
                         onClick={() => toggleSelect(staff.id || staff._id)}
@@ -463,7 +479,7 @@ function Staffs() {
                           <>
                             <button
                               onClick={() => handleEditClick(staff)}
-                              className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-blue-50"
+                              className="text-primary-blue hover:text-primary-blue/80 text-xs sm:text-sm font-medium flex items-center gap-1 p-1 rounded hover:bg-cyan-50"
                               title="Edit"
                             >
                               <Edit2 size={14} className="sm:size-4" />

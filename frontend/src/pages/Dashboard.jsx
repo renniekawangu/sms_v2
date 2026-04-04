@@ -69,12 +69,12 @@ function AdminDashboard() {
         description="A unified snapshot of users, classrooms, finance, and academic activity so you can act quickly without hopping between disconnected screens."
         meta={
           <>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Academic Year</p>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">Academic Year</p>
               <p className="mt-1 font-display text-lg font-semibold text-slate-900">{currentAcademicYear?.year || 'Not Set'}</p>
             </div>
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">School</p>
+            <div className="rounded-2xl border border-green-100 bg-green-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-green-700">School</p>
               <p className="mt-1 font-display text-lg font-semibold text-slate-900">{schoolSettings?.schoolName || 'School'}</p>
             </div>
           </>
