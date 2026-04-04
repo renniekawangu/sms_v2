@@ -104,7 +104,7 @@ function Header({ onMenuClick }) {
   const greetingName = user?.name?.split(' ')[0] || 'Team'
 
   return (
-    <header className="sticky top-0 z-30 px-3 pt-3 sm:px-4 sm:pt-4 lg:px-6">
+    <header className="sticky top-0 z-30 px-2 pt-2 sm:px-4 sm:pt-4 lg:px-6">
       <div className="surface-card surface-card-strong border border-white/70 px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -121,14 +121,14 @@ function Header({ onMenuClick }) {
             </div>
 
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <div className="hidden sm:flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                 <ShieldCheck size={14} className="text-primary-blue" />
                 Unified School Workspace
               </div>
-              <p className="mt-1 truncate font-display text-lg font-semibold text-slate-900 sm:text-xl">
+              <p className="truncate font-display text-base font-semibold text-slate-900 sm:mt-1 sm:text-xl">
                 Welcome back, {greetingName}
               </p>
-              <p className="truncate text-sm text-slate-500">
+              <p className="hidden md:block truncate text-sm text-slate-500">
                 Stay on top of students, reports, finance, and daily operations.
               </p>
             </div>
@@ -204,7 +204,7 @@ function Header({ onMenuClick }) {
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center justify-center rounded-2xl border border-red-100 bg-white/80 p-2.5 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              className="inline-flex items-center justify-center rounded-2xl border border-red-100 bg-white/80 p-2.5 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 active:scale-[0.98]"
               aria-label="Logout"
               title="Logout"
             >

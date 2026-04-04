@@ -58,6 +58,27 @@ function Sidebar({ isOpen, onClose }) {
   const userRole = user?.role || ROLES.ADMIN
   const [teacherClassroomId, setTeacherClassroomId] = useState(null)
 
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && isOpen && onClose) {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+
+    if (isOpen) {
+      document.body.classList.add('modal-open')
+    } else {
+      document.body.classList.remove('modal-open')
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.classList.remove('modal-open')
+    }
+  }, [isOpen, onClose])
+
   // Fetch teacher's classroom on component mount
   useEffect(() => {
     if (userRole === ROLES.TEACHER) {
@@ -107,7 +128,7 @@ function Sidebar({ isOpen, onClose }) {
       {/* Mobile overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
@@ -115,10 +136,10 @@ function Sidebar({ isOpen, onClose }) {
       {/* Sidebar */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50
-        w-72 border-r border-white/40 bg-[linear-gradient(180deg,rgba(7,18,33,0.96),rgba(17,24,39,0.96))] text-white shadow-[0_24px_60px_rgba(15,23,42,0.28)] flex flex-col
+        w-[85vw] max-w-[320px] md:w-72 border-r border-white/40 bg-[linear-gradient(180deg,rgba(7,18,33,0.96),rgba(17,24,39,0.96))] text-white shadow-[0_24px_60px_rgba(15,23,42,0.28)] flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        h-screen md:h-auto overflow-y-auto
+        h-[100dvh] md:h-auto overflow-y-auto overscroll-contain
       `}>
         <div className="border-b border-white/10 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
