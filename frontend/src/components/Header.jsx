@@ -121,15 +121,8 @@ function Header({ onMenuClick }) {
             </div>
 
             <div className="min-w-0">
-              <div className="hidden sm:flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                <ShieldCheck size={14} className="text-primary-blue" />
-                Unified School Workspace
-              </div>
               <p className="truncate font-display text-base font-semibold text-slate-900 sm:mt-1 sm:text-xl">
                 Welcome back, {greetingName}
-              </p>
-              <p className="hidden md:block truncate text-sm text-slate-500">
-                Stay on top of students, reports, finance, and daily operations.
               </p>
             </div>
           </div>
@@ -191,25 +184,6 @@ function Header({ onMenuClick }) {
                 </div>
               )}
             </div>
-
-            <div className="hidden sm:flex items-center gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/70 px-3 py-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#02A7BF,#0A6E7D)] text-sm font-bold text-white">
-                {greetingName.charAt(0).toUpperCase()}
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-slate-800">{user?.name || 'User'}</p>
-                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{user?.role || 'member'}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center justify-center rounded-2xl border border-red-100 bg-white/80 p-2.5 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 active:scale-[0.98]"
-              aria-label="Logout"
-              title="Logout"
-            >
-              <LogOut size={18} />
-            </button>
           </div>
         </div>
 
