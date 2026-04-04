@@ -108,7 +108,7 @@ function Header({ onMenuClick }) {
       <div className="surface-card surface-card-strong border border-white/70 px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex h-12 w-12 sm:h-12 sm:w-12 items-center justify-center rounded-2xl">
+            <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl">
               <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
           </div>
