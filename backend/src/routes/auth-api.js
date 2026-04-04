@@ -9,6 +9,7 @@ const { User } = require('../models/user');
 const { Student } = require('../models/student');
 const { authRateLimiter } = require('../middleware/rateLimiter');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { validate, loginSchema } = require('../middleware/validate');
 
 const router = express.Router();
 const jwtSecret = process.env.JWT_SECRET;
@@ -26,7 +27,7 @@ const generateToken = (user) => {
  * POST /api/auth/login
  * JSON-based login endpoint for frontend SPA
  */
-router.post('/login', authRateLimiter, asyncHandler(async (req, res) => {
+router.post('/login', authRateLimiter, validate(loginSchema), asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {

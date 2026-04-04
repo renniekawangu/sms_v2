@@ -1,6 +1,4 @@
-const Joi = require('joi');
-
-const roles = ['admin', 'student', 'teacher', 'head-teacher', 'accounts'];
+const roles = ['admin', 'student', 'teacher', 'head-teacher', 'accounts', 'parent'];
 
 const classLevelValues = [
   'Baby Class',
@@ -16,122 +14,268 @@ const classLevelValues = [
   'Grade 7'
 ];
 
-const studentCreateSchema = Joi.object({
-  firstName: Joi.string().trim().min(2).required(),
-  lastName: Joi.string().trim().min(2).required(),
-  password: Joi.string().min(6).required(),
-  dateOfBirth: Joi.date().required(),
-  address: Joi.string().min(3).required(),
-  phone: Joi.string().min(5).required(),
-  classLevel: Joi.string().valid(...classLevelValues).optional(),
-  stream: Joi.string().allow('', null).optional()
-});
+const isPlainObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
 
-const studentUpdateSchema = Joi.object({
-  firstName: Joi.string().trim().min(2).required(),
-  lastName: Joi.string().trim().min(2).required(),
-  dateOfBirth: Joi.date().required(),
-  address: Joi.string().min(3).required(),
-  phone: Joi.string().min(5).required(),
-  classLevel: Joi.string().valid(...classLevelValues).optional(),
-  stream: Joi.string().allow('', null).optional()
-});
+const normalizeString = (value) => (typeof value === 'string' ? value.trim() : value);
 
-const staffCreateSchema = Joi.object({
-  firstName: Joi.string().trim().min(2).required(),
-  lastName: Joi.string().trim().min(2).required(),
-  email: Joi.string().email().required(),
-  role: Joi.string().valid('teacher', 'head-teacher', 'accounts').required(),
-  password: Joi.string().min(6).required(),
-  address: Joi.string().min(3).required(),
-  phone: Joi.string().min(5).required()
-});
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-const staffUpdateSchema = Joi.object({
-  firstName: Joi.string().trim().min(2).required().messages({
-    'string.empty': 'First name is required',
-    'string.min': 'First name must be at least 2 characters',
-    'any.required': 'First name is required'
-  }),
-  lastName: Joi.string().trim().min(2).required().messages({
-    'string.empty': 'Last name is required',
-    'string.min': 'Last name must be at least 2 characters',
-    'any.required': 'Last name is required'
-  }),
-  email: Joi.string().email().required(),
-  role: Joi.string().valid('teacher', 'head-teacher', 'accounts').optional(),
-  address: Joi.string().min(3).required(),
-  phone: Joi.string().min(5).required()
-});
+const parseDate = (value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 
-const userCreateSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
-  role: Joi.string().valid(...roles).required(),
-  firstName: Joi.string().trim().min(2).required(),
-  lastName: Joi.string().trim().min(2).required(),
-  address: Joi.string().min(3).required(),
-  phone: Joi.string().min(5).required(),
-  dateOfBirth: Joi.alternatives().conditional('role', {
-    is: 'student',
-    then: Joi.date().required(),
-    otherwise: Joi.any().optional()
-  })
-});
+const validate = (schema) => (req, res, next) => {
+  const result = schema(req.body);
 
-const userUpdateSchema = Joi.object({
-  email: Joi.string().email().required(),
-  role: Joi.string().valid(...roles).required(),
-  password: Joi.string().min(6).allow('', null).optional(),
-  firstName: Joi.string().trim().min(2).allow('').optional(),
-  lastName: Joi.string().trim().min(2).allow('').optional(),
-  phone: Joi.string().min(5).allow('').optional(),
-  address: Joi.string().min(3).allow('').optional(),
-  dateOfBirth: Joi.date().allow('', null).optional(),
-  classLevel: Joi.string().valid(...classLevelValues).allow('', null).optional(),
-  stream: Joi.string().allow('', null).optional()
-});
+  if (result.errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation Error',
+      errors: result.errors
+    });
+  }
 
-function validate(schema) {
-  return (req, res, next) => {
-    const { error, value } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
-    if (error) {
-      const errors = error.details.map(d => d.message);
-      // Store errors in session flash for SSR routes (if needed)
-      req.validationErrors = errors;
-      
-      // For API routes, return JSON response instead of rendering HTML
-      // Check if this is an API request (has /api prefix or Accept: application/json header)
-      const isApiRequest = req.path.startsWith('/api') || 
-                          req.get('Accept')?.includes('application/json') ||
-                          req.get('Content-Type')?.includes('application/json');
-      
-      if (isApiRequest) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation Error',
-          errors: errors
-        });
-      }
-      
-      // For SSR routes, render error page
-      return res.status(400).render('error', { 
-        title: 'Validation Error',
-        message: 'Please correct the following errors:',
-        errors: errors 
-      });
-    }
-    req.body = value;
-    next();
+  req.body = result.value;
+  return next();
+};
+
+const loginSchema = (payload) => {
+  const data = isPlainObject(payload) ? payload : {};
+  const email = normalizeString(data.email);
+  const password = typeof data.password === 'string' ? data.password : '';
+  const errors = [];
+
+  if (!email) {
+    errors.push('Email or student ID is required');
+  }
+
+  if (!password) {
+    errors.push('Password is required');
+  }
+
+  return {
+    errors,
+    value: { email, password }
   };
-}
+};
+
+const userCreateSchema = (payload) => {
+  const data = isPlainObject(payload) ? payload : {};
+  const email = normalizeString(data.email)?.toLowerCase();
+  const password = typeof data.password === 'string' ? data.password : '';
+  const role = normalizeString(data.role);
+  const name = normalizeString(data.name);
+  const phone = normalizeString(data.phone);
+  const date_of_join = parseDate(data.date_of_join);
+  const errors = [];
+
+  if (!email) {
+    errors.push('Email is required');
+  } else if (!isValidEmail(email)) {
+    errors.push('Email must be valid');
+  }
+
+  if (!password) {
+    errors.push('Password is required');
+  } else if (password.length < 6) {
+    errors.push('Password must be at least 6 characters long');
+  }
+
+  if (!role) {
+    errors.push('Role is required');
+  } else if (!roles.includes(role)) {
+    errors.push(`Role must be one of: ${roles.join(', ')}`);
+  }
+
+  if (date_of_join === null) {
+    errors.push('date_of_join must be a valid date');
+  }
+
+  return {
+    errors,
+    value: {
+      email,
+      password,
+      role,
+      name,
+      phone,
+      date_of_join
+    }
+  };
+};
+
+const userUpdateSchema = (payload) => {
+  const data = isPlainObject(payload) ? payload : {};
+  const value = {};
+  const errors = [];
+
+  if (Object.prototype.hasOwnProperty.call(data, 'email')) {
+    const email = normalizeString(data.email)?.toLowerCase();
+    if (!email) {
+      errors.push('Email cannot be empty');
+    } else if (!isValidEmail(email)) {
+      errors.push('Email must be valid');
+    } else {
+      value.email = email;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'password')) {
+    const password = typeof data.password === 'string' ? data.password : '';
+    if (!password) {
+      errors.push('Password cannot be empty');
+    } else if (password.length < 6) {
+      errors.push('Password must be at least 6 characters long');
+    } else {
+      value.password = password;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'role')) {
+    const role = normalizeString(data.role);
+    if (!role) {
+      errors.push('Role cannot be empty');
+    } else if (!roles.includes(role)) {
+      errors.push(`Role must be one of: ${roles.join(', ')}`);
+    } else {
+      value.role = role;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'name')) {
+    value.name = normalizeString(data.name);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'phone')) {
+    value.phone = normalizeString(data.phone);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'date_of_join')) {
+    const date_of_join = parseDate(data.date_of_join);
+    if (date_of_join === null) {
+      errors.push('date_of_join must be a valid date');
+    } else {
+      value.date_of_join = date_of_join;
+    }
+  }
+
+  return { errors, value };
+};
+
+const studentCreateSchema = (payload) => {
+  const data = isPlainObject(payload) ? payload : {};
+  const errors = [];
+  const value = {
+    firstName: normalizeString(data.firstName),
+    lastName: normalizeString(data.lastName),
+    password: typeof data.password === 'string' ? data.password : '',
+    address: normalizeString(data.address),
+    phone: normalizeString(data.phone),
+    stream: normalizeString(data.stream),
+    classLevel: normalizeString(data.classLevel)
+  };
+  const dateOfBirth = parseDate(data.dateOfBirth);
+
+  if (!value.firstName) errors.push('First name is required');
+  if (!value.lastName) errors.push('Last name is required');
+  if (!value.password || value.password.length < 6) errors.push('Password must be at least 6 characters long');
+  if (!value.address) errors.push('Address is required');
+  if (!value.phone) errors.push('Phone is required');
+  if (dateOfBirth === null || !dateOfBirth) errors.push('dateOfBirth is required and must be valid');
+  if (value.classLevel && !classLevelValues.includes(value.classLevel)) {
+    errors.push(`classLevel must be one of: ${classLevelValues.join(', ')}`);
+  }
+
+  value.dateOfBirth = dateOfBirth || undefined;
+  return { errors, value };
+};
+
+const studentUpdateSchema = (payload) => {
+  const data = isPlainObject(payload) ? payload : {};
+  const errors = [];
+  const value = {
+    firstName: normalizeString(data.firstName),
+    lastName: normalizeString(data.lastName),
+    address: normalizeString(data.address),
+    phone: normalizeString(data.phone),
+    stream: normalizeString(data.stream),
+    classLevel: normalizeString(data.classLevel)
+  };
+  const dateOfBirth = parseDate(data.dateOfBirth);
+
+  if (!value.firstName) errors.push('First name is required');
+  if (!value.lastName) errors.push('Last name is required');
+  if (!value.address) errors.push('Address is required');
+  if (!value.phone) errors.push('Phone is required');
+  if (dateOfBirth === null || !dateOfBirth) errors.push('dateOfBirth is required and must be valid');
+  if (value.classLevel && !classLevelValues.includes(value.classLevel)) {
+    errors.push(`classLevel must be one of: ${classLevelValues.join(', ')}`);
+  }
+
+  value.dateOfBirth = dateOfBirth || undefined;
+  return { errors, value };
+};
+
+const staffCreateSchema = (payload) => {
+  const data = isPlainObject(payload) ? payload : {};
+  const role = normalizeString(data.role);
+  const email = normalizeString(data.email)?.toLowerCase();
+  const password = typeof data.password === 'string' ? data.password : '';
+  const errors = [];
+  const value = {
+    firstName: normalizeString(data.firstName),
+    lastName: normalizeString(data.lastName),
+    email,
+    role,
+    password,
+    address: normalizeString(data.address),
+    phone: normalizeString(data.phone)
+  };
+
+  if (!value.firstName) errors.push('First name is required');
+  if (!value.lastName) errors.push('Last name is required');
+  if (!email || !isValidEmail(email)) errors.push('Email must be valid');
+  if (!['teacher', 'head-teacher', 'accounts'].includes(role)) errors.push('Role must be teacher, head-teacher, or accounts');
+  if (!password || password.length < 6) errors.push('Password must be at least 6 characters long');
+  if (!value.address) errors.push('Address is required');
+  if (!value.phone) errors.push('Phone is required');
+
+  return { errors, value };
+};
+
+const staffUpdateSchema = (payload) => {
+  const data = isPlainObject(payload) ? payload : {};
+  const role = normalizeString(data.role);
+  const email = normalizeString(data.email)?.toLowerCase();
+  const errors = [];
+  const value = {
+    firstName: normalizeString(data.firstName),
+    lastName: normalizeString(data.lastName),
+    email,
+    role,
+    address: normalizeString(data.address),
+    phone: normalizeString(data.phone)
+  };
+
+  if (!value.firstName) errors.push('First name is required');
+  if (!value.lastName) errors.push('Last name is required');
+  if (!email || !isValidEmail(email)) errors.push('Email must be valid');
+  if (role && !['teacher', 'head-teacher', 'accounts'].includes(role)) errors.push('Role must be teacher, head-teacher, or accounts');
+  if (!value.address) errors.push('Address is required');
+  if (!value.phone) errors.push('Phone is required');
+
+  return { errors, value };
+};
 
 module.exports = {
   validate,
+  loginSchema,
+  userCreateSchema,
+  userUpdateSchema,
   studentCreateSchema,
   studentUpdateSchema,
   staffCreateSchema,
-  staffUpdateSchema,
-  userCreateSchema,
-  userUpdateSchema
+  staffUpdateSchema
 };

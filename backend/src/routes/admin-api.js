@@ -19,6 +19,7 @@ const { AuditLog } = require('../models/audit-log');
 const { Parent } = require('../models/parent');
 const { logAction } = require('../utils/auditLogger');
 const { getSchoolSettings, getCurrentAcademicYear } = require('../models/school-settings');
+const { validate, userCreateSchema, userUpdateSchema } = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -172,7 +173,7 @@ router.get('/users/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(asy
  * POST /api/admin/users
  * Create new user with privilege escalation prevention
  */
-router.post('/users', requireAuth, requireRole(ROLES.ADMIN), preventPrivilegeEscalation, asyncHandler(async (req, res) => {
+router.post('/users', requireAuth, requireRole(ROLES.ADMIN), preventPrivilegeEscalation, validate(userCreateSchema), asyncHandler(async (req, res) => {
   const { email, password, role, name, phone, date_of_join } = req.body;
 
   if (!email || !password || !role) {
@@ -245,7 +246,7 @@ router.post('/users', requireAuth, requireRole(ROLES.ADMIN), preventPrivilegeEsc
  * PUT /api/admin/users/:id
  * Update user with privilege escalation prevention
  */
-router.put('/users/:id', requireAuth, requireRole(ROLES.ADMIN), preventPrivilegeEscalation, asyncHandler(async (req, res) => {
+router.put('/users/:id', requireAuth, requireRole(ROLES.ADMIN), preventPrivilegeEscalation, validate(userUpdateSchema), asyncHandler(async (req, res) => {
   const { email, role } = req.body;
   const user = await User.findById(req.params.id);
 

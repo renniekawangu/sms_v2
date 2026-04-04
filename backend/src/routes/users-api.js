@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { requireAuth, requireRole } = require('../middleware/rbac');
 const { ROLES } = require('../config/rbac');
+const { validate, userCreateSchema, userUpdateSchema } = require('../middleware/validate');
 const { User } = require('../models/user');
 const { Parent } = require('../models/parent');
 
@@ -34,7 +35,7 @@ router.get('/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (re
 }));
 
 // POST /api/users - create user
-router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.post('/', requireAuth, requireRole(ROLES.ADMIN), validate(userCreateSchema), asyncHandler(async (req, res) => {
   const { email, password, role, name, phone, date_of_join, ...rest } = req.body;
   if (!email || !password || !role) {
     return res.status(400).json({ error: 'Email, password, and role are required' });
@@ -84,7 +85,7 @@ router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req,
 }));
 
 // PUT /api/users/:id - update user
-router.put('/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, requireRole(ROLES.ADMIN), validate(userUpdateSchema), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { password, role, email, name, phone, date_of_join, ...rest } = req.body;
   if (!mongoose.isValidObjectId(id)) {

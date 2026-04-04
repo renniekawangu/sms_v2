@@ -1,43 +1,56 @@
+import { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { SettingsProvider } from './contexts/SettingsContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import ProtectedRoute from './components/ProtectedRoute'
-import RoleBasedDashboard from './components/RoleBasedDashboard'
 import Layout from './components/Layout'
 import './index-responsive.css'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import AdminPanel from './pages/AdminPanel'
-import RoleManagement from './pages/RoleManagement'
-import Students from './pages/Students'
-import Teachers from './pages/Teachers'
-import Staffs from './pages/Staffs'
-import Classrooms from './pages/Classrooms'
-import ViewClassroom from './pages/ViewClassroom'
-import Subjects from './pages/Subjects'
-import Timetable from './pages/Timetable'
-import Children from './pages/Children'
-import ChildDetail from './pages/ChildDetail'
-import Parents from './pages/Parents'
-import Attendance from './pages/Attendance'
-import Fees from './pages/Fees'
-import Payments from './pages/Payments'
-import FinancialReports from './pages/FinancialReports'
-import Expenses from './pages/Expenses'
-import Issues from './pages/Issues'
-import SearchResults from './pages/SearchResults'
-import Settings from './pages/Settings'
-import UsersManagement from './pages/UsersManagement'
-import Messages from './pages/Messages'
-import Reports from './pages/Reports'
-import ReportCards from './pages/ReportCards'
-import Exams from './pages/Exams'
-import Results from './pages/Results'
-import ResultsApproval from './pages/ResultsApproval'
 import { PermissionGate } from './components/PermissionGate'
 import { ROLES, PERMISSIONS } from './config/rbac'
+
+const RoleBasedDashboard = lazy(() => import('./components/RoleBasedDashboard'))
+const Login = lazy(() => import('./pages/Login'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const AdminPanel = lazy(() => import('./pages/AdminPanel'))
+const RoleManagement = lazy(() => import('./pages/RoleManagement'))
+const Students = lazy(() => import('./pages/Students'))
+const Teachers = lazy(() => import('./pages/Teachers'))
+const Staffs = lazy(() => import('./pages/Staffs'))
+const Classrooms = lazy(() => import('./pages/Classrooms'))
+const ViewClassroom = lazy(() => import('./pages/ViewClassroom'))
+const Subjects = lazy(() => import('./pages/Subjects'))
+const Timetable = lazy(() => import('./pages/Timetable'))
+const Children = lazy(() => import('./pages/Children'))
+const ChildDetail = lazy(() => import('./pages/ChildDetail'))
+const Parents = lazy(() => import('./pages/Parents'))
+const Attendance = lazy(() => import('./pages/Attendance'))
+const Fees = lazy(() => import('./pages/Fees'))
+const Payments = lazy(() => import('./pages/Payments'))
+const FinancialReports = lazy(() => import('./pages/FinancialReports'))
+const Expenses = lazy(() => import('./pages/Expenses'))
+const Issues = lazy(() => import('./pages/Issues'))
+const SearchResults = lazy(() => import('./pages/SearchResults'))
+const Settings = lazy(() => import('./pages/Settings'))
+const UsersManagement = lazy(() => import('./pages/UsersManagement'))
+const Messages = lazy(() => import('./pages/Messages'))
+const Reports = lazy(() => import('./pages/Reports'))
+const ReportCards = lazy(() => import('./pages/ReportCards'))
+const Exams = lazy(() => import('./pages/Exams'))
+const Results = lazy(() => import('./pages/Results'))
+const ResultsApproval = lazy(() => import('./pages/ResultsApproval'))
+
+function RouteFallback() {
+  return (
+    <div className="min-h-screen bg-background-light flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-text-muted">Loading page...</p>
+      </div>
+    </div>
+  )
+}
 
 function App() {
   return (
@@ -46,18 +59,19 @@ function App() {
         <ToastProvider>
           <SettingsProvider>
             <Router>
-            <Routes>
-              <Route path="/login" element={<Login />} />
+              <Suspense fallback={<RouteFallback />}>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
           
-              {/* Dashboard - Routes to role-based dashboards */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <RoleBasedDashboard />
-                  </ProtectedRoute>
-                }
-              />
+                  {/* Dashboard - Routes to role-based dashboards */}
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <RoleBasedDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
 
               {/* Dashboard fallback for direct access */}
               <Route
@@ -401,9 +415,10 @@ function App() {
                 }
               />
 
-              {/* Catch-all - redirect to home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                  {/* Catch-all - redirect to home */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
             </Router>
           </SettingsProvider>
         </ToastProvider>
