@@ -65,13 +65,26 @@ const Messages = () => {
   const loadConversations = async () => {
     try {
       setLoading(true)
-      const result = await messagesApi.getInbox()
-      const messageList = result.messages || []
+      const [inboxResult, sentResult] = await Promise.all([
+        messagesApi.getInbox(),
+        messagesApi.getSent()
+      ])
+
+      const messageList = [
+        ...(inboxResult.messages || []),
+        ...(sentResult.messages || [])
+      ]
+
+      const currentUserId = String(user?.user_id || user?.id || user?._id || '')
       
       const conversationMap = {}
       messageList.forEach(msg => {
-        const otherUser = msg.sender.id === user.id ? msg.recipient : msg.sender
-        const key = otherUser.id
+        const senderId = String(msg.sender?.id || msg.sender?._id || '')
+        const recipientId = String(msg.recipient?.id || msg.recipient?._id || '')
+        const otherUser = senderId === currentUserId ? msg.recipient : msg.sender
+        const key = String(otherUser?.id || otherUser?._id || '')
+
+        if (!key) return
         
         if (!conversationMap[key]) {
           conversationMap[key] = {
@@ -81,8 +94,13 @@ const Messages = () => {
             messages: []
           }
         }
+
         conversationMap[key].messages.push(msg)
-        conversationMap[key].lastMessage = msg
+
+        const existingLast = conversationMap[key].lastMessage
+        if (!existingLast || new Date(msg.createdAt) > new Date(existingLast.createdAt)) {
+          conversationMap[key].lastMessage = msg
+        }
       })
 
       const convList = Object.values(conversationMap).sort((a, b) => 
