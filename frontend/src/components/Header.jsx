@@ -119,12 +119,6 @@ function Header({ onMenuClick }) {
             <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#02A7BF,#0A6E7D)] shadow-[0_12px_24px_rgba(2,167,191,0.24)]">
               <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
             </div>
-
-            <div className="min-w-0">
-              <p className="font-display text-base font-semibold text-slate-900 sm:mt-1 sm:text-xl">
-                Welcome back, {greetingName}
-              </p>
-            </div>
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-3">
