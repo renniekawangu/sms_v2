@@ -108,6 +108,12 @@ function Header({ onMenuClick }) {
       <div className="surface-card surface-card-strong border border-white/70 px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex h-12 w-12 sm:h-12 sm:w-12 items-center justify-center rounded-2xl">
+              <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
+            </div>
+          </div>
+
+          <div className="flex flex-1 items-center justify-end gap-3">
             <button
               onClick={onMenuClick}
               className="md:hidden inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white/80 p-2.5 text-slate-700 shadow-sm transition hover:bg-white"
@@ -116,12 +122,6 @@ function Header({ onMenuClick }) {
               <Menu size={20} />
             </button>
 
-            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl">
-              <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
-            </div>
-          </div>
-
-          <div className="flex flex-1 items-center justify-end gap-3">
             <div className="hidden md:block w-full max-w-xl">
               {isAdmin && (
                 <div className="relative" ref={searchPanelRef}>
