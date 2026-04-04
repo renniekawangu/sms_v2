@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { authApi } from '../services/api'
-import { ROLE_PERMISSIONS, ROLES, hasPermission, canAccessRoute, requiresSelfAccessOnly } from '../config/rbac'
+import { authApi, AUTH_LOGOUT_EVENT } from '../services/api'
+import { ROLE_PERMISSIONS, ROLES, canAccessRoute, requiresSelfAccessOnly } from '../config/rbac'
 
 const AuthContext = createContext(null)
 
@@ -10,21 +10,60 @@ export function AuthProvider({ children }) {
   const [permissions, setPermissions] = useState([])
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser)
-        setUser(userData)
-        
-        // Load permissions based on role using RBAC config
-        const rolePermissions = ROLE_PERMISSIONS[userData.role] || []
-        setPermissions(rolePermissions)
-      } catch (e) {
-        localStorage.removeItem('user')
-      }
+    let isMounted = true
+
+    const syncUserState = (userData) => {
+      if (!isMounted) return
+      setUser(userData)
+      setPermissions(userData ? (ROLE_PERMISSIONS[userData.role] || []) : [])
     }
-    setLoading(false)
+
+    const clearAuthState = () => {
+      localStorage.removeItem('user')
+      syncUserState(null)
+      setLoading(false)
+    }
+
+    const restoreSession = async () => {
+      const savedUser = localStorage.getItem('user')
+      if (!savedUser) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const storedUser = JSON.parse(savedUser)
+        const currentUser = await authApi.me()
+
+        const userData = {
+          ...storedUser,
+          ...currentUser,
+          token: storedUser.token,
+          email: currentUser.email || storedUser.email,
+          name: currentUser.name || storedUser.name || 'User'
+        }
+
+        localStorage.setItem('user', JSON.stringify(userData))
+        syncUserState(userData)
+      } catch (e) {
+        clearAuthState()
+        return
+      }
+
+      setLoading(false)
+    }
+
+    const handleUnauthorized = () => {
+      clearAuthState()
+    }
+
+    window.addEventListener(AUTH_LOGOUT_EVENT, handleUnauthorized)
+    restoreSession()
+
+    return () => {
+      isMounted = false
+      window.removeEventListener(AUTH_LOGOUT_EVENT, handleUnauthorized)
+    }
   }, [])
 
   /**

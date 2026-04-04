@@ -10,7 +10,7 @@ const {
   formatNumber,
   safeString,
   calculatePercentage
-} = require('../../utils/formatters');
+} = require('../../src/utils/formatters');
 
 describe('Formatter Utilities', () => {
   describe('formatGrade', () => {

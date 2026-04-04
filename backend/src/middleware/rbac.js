@@ -4,13 +4,14 @@
  */
 const jwt = require('jsonwebtoken');
 const { ROLES, hasPermission, canAccessEndpoint, canAccessResource } = require('../config/rbac');
+const jwtSecret = process.env.JWT_SECRET;
 
 /**
  * Verify JWT Token and extract user info
  */
 const verifyToken = (token) => {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key');
+    return jwt.verify(token, jwtSecret);
   } catch (err) {
     return null;
   }

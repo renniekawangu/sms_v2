@@ -1,10 +1,11 @@
 import { Search, Mic, LogOut, User, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
-import { studentsApi, teachersApi, adminApi } from '../services/api'
+import { adminApi } from '../services/api'
 import { ROLES } from '../config/rbac'
+import { useDebounce } from '../utils/debounce'
 
 function Header({ onMenuClick }) {
   const { user, logout } = useAuth()
@@ -15,6 +16,7 @@ function Header({ onMenuClick }) {
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
+  const debouncedQuery = useDebounce(searchQuery, 300)
 
   const handleLogout = async () => {
     try {
@@ -27,68 +29,42 @@ function Header({ onMenuClick }) {
     }
   }
 
-  const handleSearch = async (query) => {
+  useEffect(() => {
+    const runSearch = async () => {
+      if (!isAdmin || !debouncedQuery.trim()) {
+        setSearchResults([])
+        setShowResults(false)
+        setIsSearching(false)
+        return
+      }
+
+      setIsSearching(true)
+      try {
+        const response = await adminApi.search(debouncedQuery.trim())
+        const results = [
+          ...(response.students || []).map((student) => ({ ...student, type: 'student' })),
+          ...(response.staff || []).map((staffMember) => ({ ...staffMember, type: staffMember.role || 'staff' })),
+          ...(response.users || []).map((appUser) => ({ ...appUser, type: appUser.role || 'user' }))
+        ]
+
+        setSearchResults(results.slice(0, 10))
+        setShowResults(true)
+      } catch (err) {
+        console.error('Search error:', err)
+        setSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }
+
+    runSearch()
+  }, [debouncedQuery, isAdmin])
+
+  const handleSearchChange = (query) => {
     setSearchQuery(query)
     if (!query.trim()) {
       setSearchResults([])
       setShowResults(false)
-      return
-    }
-
-    setIsSearching(true)
-    try {
-      const queryLower = query.toLowerCase()
-      const results = []
-
-      try {
-        const students = await studentsApi.list()
-        const studentArray = Array.isArray(students) ? students : students.data || []
-        const studentMatches = studentArray.filter(s => 
-          s.firstName?.toLowerCase().includes(queryLower) ||
-          s.lastName?.toLowerCase().includes(queryLower) ||
-          s.email?.toLowerCase().includes(queryLower) ||
-          s.phone?.includes(query) ||
-          s._id?.toString().includes(query)
-        )
-        results.push(...studentMatches.map(s => ({ ...s, type: 'student' })))
-      } catch (err) {
-        console.error('Error fetching students:', err)
-      }
-
-      try {
-        const teachers = await teachersApi.list()
-        const teacherArray = Array.isArray(teachers) ? teachers : teachers.data || []
-        const teacherMatches = teacherArray.filter(t => 
-          t.name?.toLowerCase().includes(queryLower) ||
-          t.email?.toLowerCase().includes(queryLower) ||
-          t.phone?.includes(query) ||
-          t._id?.toString().includes(query)
-        )
-        results.push(...teacherMatches.map(t => ({ ...t, type: 'teacher' })))
-      } catch (err) {
-        console.error('Error fetching teachers:', err)
-      }
-
-      try {
-        const staffResponse = await adminApi.listStaff()
-        const staffArray = Array.isArray(staffResponse) ? staffResponse : staffResponse.data || []
-        const staffMatches = staffArray.filter(s => 
-          s.name?.toLowerCase().includes(queryLower) ||
-          s.email?.toLowerCase().includes(queryLower) ||
-          s.phone?.includes(query) ||
-          s._id?.toString().includes(query)
-        )
-        results.push(...staffMatches.map(s => ({ ...s, type: s.role || 'staff' })))
-      } catch (err) {
-        console.error('Error fetching staff:', err)
-      }
-
-      setSearchResults(results.slice(0, 10))
-      setShowResults(true)
-    } catch (err) {
-      console.error('Search error:', err)
-    } finally {
-      setIsSearching(false)
     }
   }
 
@@ -115,7 +91,7 @@ function Header({ onMenuClick }) {
                 type="text"
                 placeholder="Search by name, email, or phone..."
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => searchQuery && setShowResults(true)}
                 className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-primary-blue focus:border-2"
               />

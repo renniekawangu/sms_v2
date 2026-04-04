@@ -9,14 +9,14 @@ const logger = require('./utils/logger');
 const compression = require('compression');
 const { securityHeaders, sanitizeInput } = require('./middleware/security');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { authRateLimiter } = require('./middleware/rateLimiter');
-const formatters = require('./utils/formatters');
 const accessLogger = require('./middleware/accessLog');
 
-console.log('[SERVER] Starting SMS backend server...');
-console.log('[SERVER] NODE_ENV:', process.env.NODE_ENV);
-console.log('[SERVER] Port:', process.env.PORT);
-console.log('[SERVER] Connecting to MongoDB...');
+const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+
+if (missingEnvVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+}
 
 // Database Connection with proper timeout and retry options
 const mongoOptions = {
@@ -28,23 +28,6 @@ const mongoOptions = {
   retryWrites: true,
   retryReads: true,
 };
-
-// Start MongoDB connection in background (non-blocking)
-mongoose.connect(process.env.MONGODB_URI, mongoOptions)
-  .then(async () => {
-    console.log('[DB] ✓ Connected to MongoDB');
-    logger.info('✓ Connected to MongoDB');
-    try {
-      const { initializeDefaultRoles } = require('./models/role');
-      await initializeDefaultRoles();
-    } catch (err) {
-      logger.error('Error initializing roles:', err.message);
-    }
-  })
-  .catch(err => {
-    console.error('[DB] ✗ MongoDB connection error:', err.message);
-    logger.error('✗ MongoDB connection error: %s', err.message);
-  });
 
 // Handle connection events
 mongoose.connection.on('disconnected', () => {
@@ -188,8 +171,28 @@ process.on('unhandledRejection', (reason) => {
 
 // Server Start
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n✓ Server running on http://localhost:${PORT}`);
-  console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✓ Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}\n`);
-});
+
+async function startServer() {
+  logger.info('Starting SMS backend server');
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`Port: ${PORT}`);
+  logger.info('Connecting to MongoDB');
+
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, mongoOptions);
+    logger.info('Connected to MongoDB');
+
+    const { initializeDefaultRoles } = require('./models/role');
+    await initializeDefaultRoles();
+
+    app.listen(PORT, () => {
+      logger.info(`Server running on http://localhost:${PORT}`);
+      logger.info(`Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    });
+  } catch (err) {
+    logger.error('Failed to start server: %s', err.stack || err.message);
+    process.exit(1);
+  }
+}
+
+startServer();

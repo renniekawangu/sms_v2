@@ -1,5 +1,14 @@
 // Real API Service - connects to backend API
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const AUTH_LOGOUT_EVENT = 'auth:logout';
+
+const notifyUnauthorized = () => {
+  localStorage.removeItem('user');
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(AUTH_LOGOUT_EVENT));
+  }
+};
 
 
 // Helper function to get auth token
@@ -47,11 +56,8 @@ export const apiCall = async (endpoint, options = {}) => {
         if (endpoint === '/auth/login') {
           throw new Error(errorData.message || errorData.error || 'Invalid credentials')
         }
-        // For other endpoints, it's a session expiration
-        localStorage.removeItem('user')
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login'
-        }
+        // For other endpoints, let the auth provider clear state and redirect.
+        notifyUnauthorized()
         throw new Error('Session expired. Please login again.')
       }
       
@@ -643,6 +649,13 @@ export const adminApi = {
 
   getAuditLogs: async () => {
     return apiCall('/admin/audit-logs', {
+      method: 'GET',
+    });
+  },
+
+  search: async (query) => {
+    const params = new URLSearchParams({ q: query });
+    return apiCall(`/admin/search?${params.toString()}`, {
       method: 'GET',
     });
   },

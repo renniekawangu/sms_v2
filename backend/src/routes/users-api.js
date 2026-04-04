@@ -1,5 +1,4 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { requireAuth, requireRole } = require('../middleware/rbac');
@@ -46,10 +45,9 @@ router.post('/', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (req,
   const existing = await User.findOne({ email: String(email).toLowerCase().trim() });
   if (existing) return res.status(400).json({ error: 'Email already in use' });
 
-  const hashed = await bcrypt.hash(password, 10);
   const user = new User({ 
     email: email.toLowerCase().trim(), 
-    password: hashed, 
+    password, 
     role,
     name,
     phone,
@@ -110,7 +108,7 @@ router.put('/:id', requireAuth, requireRole(ROLES.ADMIN), asyncHandler(async (re
   if (date_of_join) user.date_of_join = new Date(date_of_join);
   if (role) user.role = role;
   if (password) {
-    user.password = await bcrypt.hash(password, 10);
+    user.password = password;
   }
   Object.assign(user, rest);
   await user.save();

@@ -11,12 +11,13 @@ const { authRateLimiter } = require('../middleware/rateLimiter');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 const router = express.Router();
+const jwtSecret = process.env.JWT_SECRET;
 
 // Generate JWT Token
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || 'your_secret_key',
+    jwtSecret,
     { expiresIn: process.env.JWT_EXPIRE || '1h' }
   );
 };
@@ -70,7 +71,7 @@ router.post('/login', authRateLimiter, asyncHandler(async (req, res) => {
       user_id: user._id,
       email: user.email,
       role: user.role,
-      name: user.name || user.email.split('@')[0],
+      name: user.name || user.email?.split('@')[0] || 'User',
       phone: user.phone,
       date_of_join: user.date_of_join
     };
@@ -126,7 +127,7 @@ router.get('/me', asyncHandler(async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key');
+    const decoded = jwt.verify(token, jwtSecret);
     const user = await User.findById(decoded.id);
 
     if (!user) {

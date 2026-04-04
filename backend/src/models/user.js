@@ -3,6 +3,7 @@
  * Handles user authentication and role-based access
  */
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -32,6 +33,20 @@ const userSchema = new mongoose.Schema({
   parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Parent' }
 }, {
   timestamps: true
+});
+
+userSchema.pre('save', async function saveUser(next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
+
+  // Avoid double-hashing when older code paths still pass a bcrypt hash.
+  if (typeof this.password === 'string' && this.password.startsWith('$2')) {
+    return next();
+  }
+
+  this.password = await bcrypt.hash(this.password, 10);
+  return next();
 });
 
 const User = mongoose.model('User', userSchema);
