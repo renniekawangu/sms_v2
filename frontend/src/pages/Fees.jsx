@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useSettings } from '../contexts/SettingsContext'
 import Modal from '../components/Modal'
 import FeeForm from '../components/FeeForm'
+import PageHeader from '../components/PageHeader'
 import { useCurrency, formatCurrency } from '../hooks/useCurrency'
 import { debounce } from '../utils/helpers'
 import { TableSkeleton } from '../components/LoadingSkeleton'
@@ -176,28 +177,38 @@ function Fees() {
   return (
     <ErrorBoundary>
       <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-text-dark">Fees</h1>
-          <p className="text-sm sm:text-base text-text-muted mt-1">Manage student fees</p>
-        </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center justify-center sm:justify-start gap-2 bg-primary-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors text-sm sm:text-base font-medium"
-        >
-          <Plus size={18} className="sm:size-5" />
-          <span>Add Fee</span>
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Fee Ledger"
+        title="Fees"
+        description="Review fee records, filter by academic period, and create or edit charges from the same consistent finance workspace."
+        meta={
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Loaded fees</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{fees.length}</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Visible fees</p>
+              <p className="mt-1 font-display text-2xl font-semibold text-slate-900">{filteredFees.length}</p>
+            </div>
+          </>
+        }
+        actions={
+          <button onClick={handleCreate} className="btn-ui btn-primary">
+            <Plus size={18} className="sm:size-5" />
+            <span>Add Fee</span>
+          </button>
+        }
+      />
 
-      <div className="bg-card-white rounded-custom shadow-custom p-3 sm:p-4 lg:p-6">
+      <div className="table-shell p-3 sm:p-4 lg:p-6">
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-text-dark mb-2">Academic Year</label>
+          <div className="ui-field">
+            <label className="ui-label">Academic Year</label>
             <select
               value={filters.academicYear}
               onChange={(e) => handleFilterChange('academicYear', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              className="ui-select"
             >
               <option value="">All Years</option>
               {academicYears.map((year) => (
@@ -208,12 +219,12 @@ function Fees() {
             </select>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-text-dark mb-2">Term</label>
+          <div className="ui-field">
+            <label className="ui-label">Term</label>
             <select
               value={filters.term}
               onChange={(e) => handleFilterChange('term', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              className="ui-select"
             >
               <option value="">All Terms</option>
               <option value="Term 1">Term 1</option>
@@ -226,7 +237,7 @@ function Fees() {
           <div className="flex items-end">
             <button
               onClick={() => setFilters({ academicYear: currentAcademicYear?.year || '', term: '' })}
-              className="w-full px-4 py-2 bg-gray-200 text-text-dark rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+              className="btn-ui btn-secondary w-full"
             >
               Reset Filters
             </button>
@@ -241,7 +252,7 @@ function Fees() {
               placeholder="Search fees by student or term..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+              className="ui-input pl-10"
             />
           </div>
         </div>

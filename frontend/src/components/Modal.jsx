@@ -44,7 +44,7 @@ function Modal({ isOpen, onClose, title, children }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-3 sm:p-4 overflow-y-auto backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -53,16 +53,16 @@ function Modal({ isOpen, onClose, title, children }) {
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="bg-card-white rounded-custom shadow-custom w-full max-w-2xl max-h-[90vh] overflow-y-auto my-auto focus:outline-none"
+        className="form-shell w-full max-w-2xl max-h-[90vh] overflow-y-auto my-auto focus:outline-none border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] shadow-[0_28px_70px_rgba(15,23,42,0.18)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-card-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10">
-          <h2 id="modal-title" className="text-lg sm:text-xl font-semibold text-text-dark">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
+          <h2 id="modal-title" className="font-display text-lg font-semibold text-text-dark sm:text-xl">
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-text-dark transition-colors p-1 hover:bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue flex-shrink-0"
+            className="flex-shrink-0 rounded-xl p-2 text-text-muted transition-colors hover:bg-slate-100 hover:text-text-dark focus:outline-none focus:ring-2 focus:ring-primary-blue"
             aria-label="Close modal"
           >
             <X size={20} className="sm:size-6" />

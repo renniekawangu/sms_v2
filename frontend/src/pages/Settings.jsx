@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Settings as SettingsIcon, School, Calendar, DollarSign, Umbrella } from 'lucide-react'
 import { settingsApi } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
+import PageHeader from '../components/PageHeader'
 
 function Settings() {
   const [activeTab, setActiveTab] = useState('school')
@@ -362,26 +363,31 @@ function Settings() {
   ]
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 p-3 sm:p-4 lg:p-6">
-      <div className="flex items-start gap-3 mb-6">
-        <SettingsIcon className="w-6 sm:w-8 h-6 sm:h-8 text-primary-blue flex-shrink-0" />
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-text-dark">School Settings</h1>
-        </div>
-      </div>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Configuration"
+        title="School Settings"
+        description="Manage core school identity, academic periods, fees, and holidays from one organized admin workspace."
+        meta={
+          <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Active section</p>
+            <p className="mt-1 font-display text-2xl font-semibold text-slate-900 capitalize">{activeTab}</p>
+          </div>
+        }
+      />
 
       {/* Tabs */}
-      <div className="flex gap-1 sm:gap-2 mb-6 overflow-x-auto border-b border-gray-200">
+      <div className="toolbar-card flex gap-1 sm:gap-2 overflow-x-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+              className={`ui-tab whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'text-primary-blue border-b-2 border-primary-blue'
-                  : 'text-text-muted hover:text-text-dark'
+                  ? 'ui-tab-active'
+                  : ''
               }`}
             >
               <Icon size={16} className="hidden sm:inline" />
@@ -392,127 +398,132 @@ function Settings() {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-lg shadow-custom p-3 sm:p-4 lg:p-6">
+      <div className="form-shell p-3 sm:p-4 lg:p-6">
         {loading ? (
           <div className="text-center py-8 text-text-muted">Loading...</div>
         ) : (
           <>
             {/* School Settings Tab */}
             {activeTab === 'school' && (
-              <form onSubmit={handleSchoolSettingsSubmit} className="space-y-4 max-w-3xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="col-span-1 md:col-span-2">
-                    <label className="block text-sm font-medium text-text-dark mb-2">
+              <form onSubmit={handleSchoolSettingsSubmit} className="space-y-5 max-w-4xl">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <p className="font-display text-lg font-semibold text-slate-900">School identity and defaults</p>
+                  <p className="mt-1 text-sm text-text-muted">Update the core settings that shape the rest of the system experience.</p>
+                </div>
+
+                <div className="form-grid-ui two-up">
+                  <div className="ui-field md:col-span-2">
+                    <label className="ui-label">
                       School Name
                     </label>
                     <input
                       type="text"
                       value={schoolSettings.schoolName}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, schoolName: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-input"
                       required
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-dark mb-2">School Logo URL</label>
+                  <div className="ui-field">
+                    <label className="ui-label">School Logo URL</label>
                     <input
                       type="url"
                       value={schoolSettings.schoolLogo}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, schoolLogo: e.target.value })}
                       placeholder="https://..."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-input"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-dark mb-2">Language</label>
+                  <div className="ui-field">
+                    <label className="ui-label">Language</label>
                     <input
                       type="text"
                       value={schoolSettings.language}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, language: e.target.value })}
                       placeholder="en"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-input"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-dark mb-2">Currency Symbol</label>
+                  <div className="ui-field">
+                    <label className="ui-label">Currency Symbol</label>
                     <input
                       type="text"
                       value={schoolSettings.currency}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, currency: e.target.value })}
                       placeholder="K, $, €"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-input"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-dark mb-2">Timezone</label>
+                  <div className="ui-field">
+                    <label className="ui-label">Timezone</label>
                     <input
                       type="text"
                       value={schoolSettings.timezone}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, timezone: e.target.value })}
                       placeholder="Africa/Lusaka"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-input"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-dark mb-2">Academic Year Format</label>
+                  <div className="ui-field">
+                    <label className="ui-label">Academic Year Format</label>
                     <input
                       type="text"
                       value={schoolSettings.academicYearFormat}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, academicYearFormat: e.target.value })}
                       placeholder="yyyy or yyyy-yyyy"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-input"
                     />
                   </div>
 
-                  <div className="col-span-1 md:col-span-2">
-                    <label className="block text-sm font-medium text-text-dark mb-2">Description</label>
+                  <div className="ui-field md:col-span-2">
+                    <label className="ui-label">Description</label>
                     <textarea
                       value={schoolSettings.schoolDescription}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, schoolDescription: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-textarea"
                       rows="3"
                     />
                   </div>
 
-                  <div className="col-span-1 md:col-span-2">
-                    <label className="block text-sm font-medium text-text-dark mb-2">Address</label>
+                  <div className="ui-field md:col-span-2">
+                    <label className="ui-label">Address</label>
                     <textarea
                       value={schoolSettings.schoolAddress}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, schoolAddress: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-textarea"
                       rows="3"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-dark mb-2">Phone</label>
+                  <div className="ui-field">
+                    <label className="ui-label">Phone</label>
                     <input
                       type="tel"
                       value={schoolSettings.schoolPhone}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, schoolPhone: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-input"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-dark mb-2">Email</label>
+                  <div className="ui-field">
+                    <label className="ui-label">Email</label>
                     <input
                       type="email"
                       value={schoolSettings.schoolEmail}
                       onChange={(e) => setSchoolSettings({ ...schoolSettings, schoolEmail: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                      className="ui-input"
                     />
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="btn-ui btn-primary"
                 >
                   Save Settings
                 </button>

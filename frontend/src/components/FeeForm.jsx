@@ -80,9 +80,14 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="studentId" className="block text-sm font-medium text-text-dark mb-2">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+        <p className="font-display text-lg font-semibold text-slate-900">{fee ? 'Update fee record' : 'Create a new fee record'}</p>
+        <p className="mt-1 text-sm text-text-muted">Use the same finance workflow styling as the rest of the dashboard for cleaner data entry.</p>
+      </div>
+
+      <div className="ui-field">
+        <label htmlFor="studentId" className="ui-label">
           Student <span className="text-red-500">*</span>
         </label>
         <select
@@ -90,10 +95,10 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
           name="studentId"
           value={formData.studentId}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+          className={`ui-select ${
             errors.studentId
               ? 'border-red-300 focus:ring-red-500'
-              : 'border-gray-200 focus:ring-primary-blue'
+              : ''
           }`}
         >
           <option value="">Select a student</option>
@@ -103,12 +108,12 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
-        {errors.studentId && <p className="mt-1 text-sm text-red-500">{errors.studentId}</p>}
+        {errors.studentId && <p className="text-sm text-red-500">{errors.studentId}</p>}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-text-dark mb-2">
+      <div className="form-grid-ui two-up">
+        <div className="ui-field">
+          <label htmlFor="amount" className="ui-label">
             Amount <span className="text-red-500">*</span>
           </label>
           <input
@@ -119,18 +124,18 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
             onChange={handleChange}
             min="0"
             step="0.01"
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+            className={`ui-input ${
               errors.amount
                 ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-200 focus:ring-primary-blue'
+                : ''
             }`}
             placeholder="Enter amount"
           />
-          {errors.amount && <p className="mt-1 text-sm text-red-500">{errors.amount}</p>}
+          {errors.amount && <p className="text-sm text-red-500">{errors.amount}</p>}
         </div>
 
-        <div>
-          <label htmlFor="dueDate" className="block text-sm font-medium text-text-dark mb-2">
+        <div className="ui-field">
+          <label htmlFor="dueDate" className="ui-label">
             Due Date <span className="text-red-500">*</span>
           </label>
           <input
@@ -139,17 +144,17 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
             name="dueDate"
             value={formData.dueDate}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+            className={`ui-input ${
               errors.dueDate
                 ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-200 focus:ring-primary-blue'
+                : ''
             }`}
           />
-          {errors.dueDate && <p className="mt-1 text-sm text-red-500">{errors.dueDate}</p>}
+          {errors.dueDate && <p className="text-sm text-red-500">{errors.dueDate}</p>}
         </div>
 
-        <div>
-          <label htmlFor="academicYear" className="block text-sm font-medium text-text-dark mb-2">
+        <div className="ui-field">
+          <label htmlFor="academicYear" className="ui-label">
             Academic Year <span className="text-red-500">*</span>
           </label>
           <select
@@ -157,10 +162,10 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
             name="academicYear"
             value={formData.academicYear}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+            className={`ui-select ${
               errors.academicYear
                 ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-200 focus:ring-primary-blue'
+                : ''
             }`}
           >
             <option value="">Select academic year</option>
@@ -170,11 +175,11 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
               </option>
             ))}
           </select>
-          {errors.academicYear && <p className="mt-1 text-sm text-red-500">{errors.academicYear}</p>}
+          {errors.academicYear && <p className="text-sm text-red-500">{errors.academicYear}</p>}
         </div>
 
-        <div>
-          <label htmlFor="term" className="block text-sm font-medium text-text-dark mb-2">
+        <div className="ui-field">
+          <label htmlFor="term" className="ui-label">
             Term
           </label>
           <select
@@ -182,7 +187,7 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
             name="term"
             value={formData.term}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className="ui-select"
           >
             <option value="General">General</option>
             <option value="Term 1">Term 1</option>
@@ -191,8 +196,8 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
           </select>
         </div>
 
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-text-dark mb-2">
+        <div className="ui-field">
+          <label htmlFor="description" className="ui-label">
             Description
           </label>
           <input
@@ -201,13 +206,13 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
             name="description"
             value={formData.description}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className="ui-input"
             placeholder="e.g., Tuition Fee"
           />
         </div>
 
-        <div>
-          <label htmlFor="status" className="block text-sm font-medium text-text-dark mb-2">
+        <div className="ui-field">
+          <label htmlFor="status" className="ui-label">
             Status
           </label>
           <select
@@ -215,7 +220,7 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
             name="status"
             value={formData.status}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
+            className="ui-select"
           >
             <option value="unpaid">Unpaid</option>
             <option value="pending">Pending</option>
@@ -224,17 +229,17 @@ function FeeForm({ fee, students, onSubmit, onCancel }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 pt-4">
+      <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
-          className="flex-1 bg-primary-blue text-white px-4 py-2 rounded-lg hover:bg-primary-blue/90 transition-colors font-medium"
+          className="btn-ui btn-primary flex-1"
         >
           {fee ? 'Update Fee' : 'Add Fee'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 border border-gray-200 text-text-dark px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+          className="btn-ui btn-secondary flex-1"
         >
           Cancel
         </button>
