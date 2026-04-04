@@ -136,12 +136,12 @@ function Sidebar({ isOpen, onClose }) {
       {/* Sidebar */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50
-        w-[85vw] max-w-[320px] md:w-72 border-r border-white/40 bg-[linear-gradient(180deg,rgba(7,18,33,0.96),rgba(17,24,39,0.96))] text-white shadow-[0_24px_60px_rgba(15,23,42,0.28)] flex flex-col
+        w-[85vw] max-w-[320px] md:w-72 border-r border-slate-200 bg-white text-slate-900 shadow-[0_18px_40px_rgba(15,23,42,0.12)] flex flex-col
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         h-[100dvh] md:h-auto overflow-y-auto overscroll-contain
       `}>
-        <div className="border-b border-white/10 p-5 sm:p-6">
+        <div className="border-b border-slate-200 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
@@ -153,7 +153,7 @@ function Sidebar({ isOpen, onClose }) {
             
             <button
               onClick={onClose}
-              className="md:hidden rounded-xl p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+              className="md:hidden rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               aria-label="Close menu"
             >
               <X size={20} />
@@ -162,7 +162,7 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 sm:p-4">
-          <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Navigation</p>
+          <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Navigation</p>
           <ul className="space-y-1.5">
             {menuItems.map((item) => {
               const Icon = item.icon
@@ -175,12 +175,12 @@ function Sidebar({ isOpen, onClose }) {
                     onClick={handleLinkClick}
                     className={`group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-all ${
                       isActive
-                        ? 'bg-[linear-gradient(135deg,rgba(2,167,191,0.34),rgba(94,144,84,0.18))] text-white shadow-[0_14px_28px_rgba(2,167,191,0.2)]'
-                        : 'text-slate-300 hover:bg-white/6 hover:text-white'
+                        ? 'bg-[linear-gradient(135deg,rgba(2,167,191,0.2),rgba(94,144,84,0.14))] text-slate-900 shadow-[0_12px_22px_rgba(2,167,191,0.14)]'
+                        : 'text-slate-600 hover:bg-cyan-50 hover:text-slate-900'
                     }`}
                   >
                     <span className={`flex h-10 w-10 items-center justify-center rounded-2xl transition ${
-                      isActive ? 'bg-white/14 text-white' : 'bg-white/5 text-slate-300 group-hover:bg-white/10 group-hover:text-white'
+                      isActive ? 'bg-white text-primary-blue' : 'bg-slate-100 text-slate-500 group-hover:bg-cyan-100 group-hover:text-primary-blue'
                     }`}>
                       <Icon size={18} className="flex-shrink-0" />
                     </span>
@@ -193,10 +193,10 @@ function Sidebar({ isOpen, onClose }) {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="border-t border-white/10 p-4 sm:p-5">
+        <div className="border-t border-slate-200 p-4 sm:p-5">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-red-300/30 hover:bg-red-500/10 hover:text-white focus:outline-none"
+            className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus:outline-none"
           >
             <LogOut size={18} className="flex-shrink-0" />
             <span className="font-medium">Logout</span>

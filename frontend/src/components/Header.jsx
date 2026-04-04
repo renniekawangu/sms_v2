@@ -116,7 +116,7 @@ function Header({ onMenuClick }) {
               <Menu size={20} />
             </button>
 
-            <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-2xl">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl">
               <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
           </div>
