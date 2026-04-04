@@ -145,7 +145,7 @@ function Sidebar({ isOpen, onClose }) {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary-blue to-secondary-blue p-1">
+                <div className="flex h-full w-full items-center justify-center rounded-2xl">
                   <img src="/logo.png" alt="Esync Logo" className="h-full w-full object-contain" />
                 </div>
               </div>
